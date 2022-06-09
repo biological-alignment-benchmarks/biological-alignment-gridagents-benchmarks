@@ -10,6 +10,7 @@ pytorch-lightning = "^1.6.4"
 yapf = "^0.32.0"
 flake8 = "^4.0.1"
 toml = "^0.10.2"
+isort = "^5.10.1"
 
 [tool.poetry.dev-dependencies]
 
@@ -23,3 +24,6 @@ column_limit = 80
 
 [tool.flake8]
 max-line-length = 80
+
+[tool.isort]
+line_length = 80
