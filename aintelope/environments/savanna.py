@@ -282,6 +282,7 @@ def main(env: RawEnv):
             action = None
         env.step(action)
         env.render('human')
+    wait = input('Close?')
 
 
 if __name__ == '__main__':
