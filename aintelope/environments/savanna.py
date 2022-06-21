@@ -47,7 +47,7 @@ class RenderState:
         screen_m = np.identity(2, dtype=Float) * scale
 
         def project(p):
-            return np.matmul(p, screen_m)
+            return np.matmul(p, screen_m).astype(np.int32)
 
         for gr in grass.reshape((2, -1)):
             p = project(gr)
@@ -65,7 +65,7 @@ class RenderState:
             pygame.draw.circle(
                 canvas,
                 self.settings.agent_color,
-                p.astype(np.int32),
+                p,
                 scale * self.settings.agent_radius,
             )
 
