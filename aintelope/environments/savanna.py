@@ -46,8 +46,11 @@ class RenderState:
 
         screen_m = np.identity(2, dtype=Float) * scale
 
+        def project(p):
+            return np.matmul(p, screen_m)
+
         for gr in grass.reshape((2, -1)):
-            p = np.matmul(gr, screen_m)
+            p = project(gr)
             pygame.draw.circle(
                 canvas,
                 self.settings.grass_color,
@@ -59,7 +62,7 @@ class RenderState:
             print('agent_pos', agent_pos)
             assert len(agent_pos) == 2, agent_pos
             # TODO: render agent name as text
-            p = np.matmul(agent_pos, screen_m)
+            p = project(agent_pos)
             print(p)
             pygame.draw.circle(
                 canvas,
