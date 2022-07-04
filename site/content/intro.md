@@ -3,6 +3,7 @@ Category: blog
 Tags: meta, aintelope
 Slug: intro
 Authors: Gunnar Zarncke
+Date: 2022-06-27
 Summary: aintelope project goes live
 
 Yeah, we have a site documentation and some first Python code now.
