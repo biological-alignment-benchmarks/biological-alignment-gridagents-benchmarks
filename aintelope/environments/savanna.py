@@ -270,9 +270,6 @@ class RawEnv(AECEnv):
             }
 
         else:
-            # necessary so that observe() returns a reasonable observation at all times.
-            iagent = 1 - self.agent_name_mapping[agent]
-            self.state[self.agents[iagent]] = None
             # no rewards are allocated until both players give an action
             self._clear_rewards()
 
