@@ -245,6 +245,7 @@ class RawEnv(AECEnv):
             agent_selection to the next done agent, or if there are no more
             done agents, to the next live agent
             """
+            # FIXME: why th is it REQUIRED to call step() on a done agent?!
             return self._was_done_step(action)
 
         agent = self.agent_selection
