@@ -20,6 +20,8 @@ AMOUNT_AGENTS = 1  # for now only one agent
 AMOUNT_GRASS = 2
 ACTION_MAP = np.array([[0, 1], [1, 0], [0, -1], [-1, 0]], dtype=PositionFloat)
 
+Action = int
+
 
 class RenderSettings:
     def __init__(self, metadata):
@@ -226,7 +228,7 @@ class RawEnv(AECEnv):
         self._agent_selector = agent_selector(self.agents)
         self.agent_selection = self._agent_selector.next()
 
-    def step(self, action: int):
+    def step(self, action: Action):
         """Take in an action for the current agent (specified by
         agent_selection) and needs to update:
         - rewards
