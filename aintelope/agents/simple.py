@@ -2,7 +2,18 @@ import random
 from pprint import pprint
 import numpy as np
 from gym.spaces import Discrete
+import gym
+from aintelope.agents.q_agent import Agent as Q_agent
+from aintelope.agents.memory import ReplayBuffer
 from aintelope.environments.savanna import env, move_agent, reward_agent
+import os
+from gemini import Scene, Entity, sleep
+
+
+
+
+# pygame.display.list_modes()
+os.environ["SDL_VIDEODRIVER"] = "dummy" #"x11" # "directfb"
 
 # numerical constants
 EPS = 0.0001
@@ -26,8 +37,8 @@ class OneStepPerfectPredictionAgent:
             if reward > bestreward:
                 bestreward = reward
                 ibestaction = iaction
-        print(observation)
-        print(reward, iaction)
+        # print(observation)
+        # print(reward, iaction)
         return ibestaction
 
 
@@ -47,7 +58,7 @@ class IterativeWeightOptimizationAgent:
         if not self.is_initialized:
             info[ACTIONS_WEIGHTS] = np.repeat([1.0], action_space.n)
             self.is_initialized = True
-
+        print('info', info)
         print("step:", reward, observation)
         last_action = info.get(LAST_ACTION_KEY)
         last_reward = info.get(LAST_REWARD_KEY, 0)
@@ -110,11 +121,15 @@ class IterativeWeightOptimizationAgent:
 
 
 def main(env):
-    mode = "human"
-    policy = IterativeWeightOptimizationAgent()
-    policy = OneStepPerfectPredictionAgent()
+    mode = "ascii"
+    # policy = IterativeWeightOptimizationAgent()
+    # policy = OneStepPerfectPredictionAgent()
     # policy = RandomWalkAgent()
+    
+    replay_size = 1000
     env.reset()
+    replay_buffer = ReplayBuffer(replay_size)
+    policy = Q_agent(gym.make(env), replay_buffer)
     for agent in env.agent_iter():
         observation, reward, done, info = env.last()
 
@@ -126,11 +141,20 @@ def main(env):
             action = None
         env.step(action)
         env.render(mode)
-    wait = input("Close?")
+
+    # wait = input("Close?")
 
 
 if __name__ == "__main__":
-    e = env()
+    env_params = {
+        'NUM_ITERS':40,  # duration of the game
+        'MAP_MIN':0, 
+        'MAP_MAX':20,
+        'render_map_max':20,
+        'AMOUNT_AGENTS':1,  # for now only one agent
+        'AMOUNT_GRASS_PATCHES':2
+                }
+    e = env(env_params=env_params)
     main(e)
 
 # Local Variables:

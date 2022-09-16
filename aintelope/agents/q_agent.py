@@ -6,6 +6,7 @@ import torch
 from torch import nn
 
 from aintelope.agents.memory import Experience, ReplayBuffer
+from aintelope.utils.data_utils import clean_state_array
 
 
 class Agent:
@@ -25,6 +26,8 @@ class Agent:
         """Resents the environment and updates the state."""
         # GYM_INTERACTION
         self.state = self.env.reset()
+        if isinstance(self.state, tuple):
+            self.state = self.state[0]        
 
     def get_action(self, net: nn.Module, epsilon: float, device: str) -> int:
         """Using the given network, decide what action to carry out using an

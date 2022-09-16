@@ -4,6 +4,8 @@ from collections import deque, namedtuple
 import numpy as np
 from torch.utils.data.dataset import IterableDataset
 
+from ..utils.data_utils import clean_state_array
+
 Experience = namedtuple(
     "Experience",
     field_names=["state", "action", "reward", "done", "new_state"],
@@ -37,21 +39,8 @@ class ReplayBuffer:
         states, actions, rewards, dones, next_states = zip(
             *(self.buffer[idx] for idx in indices)
         )
-        #  VisibleDeprecationWarning: Creating an ndarray from ragged nested sequences (which is a list-or-tuple of lists-or-tuples-or ndarrays with different lengths or shapes) is deprecated. If you meant to do this, you must specify 'dtype=object' when creating the ndarray. np.array(states),
-        
-        states = np.array([x for x in states])
-        print(type(states), len(states))
-        lengths = []
-        clean_states = []
-        for i, x in enumerate(states):
-            if isinstance(x, tuple):
-                clean_states.append(x[0])
-                if len(x) > 2 or (len(x) > 1 and x[1] != {}):
-                    print(f'dropping complex state {x[1:]} at index {i}')
-            else:
-                clean_states.append(x)
 
-        states = np.array(clean_states)
+        states = clean_state_array(states)
         return (
             states,
             np.array(actions),

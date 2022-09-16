@@ -13,6 +13,8 @@ from aintelope.agents.memory import ReplayBuffer, RLDataset
 from aintelope.agents.q_agent import Agent
 from aintelope.models.dqn import DQN
 
+from aintelope.environments.savanna import env as savanna_v1
+
 AVAIL_GPUS = min(1, torch.cuda.device_count())
 
 
@@ -33,6 +35,7 @@ class DQNLightning(LightningModule):
         eps_end: float = 0.01,
         episode_length: int = 500,
         warm_start_steps: int = 1000,
+        env_params: dict = {}
     ) -> None:
         """
         Args:
@@ -52,10 +55,19 @@ class DQNLightning(LightningModule):
         """
         super().__init__()
         self.save_hyperparameters()
-
-        # GYM_INTERACTION
-        self.env = gym.make(self.hparams.env)
-        obs_size = self.env.observation_space.shape[0]
+        if self.hparams.env == 'savanna_v1':
+            self.env = savanna_v1(env_params=env_params)
+            obs_size = self.env.observation_space.shape[0]
+        else:
+            # GYM_INTERACTION
+            # can't register as a gym env unless we rewrite as a gym env
+            # gym.envs.register(
+            #     id=self.hparams.env,
+            #     entry_point='aintelope.environments.savanna:RawEnv',
+            #     kwargs={'env_params': env_params}
+            # )
+            self.env = gym.make(self.hparams.env)
+            obs_size = self.env.observation_space.shape[0]
         n_actions = self.env.action_space.n
 
         self.net = DQN(obs_size, n_actions)
@@ -201,11 +213,34 @@ class DQNLightning(LightningModule):
         return batch[0].device.index if self.on_gpu else "cpu"
 
 
-def run_experiment():
-    model = DQNLightning()
+def run_experiment(hparams={}):
+    model = DQNLightning(**hparams)
     trainer = Trainer(gpus=AVAIL_GPUS, max_epochs=1000, val_check_interval=100)
     trainer.fit(model)
 
 
 if __name__ == "__main__":
-    run_experiment()
+
+    hparams = {
+        'batch_size': 16,
+        'lr': 1e-3,
+        'env': "savanna_v1",
+        'gamma': 0.99,
+        'sync_rate': 10,
+        'replay_size': 1000,
+        'warm_start_size': 1000,
+        'eps_last_frame': 1000,
+        'eps_start': 1.0,
+        'eps_end': 0.01,
+        'episode_length': 500,
+        'warm_start_steps': 1000,
+        'env_params': {
+            'NUM_ITERS': 500,  # duration of the game
+            'MAP_MIN': 0,
+            'MAP_MAX': 100,
+            'render_map_max': 100,
+            'AMOUNT_AGENTS': 1,  # for now only one agent
+            'AMOUNT_GRASS_PATCHES': 2
+        }
+    }
+    run_experiment(hparams)
