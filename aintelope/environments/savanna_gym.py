@@ -108,7 +108,7 @@ def move_agent(agent_pos: np.ndarray, action: Action, map_min=0, map_max=100) ->
 class SavannaEnv(gym.Env):
 
     metadata = {
-        "name": "savanna_v1",
+        "name": "savanna-v2",
         "render_fps": 3,
         "render_agent_radius": 5,
         "render_agent_color": (200, 50, 0),

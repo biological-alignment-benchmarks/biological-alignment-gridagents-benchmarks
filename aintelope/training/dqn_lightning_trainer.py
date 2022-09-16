@@ -28,7 +28,7 @@ class DQNLightning(LightningModule):
         self,
         batch_size: int = 16,
         lr: float = 1e-3,
-        env: str = "savanna-v1",
+        env: str = "savanna-v2",
         gamma: float = 0.99,
         sync_rate: int = 10,
         replay_size: int = 1000,
@@ -58,7 +58,7 @@ class DQNLightning(LightningModule):
         """
         super().__init__()
         self.save_hyperparameters()
-        if self.hparams.env == 'savanna_v1':
+        if self.hparams.env == 'savanna-v2':
             self.env = SavannaEnv(env_params=env_params)
             obs_size = self.env.observation_space.shape[0]
         else:
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     hparams = {
         'batch_size': 16,
         'lr': 1e-3,
-        'env': "savanna_v1",
+        'env': "savanna-v2",
         'gamma': 0.99,
         'sync_rate': 10,
         'replay_size': 1000,
