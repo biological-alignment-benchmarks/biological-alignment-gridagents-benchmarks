@@ -7,7 +7,6 @@ from torch import nn
 
 from aintelope.agents.memory import Experience, ReplayBuffer
 from aintelope.agents.shards.savanna_shards import available_shards_dict
-from aintelope.environments.env_utils.distance import distance_to_closest_item
 
 
 class ShardAgent:
@@ -84,13 +83,21 @@ class ShardAgent:
         Returns:
             reward, done
         """
-        # GYM_INTERACTION
+
+        # The 'mind' of the agent decides what to do next
         action = self.get_action(net, epsilon, device)
 
+        # you could optionally have a filter step here where the body'/'instincts'/'hindbrain'
+        # can veto certain actions, for example stepping off a cliff
+        # this would be like Redwood Research's Harm/Failure Classifier
+        body_veto = False
+        
         # do step in the environment
-        # GYM_INTERACTION
+        # the environment reports the result of that decision
         new_state, env_reward, done = self.env.step(action)
 
+        # the 'body'/'instincts'/'hindbrain' of the agent decides what reward the 'mind' should receive
+        # based on the current and historical state reported by the environment
         if len(self.shards) == 0:
             # use env reward as default
             reward = env_reward
@@ -102,11 +109,14 @@ class ShardAgent:
             for shard_name, shard_object in self.shards.items():
                 reward += shard_object.calc_reward(self, new_state)
 
+
+        # the action taken, the environment's response, and the body's reward are all recorded together in memory
         exp = Experience(self.state, action, reward, done, new_state)
-
         self.replay_buffer.append(exp)
-
         self.state = new_state
+        
+        
+        # if scenario is complete or agent experiences catastrophic failure, end the agent.
         if done:
             self.reset()
         return reward, done

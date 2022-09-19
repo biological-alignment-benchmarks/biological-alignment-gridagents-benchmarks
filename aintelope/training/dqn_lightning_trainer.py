@@ -230,14 +230,18 @@ def run_experiment(hparams={}, trainer_params={}):
          save_last=True,
          save_on_train_epoch_end=True
      )
+    if trainer_params.get('resume_from_checkpoint'):
+        checkpoint = 'checkpoints/last.ckpt'
+    else:
+        checkpoint = None
+    print('checkpoint', checkpoint)
     trainer = Trainer(
         gpus=AVAIL_GPUS,
-        max_epochs=100, 
-        val_check_interval=100, 
-        resume_from_checkpoint=trainer_params.get('resume_from_checkpoint'), 
+        max_epochs=trainer_params.get('max_epochs', 100), 
+        val_check_interval=100,  
         enable_progress_bar=True,
         callbacks=[checkpoint_callback])
-    trainer.fit(model)
+    trainer.fit(model, ckpt_path=checkpoint)
 
 
 
@@ -268,7 +272,9 @@ if __name__ == "__main__":
 
     }
     trainer_params = {
-        'resume_from_checkpoint': None,
+        'resume_from_checkpoint': True,
+        'num_workers': 14,
+        'max_epochs': 2000
     }
     run_experiment(hparams, trainer_params)
 
