@@ -5,7 +5,7 @@ from gym.spaces import Discrete
 import gym
 from aintelope.agents.q_agent import Agent as Q_agent
 from aintelope.agents.memory import ReplayBuffer
-from aintelope.environments.savanna import env, move_agent, reward_agent
+from aintelope.aintelope.environments.savanna_zoo import env, move_agent, reward_agent
 import os
 from gemini import Scene, Entity, sleep
 

@@ -10,7 +10,7 @@ from pettingzoo.test import (
 from pettingzoo.test.parallel_test import parallel_api_test
 from pettingzoo.test.seed_test import parallel_seed_test
 
-from aintelope.environments import savanna as sut
+from aintelope.aintelope.environments import savanna_zoo as sut
 
 
 def test_pettingzoo_api():
