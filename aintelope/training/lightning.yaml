@@ -3,7 +3,10 @@ agent: shard_agent
 hparams:
   batch_size: 16
   lr: 0.001
-  env: "savanna-v2"
+  env: "savanna-gym-v2"
+  env_entry_point: 'aintelope.environments.savanna_gym:SavannaGymEnv'
+  env_type: 'gym'
+  model: 'dqn'
   gamma: 0.99
   sync_rate: 10
   replay_size: 99
