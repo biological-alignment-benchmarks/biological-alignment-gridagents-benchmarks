@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 
 from aintelope.agents.memory import ReplayBuffer, RLDataset
 from aintelope.agents.q_agent import Agent
+from aintelope.agents.shard_agent import ShardAgent
 from aintelope.models.dqn import DQN
 
 from aintelope.environments.savanna_gym import SavannaEnv
@@ -27,7 +28,7 @@ class DQNLightning(LightningModule):
         self,
         batch_size: int = 16,
         lr: float = 1e-3,
-        env: str = "CartPole-v1",
+        env: str = "savanna-v2",
         gamma: float = 0.99,
         sync_rate: int = 10,
         replay_size: int = 1000,
@@ -57,7 +58,7 @@ class DQNLightning(LightningModule):
         """
         super().__init__()
         self.save_hyperparameters()
-        if self.hparams.env == 'savanna_v1':
+        if self.hparams.env == 'savanna-v2':
             self.env = SavannaEnv(env_params=env_params)
             obs_size = self.env.observation_space.shape[0]
         else:
@@ -76,7 +77,7 @@ class DQNLightning(LightningModule):
         self.target_net = DQN(obs_size, n_actions)
 
         self.buffer = ReplayBuffer(self.hparams.replay_size)
-        self.agent = Agent(self.env, self.buffer)
+        self.agent = ShardAgent(self.env, self.buffer)
         self.total_reward = 0
         self.episode_reward = 0
         self.populate(self.hparams.warm_start_steps)
@@ -245,7 +246,7 @@ if __name__ == "__main__":
     hparams = {
         'batch_size': 16,
         'lr': 1e-3,
-        'env': "savanna_v1",
+        'env': "savanna-v2",
         'gamma': 0.99,
         'sync_rate': 10,
         'replay_size': 1000,
@@ -261,7 +262,8 @@ if __name__ == "__main__":
             'MAP_MAX': 100,
             'render_map_max': 100,
             'AMOUNT_AGENTS': 1,  # for now only one agent
-            'AMOUNT_GRASS_PATCHES': 2
+            'AMOUNT_GRASS_PATCHES': 2,
+            'AMOUNT_WATER_HOLES': 2
         }
 
     }

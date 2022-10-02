@@ -6,12 +6,14 @@ import torch
 from torch import nn
 
 from aintelope.agents.memory import Experience, ReplayBuffer
+from aintelope.agents.shards.savanna_shards import available_shards_dict
+from aintelope.environments.env_utils.distance import distance_to_closest_item
 
 
-class Agent:
+class ShardAgent:
     """Base Agent class handeling the interaction with the environment."""
 
-    def __init__(self, env: gym.Env, replay_buffer: ReplayBuffer) -> None:
+    def __init__(self, env: gym.Env, replay_buffer: ReplayBuffer, target_shards=[]) -> None:
         """
         Args:
             env: training environment
@@ -19,14 +21,22 @@ class Agent:
         """
         self.env = env
         self.replay_buffer = replay_buffer
+        self.target_shards = target_shards
+        self.shards = {}
         self.reset()
+
+    def init_shards(self):
+        self.shards = {shard : available_shards_dict.get(shard) for shard in self.target_shards if shard in available_shards_dict}
+        for shard in self.shards.values():
+            shard.reset()
 
     def reset(self) -> None:
         """Resents the environment and updates the state."""
         # GYM_INTERACTION
         self.state = self.env.reset()
         if isinstance(self.state, tuple):
-            self.state = self.state[0]        
+            self.state = self.state[0]  
+        self.init_shards()     
 
     def get_action(self, net: nn.Module, epsilon: float, device: str) -> int:
         """Using the given network, decide what action to carry out using an
@@ -79,7 +89,18 @@ class Agent:
 
         # do step in the environment
         # GYM_INTERACTION
-        new_state, reward, done = self.env.step(action)
+        new_state, env_reward, done = self.env.step(action)
+
+        if len(self.shards) == 0:
+            # use env reward as default
+            reward = env_reward
+        else:
+            # interpret new_state and env_reward to compute actual reward
+            
+            # state = [0] + [agent_x, agent_y] + [[1, x[0], x[1]] for x in self.grass_patches] + [[2, x[0], x[1]] for x in self.water_holes]
+            reward = 0
+            for shard_name, shard_object in self.shards.items():
+                reward += shard_object.calc_reward(self, new_state)
 
         exp = Experience(self.state, action, reward, done, new_state)
 
