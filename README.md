@@ -49,7 +49,7 @@ Try `/bin/python3 aintelope/environments/savanna.py`.
 We have not managed to get aintelope to build under Windows/Cygwin!
 You need at least the following prerequisites:
 
-* Python: Cygwin modules Python 3.7 including python3-devel
+* Python: Cygwin modules Python 3.7 including python3-devel (but no 3.9+ available)
 * Pytorch: https://github.com/KoichiYasuoka/CygTorch
 
 Problems:
