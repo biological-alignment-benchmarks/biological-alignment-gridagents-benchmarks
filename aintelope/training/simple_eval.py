@@ -5,7 +5,6 @@ import numpy as np
 from gym.spaces import Discrete
 import gym
 from pettingzoo.utils import parallel_to_aec
-# from supersuit import gym_vec_env_v0
 from aintelope.agents.q_agent import Agent as Qagent
 from aintelope.agents.shard_agent import ShardAgent
 from aintelope.agents.simple_agents import (

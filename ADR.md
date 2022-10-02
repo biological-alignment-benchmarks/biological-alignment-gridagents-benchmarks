@@ -89,3 +89,6 @@ We decided against variable length because of lack of knowledge.
 Against pixels because we treat this as a solved sub-problem.
 Against the grid to keep the model simple and because of the complexities introduced by sampling.
 
+## 2022-09-04
+
+We switched to the Pettingzoo ParallelEnv.
