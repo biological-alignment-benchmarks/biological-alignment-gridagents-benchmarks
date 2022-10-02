@@ -6,17 +6,15 @@ import pygame
 from gym.spaces import Box, Discrete
 from gym.utils import seeding
 from pettingzoo import AECEnv, ParallelEnv
+from pettingzoo.test import api_test
 from pettingzoo.utils import agent_selector, wrappers, parallel_to_aec
+from aintelope.environments.env_utils.render_ascii import AsciiRenderState
 
 # typing aliases
 PositionFloat = np.float32
 Action = int
 
 # environment constants
-NUM_ITERS = 500  # duration of the game
-MAP_MIN, MAP_MAX = 0, 100
-AMOUNT_AGENTS = 1  # for now only one agent
-AMOUNT_GRASS_PATCHES = 2
 ACTION_MAP = np.array([[0, 1], [1, 0], [0, -1], [-1, 0]], dtype=PositionFloat)
 
 
@@ -42,7 +40,7 @@ class RenderState:
         canvas = self.canvas
 
         canvas.fill((255, 255, 255))
-        scale = window_size / MAP_MAX
+        scale = window_size / self.settings.map_max
 
         screen_m = np.identity(2, dtype=PositionFloat) * scale
 
@@ -102,9 +100,9 @@ def reward_agent(
 ) -> np.float64:
     if len(grass_patches.shape) == 1:
         grass_patches = np.expand_dims(grass_patches, 0)
-    assert (
-        grass_patches.shape[1] == 2
-    ), f"{grass_patches.shape} -- x/y index with axis=1"
+    # assert (
+    #     grass_patches.shape[1] == 2
+    # ), f"{grass_patches.shape} -- x/y index with axis=1"
 
     grass_patch_closest = grass_patches[
         np.argmin(
@@ -115,11 +113,11 @@ def reward_agent(
     return 1 / (1 + vec_distance(grass_patch_closest, agent_pos))
 
 
-def move_agent(agent_pos: np.ndarray, action: Action) -> np.ndarray:
+def move_agent(agent_pos: np.ndarray, action: Action, map_min=0, map_max=100) -> np.ndarray:
     assert agent_pos.dtype == PositionFloat, agent_pos.dtype
     move = ACTION_MAP[action]
     agent_pos = agent_pos + move
-    agent_pos = np.clip(agent_pos, MAP_MIN, MAP_MAX)
+    agent_pos = np.clip(agent_pos, map_min, map_max)
     return agent_pos
 
 
@@ -127,19 +125,21 @@ class RawEnv(ParallelEnv):
 
     metadata = {
         "name": "savanna_v1",
-        "render_fps": 15,
+        "render_fps": 3,
         "render_agent_radius": 5,
         "render_agent_color": (200, 50, 0),
         "render_grass_radius": 5,
         "render_grass_color": (20, 200, 0),
-        "render_modes": ("human", "offline"),
+        "render_modes": ("human", "ascii", "offline"),
         "render_window_size": 512,
     }
 
-    def __init__(self):
-        self.possible_agents = [f"agent_{r}" for r in range(AMOUNT_AGENTS)]
+    def __init__(self, env_params={}):
+        self.metadata.update(env_params)
+        print(f'initializing savanna env with params: {self.metadata}')
+        self.possible_agents = [f"agent_{r}" for r in range(self.metadata['AMOUNT_AGENTS'])]
         self.agent_name_mapping = dict(
-            zip(self.possible_agents, list(range(AMOUNT_AGENTS)))
+            zip(self.possible_agents, list(range(self.metadata['AMOUNT_AGENTS'])))
         )
 
         self._action_spaces = {
@@ -147,9 +147,9 @@ class RawEnv(ParallelEnv):
         }  # agents can walk in 4 directions
         self._observation_spaces = {
             agent: Box(
-                MAP_MIN,
-                MAP_MAX,
-                shape=(2 * (AMOUNT_AGENTS + AMOUNT_GRASS_PATCHES),),
+                self.metadata['MAP_MIN'],
+                self.metadata['MAP_MAX'],
+                shape=(2 * (self.metadata['AMOUNT_AGENTS'] + self.metadata['AMOUNT_GRASS_PATCHES']),),
             )
             for agent in self.possible_agents
         }
@@ -157,6 +157,8 @@ class RawEnv(ParallelEnv):
         render_settings = RenderSettings(self.metadata)
         self.render_state = RenderState(render_settings)
         self.human_render_state = None
+        self.ascii_render_state = None
+        self.dones = None
         self.seed()
 
     @functools.lru_cache(maxsize=None)
@@ -187,6 +189,17 @@ class RawEnv(ParallelEnv):
                     self.render_state.settings
                 )
             self.human_render_state.render(self.render_state)
+        elif mode == "ascii":
+            if not self.ascii_render_state:
+                self.ascii_render_state = AsciiRenderState(
+                    self.agent_states, 
+                    self.grass_patches,
+                    self.render_state.settings
+                )
+            self.ascii_render_state.render(
+                    self.agent_states, 
+                    self.grass_patches
+                    )
         else:  # rgb_array
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(self.render_state.canvas)),
@@ -220,10 +233,10 @@ class RawEnv(ParallelEnv):
         # self.dones = {agent: False for agent in self.agents}
         # self.infos = {agent: {} for agent in self.agents}
         self.grass_patches = self.np_random.integers(
-            MAP_MIN, MAP_MAX, size=(AMOUNT_GRASS_PATCHES, 2)
+            self.metadata['MAP_MIN'], self.metadata['MAP_MAX'], size=(self.metadata['AMOUNT_GRASS_PATCHES'], 2)
         ).astype(PositionFloat)
         self.agent_states = {
-            agent: self.np_random.integers(MAP_MIN, MAP_MAX, 2).astype(
+            agent: self.np_random.integers(self.metadata['MAP_MIN'], self.metadata['MAP_MAX'], 2).astype(
                 PositionFloat
             )
             for agent in self.agents
@@ -231,9 +244,9 @@ class RawEnv(ParallelEnv):
         self.num_moves = 0
 
         # cycle through the agents; needed for wrapper
-        # self._agent_selector = agent_selector(self.agents)
-        # self.agent_selection = self._agent_selector.next()
-
+        self._agent_selector = agent_selector(self.agents)
+        self.agent_selection = self._agent_selector.next()
+        self.dones = {agent: False for agent in self.agents}
         observations = {agent: self.observe(agent) for agent in self.agents}
         return observations
 
@@ -254,7 +267,8 @@ class RawEnv(ParallelEnv):
 
         for agent in self.agents:
             self.agent_states[agent] = move_agent(
-                self.agent_states[agent], actions[agent]
+                self.agent_states[agent], actions[agent],
+                map_min=self.metadata['MAP_MIN'], map_max=self.metadata['MAP_MAX']
             )
         rewards = {
             agent: reward_agent(self.agent_states[agent], self.grass_patches)
@@ -262,8 +276,8 @@ class RawEnv(ParallelEnv):
         }
 
         self.num_moves += 1
-        env_done = self.num_moves >= NUM_ITERS
-        dones = {agent: env_done for agent in self.agents}
+        env_done = self.num_moves >= self.metadata['NUM_ITERS']
+        self.dones = {agent: env_done for agent in self.agents}
 
         observations = {agent: self.observe(agent) for agent in self.agents}
 
@@ -274,31 +288,43 @@ class RawEnv(ParallelEnv):
         if env_done:
             self.agents = []
 
-        return observations, rewards, dones, infos
+        return observations, rewards, self.dones, infos
 
 
-def raw_env():
+def env(env_params={}):
     """
     To support the AEC API, the raw_env() function just uses the from_parallel
     function to convert from a ParallelEnv to an AEC env
     """
-    env = RawEnv()
-    env = parallel_to_aec(env)
-    return env
+    env_obj = RawEnv(env_params=env_params)
+    env_obj = parallel_to_aec(env_obj)
+    return env_obj
 
 
-def env():
-    """Add PettingZoo wrappers to environment class."""
-    env = RawEnv()
-    # BaseWrapper class need agent_selection attribute
-    # env = wrappers.AssertOutOfBoundsWrapper(env)
-    # env = wrappers.OrderEnforcingWrapper(env)
-    return env
+# def env(env_params={}):
+#     """Add PettingZoo wrappers to environment class."""
+#     env = RawEnv(env_params=env_params)
+#     # BaseWrapper class need agent_selection attribute
+#     # env = wrappers.AssertOutOfBoundsWrapper(env)
+#     # env = wrappers.OrderEnforcingWrapper(env)
+#     return env
 
 
 if __name__ == "__main__":
-    e = env()
+    env_params = {
+        'NUM_ITERS':500,  # duration of the game
+        'MAP_MIN':0, 
+        'MAP_MAX':100,
+        'render_map_max':100,
+        'AMOUNT_AGENTS':1,  # for now only one agent
+        'AMOUNT_GRASS_PATCHES':2
+                }
+    e = raw_env(env_params=env_params)
+    print(type(e))
+    print(e)
+    print(e.__dict__)
     ret = e.reset()
     print(ret)
-    ret = e.step({"agent_0": 1})
-    print(ret)
+
+    api_test(e, num_cycles=10, verbose_progress=True)
+    print(e.last())

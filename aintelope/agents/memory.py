@@ -4,6 +4,8 @@ from collections import deque, namedtuple
 import numpy as np
 from torch.utils.data.dataset import IterableDataset
 
+from ..utils.data_utils import clean_state_array
+
 Experience = namedtuple(
     "Experience",
     field_names=["state", "action", "reward", "done", "new_state"],
@@ -38,8 +40,9 @@ class ReplayBuffer:
             *(self.buffer[idx] for idx in indices)
         )
 
+        states = clean_state_array(states)
         return (
-            np.array(states),
+            states,
             np.array(actions),
             np.array(rewards, dtype=np.float32),
             np.array(dones, dtype=bool),

@@ -1,10 +1,12 @@
 import typing as typ
 from collections import OrderedDict
+from datetime import timedelta
 
 import gym
 import torch
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.utilities import DistributedType
+from pytorch_lightning.callbacks import ModelCheckpoint
 from torch import Tensor, nn
 from torch.optim import Adam, Optimizer
 from torch.utils.data import DataLoader
@@ -12,6 +14,8 @@ from torch.utils.data import DataLoader
 from aintelope.agents.memory import ReplayBuffer, RLDataset
 from aintelope.agents.q_agent import Agent
 from aintelope.models.dqn import DQN
+
+from aintelope.environments.savanna_gym import SavannaEnv
 
 AVAIL_GPUS = min(1, torch.cuda.device_count())
 
@@ -33,6 +37,7 @@ class DQNLightning(LightningModule):
         eps_end: float = 0.01,
         episode_length: int = 500,
         warm_start_steps: int = 1000,
+        env_params: dict = {}
     ) -> None:
         """
         Args:
@@ -52,10 +57,19 @@ class DQNLightning(LightningModule):
         """
         super().__init__()
         self.save_hyperparameters()
-
-        # GYM_INTERACTION
-        self.env = gym.make(self.hparams.env)
-        obs_size = self.env.observation_space.shape[0]
+        if self.hparams.env == 'savanna_v1':
+            self.env = SavannaEnv(env_params=env_params)
+            obs_size = self.env.observation_space.shape[0]
+        else:
+            # GYM_INTERACTION
+            # can't register as a gym env unless we rewrite as a gym env
+            # gym.envs.register(
+            #     id=self.hparams.env,
+            #     entry_point='aintelope.environments.savanna:RawEnv',
+            #     kwargs={'env_params': env_params}
+            # )
+            self.env = gym.make(self.hparams.env)
+            obs_size = self.env.observation_space.shape[0]
         n_actions = self.env.action_space.n
 
         self.net = DQN(obs_size, n_actions)
@@ -157,15 +171,16 @@ class DQNLightning(LightningModule):
             self.target_net.load_state_dict(self.net.state_dict())
 
         log = {
-            "total_reward": torch.tensor(self.total_reward).to(device),
-            "reward": torch.tensor(reward).to(device),
+            "total_reward": torch.tensor(self.total_reward, dtype=torch.float32).to(device),
+            "reward": torch.tensor(reward, dtype=torch.float32).to(device),
             "train_loss": loss,
         }
         status = {
             "steps": torch.tensor(self.global_step).to(device),
-            "total_reward": torch.tensor(self.total_reward).to(device),
+            "total_reward": torch.tensor(self.total_reward, dtype=torch.float32).to(device),
         }
 
+        # /home/nathan/.pyenv/versions/3.10.3/envs/aintelope/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:229: UserWarning: You called `self.log('episode_reward', ...)` in your `training_step` but the value needs to be floating point. Converting it to torch.float32
         self.log("episode_reward", self.episode_reward)
         self.log("total_reward", log["total_reward"])
         self.log("reward", log["reward"])
@@ -201,11 +216,70 @@ class DQNLightning(LightningModule):
         return batch[0].device.index if self.on_gpu else "cpu"
 
 
-def run_experiment():
-    model = DQNLightning()
-    trainer = Trainer(gpus=AVAIL_GPUS, max_epochs=1000, val_check_interval=100)
+def run_experiment(hparams={}, trainer_params={}):
+    model = DQNLightning(**hparams)
+    # save any arbitrary metrics like `val_loss`, etc. in name
+    # saves a file like: my/path/epoch=2-val_loss=0.02-other_metric=0.03.ckpt
+    
+    checkpoint_callback = ModelCheckpoint(
+         dirpath='checkpoints',
+         filename='savanna-{epoch}-{val_loss:.2f}',
+         auto_insert_metric_name=True,
+         train_time_interval=timedelta(minutes=20), 
+         save_last=True,
+         save_on_train_epoch_end=True
+     )
+    trainer = Trainer(
+        gpus=AVAIL_GPUS,
+        max_epochs=100, 
+        val_check_interval=100, 
+        resume_from_checkpoint=trainer_params.get('resume_from_checkpoint'), 
+        enable_progress_bar=True,
+        callbacks=[checkpoint_callback])
     trainer.fit(model)
 
 
+
 if __name__ == "__main__":
-    run_experiment()
+
+    hparams = {
+        'batch_size': 16,
+        'lr': 1e-3,
+        'env': "savanna_v1",
+        'gamma': 0.99,
+        'sync_rate': 10,
+        'replay_size': 1000,
+        'warm_start_size': 1000,
+        'eps_last_frame': 1000,
+        'eps_start': 1.0,
+        'eps_end': 0.01,
+        'episode_length': 500,
+        'warm_start_steps': 1000,
+        'env_params': {
+            'NUM_ITERS': 500,  # duration of the game
+            'MAP_MIN': 0,
+            'MAP_MAX': 100,
+            'render_map_max': 100,
+            'AMOUNT_AGENTS': 1,  # for now only one agent
+            'AMOUNT_GRASS_PATCHES': 2
+        }
+
+    }
+    trainer_params = {
+        'resume_from_checkpoint': None,
+    }
+    run_experiment(hparams, trainer_params)
+
+    # Notes
+    # resume from a specific checkpoint
+    # trainer = Trainer(resume_from_checkpoint="some/path/to/my_checkpoint.ckpt")
+
+    # this will be handy for adding tests
+    # runs only 1 training and 1 validation batch and the program ends, avoids side-effects
+    # trainer = Trainer(fast_dev_run=True, enable_progress_bar=False)
+
+
+
+    # retrieve the best checkpoint after training
+
+    # checkpoint_callback.best_model_path
