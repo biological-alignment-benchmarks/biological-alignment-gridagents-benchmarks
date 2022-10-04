@@ -16,11 +16,11 @@ def test_qagent_in_savanna_zoo_sequential():
     with open('aintelope/training/lightning.yaml') as f:
         full_params = yaml.load(f, Loader=SafeLoader)
         hparams = full_params['hparams']
-        print(hparams)
+        
     # TODO: refactor out into test constants? Or leave here? /shrug
     test_params = {
         "agent": "q_agent",
-        "env": "savanna-zoo-v2",
+        "env": "savanna-zoo-sequential-v2",
         "env_entry_point": None,
         "env_type": "zoo",
         "sequential_env": True,
@@ -36,7 +36,8 @@ def test_qagent_in_savanna_zoo_sequential():
         "agent_params": {}
     }
     hparams.update(test_params)
-    run_episode(hparams=hparams)
+    print(hparams)
+    run_episode(hparams=hparams, device='cpu')
     
     
 def test_qagent_in_savanna_zoo_parallel():
@@ -49,14 +50,13 @@ def test_qagent_in_savanna_zoo_parallel():
     with open('aintelope/training/lightning.yaml') as f:
         full_params = yaml.load(f, Loader=SafeLoader)
         hparams = full_params['hparams']
-        print(hparams)
+        
     # TODO: refactor out into test constants? Or leave here? /shrug
     test_params = {
         "agent": "q_agent",
-        "env": "savanna-zoo-v2",
+        "env": "savanna-zoo-parallel-v2",
         "env_entry_point": None,
         "env_type": "zoo",
-        "sequential_env": False,
         "env_params": {
             "num_iters": 40,  # duration of the game
             "map_min": 0,
@@ -69,7 +69,8 @@ def test_qagent_in_savanna_zoo_parallel():
         "agent_params": {}
     }
     hparams.update(test_params)
-    run_episode(hparams=hparams)
+    print(hparams)
+    run_episode(hparams=hparams, device='cpu')
     
     
 def test_qagent_in_savanna_gym():
@@ -82,7 +83,7 @@ def test_qagent_in_savanna_gym():
     with open('aintelope/training/lightning.yaml') as f:
         full_params = yaml.load(f, Loader=SafeLoader)
         hparams = full_params['hparams']
-        print(hparams)
+        
     # TODO: refactor out into test constants? Or leave here? /shrug
     test_params = {
         "agent": "q_agent",
@@ -100,5 +101,6 @@ def test_qagent_in_savanna_gym():
         "agent_params": {}
     }
     hparams.update(test_params)
-    run_episode(hparams=hparams)
+    print(hparams)
+    run_episode(hparams=hparams, device='cpu')
     cleanup_gym_envs()
