@@ -29,8 +29,8 @@ class Agent:
 
     def reset(self) -> None:
         """Resents the environment and updates the state."""
-        # GYM_INTERACTION
         self.done = False
+        # GYM_INTERACTION
         self.state = self.env.reset()
         if isinstance(self.state, tuple):
             self.state = self.state[0]        
