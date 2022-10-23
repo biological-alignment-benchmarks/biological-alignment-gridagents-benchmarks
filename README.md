@@ -24,6 +24,10 @@ https://docs.google.com/document/d/1qc6a3MY2_guCZH8XJjutpaASNE7Zy6O5z1gblrfPemk/
 Dependencies are managed via `poetry`. See installation instructions
 [here](https://python-poetry.org/docs/#installation).
 
+You can update your version of poetry by running `poetry self update` (only
+from version `>1.2`). Otherwise uninstall your version and install the latest
+one.
+
 To install the python dependencies run `poetry install`.
 To activate the environment via poetry run `poetry shell`. Alternatively, most
 commands can also be executed without an active python environment via
@@ -43,21 +47,23 @@ For example, Nathan needed to do the following to get PyTorch with Cuda version 
 To autoformat python files you can use [`black`](https://github.com/psf/black).
 To automatically sort the imports you can run
 [`isort .`](https://github.com/PyCQA/isort) from the root level of the project.
+Configurations of the formatters can be found in `pyproject.toml`
 
 See the `Makefile` for further instructions.
 
-## Running
+## Start a training
 
-Try `make run-training-short`.
-Then look in `aintelope/checkpoints/memory_records`. There should be two new files
+Run `make run-training-short`. Then look in
+`aintelope/checkpoints/memory_records`. There should be two new files
 named `Record_{current timestamp}.csv` and `Record_{current timestamp}_plot..png`.
-The plot will be an image of the path the agent took during the test episode, using
-the best agent that the training produced. Green dots are food in the environment,
-blue dots are water.
+The plot will be an image of the path the agent took during the test episode,
+using the best agent that the training produced. Green dots are food in the
+environment, blue dots are water.
 
 
-# Cygwin
-If you are a Windows user, note that this project does work fine 
+### Cygwin
+
+[If](If) you are a Windows user, note that this project does work fine 
 on linux ubuntu using Windows wsl2.
 If you would prefer not to use wsl2, and instead run this directly on Windows,
 you will need to figure out how to do that. We have not managed to get 

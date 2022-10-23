@@ -2,26 +2,30 @@
 name = "aintelope"
 version = "0.1.0"
 description = "Simulate agents with reinforcement learning over selected cue-response patterns"
-authors = ["Hauke Rehfeld <git@haukerehfeld.de>", "Gunnar Zarncke <gunnar@zarncke.de>", "Andre Kochanke <a.kochanke@posteo.net>"]
+authors = ["Hauke Rehfeld <git@haukerehfeld.de>",
+           "Gunnar Zarncke <gunnar@zarncke.de>",
+           "Andre Kochanke <a.kochanke@posteo.net>",
+           "Nathan Helm-Burger"]
 
 [tool.poetry.dependencies]
-python = "3.10.3"
-pytorch-lightning = "1.6.4"
-flake8 = "4.0.1"
-toml = "0.10.2"
-isort = "5.10.1"
-pytest = "7.1.2"
-mypy = "0.961"
-hydra-core = "1.2.0"
-PettingZoo = "1.18.1"
-swig = "4.0.2"
 Box2D = "2.3.2"
 Box2D-kengz = "2.3.3"
-gym = "0.26.0"
-pygame = "2.1.2"
+PettingZoo = "1.18.1"
+black = "22.10.0"
+flake8 = "5.0.4"
+flake8-pyproject = "1.1.0.post0"
 gemini-engine = "1.0.9"
-black = "22.3.0"
+gym = "0.26.0"
+hydra-core = "1.2.0"
+isort = "5.10.1"
+mypy = "0.961"
+pygame = "2.1.2"
+pytest = "7.1.2"
 pytest-cov = "3.0.0"
+python = "3.10.*"
+pytorch-lightning = "1.6.4"
+swig = "4.0.2"
+toml = "0.10.2"
 
 [tool.poetry.dev-dependencies]
 
@@ -30,13 +34,13 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
-line-length = 79
+line-length = 88
 
 [tool.flake8]
-max-line-length = 80
+max-line-length = 88
 
 [tool.isort]
-line_length = 80
+line_length = 88
 
 [tool.mypy]
 ignore_missing_imports = true
