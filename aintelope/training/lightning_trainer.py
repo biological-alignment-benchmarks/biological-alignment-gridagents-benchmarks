@@ -1,22 +1,24 @@
 import typing as typ
+import logging
 from collections import OrderedDict
 from datetime import timedelta
 
+from omegaconf import DictConfig
 import gym
 import torch
-from pytorch_lightning import LightningModule, Trainer
-from pytorch_lightning.utilities import DistributedType
-from pytorch_lightning.callbacks import ModelCheckpoint
 from torch import Tensor, nn
 from torch.optim import Adam, Optimizer
 from torch.utils.data import DataLoader
+from pytorch_lightning import LightningModule, Trainer
+from pytorch_lightning.utilities.enums import DistributedType
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from aintelope.agents.memory import ReplayBuffer, RLDataset
-from aintelope.agents.q_agent import Agent
 from aintelope.agents.shard_agent import ShardAgent
 from aintelope.models.dqn import DQN
+from aintelope.environments.savanna_gym import SavannaGymEnv
 
-from aintelope.environments.savanna_gym import SavannaEnv
+logger = logging.getLogger("aintelope.training.lightning_trainer")
 
 AVAIL_GPUS = min(1, torch.cuda.device_count())
 
