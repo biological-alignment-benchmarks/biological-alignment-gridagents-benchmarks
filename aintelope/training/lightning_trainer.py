@@ -48,13 +48,16 @@ class DQNLightning(LightningModule):
             # )
             self.env = gym.make(self.hparams.env)
             obs_size = self.env.observation_space.shape[0]
+
         n_actions = self.env.action_space.n
 
         self.net = DQN(obs_size, n_actions)
         self.target_net = DQN(obs_size, n_actions)
 
         self.buffer = ReplayBuffer(self.hparams.replay_size)
-        self.agent = ShardAgent(self.env, self.buffer, **agent_params)
+        self.agent = ShardAgent(
+            self.env, self, self.buffer, **self.hparams.agent_params
+        )
         self.total_reward = 0
         self.episode_reward = 0
         self.populate(self.hparams.warm_start_steps)
