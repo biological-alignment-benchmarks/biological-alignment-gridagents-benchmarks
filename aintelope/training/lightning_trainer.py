@@ -225,77 +225,45 @@ class DQNLightning(LightningModule):
         return batch[0].device.index if self.on_gpu else "cpu"
 
 
-def run_experiment(hparams={}, trainer_params={}, train=True):
-    model = DQNLightning(**hparams)
+def run_experiment(cfg: DictConfig) -> None:
+    model = DQNLightning(cfg.hparams)
+
     # save any arbitrary metrics like `val_loss`, etc. in name
     # saves a file like: my/path/epoch=2-val_loss=0.02-other_metric=0.03.ckpt
-    
     checkpoint_callback = ModelCheckpoint(
-         dirpath='checkpoints',
-         filename='savanna-{epoch}-{val_loss:.2f}',
-         auto_insert_metric_name=True,
-         train_time_interval=timedelta(minutes=20), 
-         save_last=True,
-         save_on_train_epoch_end=True
-     )
-    if trainer_params.get('resume_from_checkpoint'):
-        checkpoint = '../checkpoints/last.ckpt'
+        dirpath="checkpoints",
+        filename="savanna-{epoch}-{val_loss:.2f}",
+        auto_insert_metric_name=True,
+        train_time_interval=timedelta(minutes=20),
+        save_last=True,
+        save_on_train_epoch_end=True,
+    )
+
+    if cfg.trainer_params.resume_from_checkpoint:
+        checkpoint = "../checkpoints/last.ckpt"
     else:
         checkpoint = None
-    print('checkpoint', checkpoint)
+    logger.info(f"checkpoint: {checkpoint}")
+
     trainer = Trainer(
         gpus=AVAIL_GPUS,
-        max_epochs=trainer_params.get('max_epochs', 100), 
-        val_check_interval=100,  
+        max_epochs=cfg.trainer_params.max_epochs,
+        val_check_interval=100,
         enable_progress_bar=True,
-        callbacks=[checkpoint_callback])
-    if train is True:
-        trainer.fit(model, ckpt_path=checkpoint)
-    
+        callbacks=[checkpoint_callback],
+    )
+
+    trainer.fit(model, ckpt_path=checkpoint)
+
     count = 0
-    record_done = model.record_step(nb_batch=count, record_path=trainer_params.get('record_path'))
-    while not record_done: 
+    record_done = model.record_step(
+        nb_batch=count, record_path=cfg.trainer_params.record_path
+    )
+    while not record_done:
         count += 1
-        record_done = model.record_step(nb_batch=count, record_path=trainer_params.get('record_path'))
-
-
-
-if __name__ == "__main__":
-
-    hparams = {
-        'batch_size': 16,
-        'lr': 1e-3,
-        'env': "savanna-v2",
-        'gamma': 0.99,
-        'sync_rate': 10,
-        'replay_size': 99,
-        'warm_start_size': 100,
-        'eps_last_frame': 1000,
-        'eps_start': 1.0,
-        'eps_end': 0.01,
-        'episode_length': 1010,
-        'warm_start_steps': 100,
-        'env_params': {
-            'num_iters': 1000,  # duration of the game
-            'map_min': 0,
-            'map_max': 5,
-            'render_map_max': 5,
-            'amount_agents': 1,  # for now only one agent
-            'amount_grass_patches': 2,
-            'amount_water_holes': 2
-        },
-        'agent_params': {
-            'target_shards':['hunger', 'thirst', 'curiosity']
-        }
-
-    }
-    trainer_params = {
-        'resume_from_checkpoint': False,
-        'num_workers': 14,
-        'max_epochs': 200,
-        'record_path': '../checkpoints/memory_records/test2.csv'
-    }
-    run_experiment(hparams, trainer_params, train=True)
+        record_done = model.record_step(
+            nb_batch=count, record_path=cfg.trainer_params.record_path
+        )
 
     # Notes
     # resume from a specific checkpoint
@@ -305,10 +273,6 @@ if __name__ == "__main__":
     # runs only 1 training and 1 validation batch and the program ends, avoids side-effects
     # trainer = Trainer(fast_dev_run=True, enable_progress_bar=False)
 
-
-
     # retrieve the best checkpoint after training
 
     # checkpoint_callback.best_model_path
-    
-    
