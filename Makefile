@@ -3,8 +3,10 @@ PROJECT = aintelope
 TESTS = tests
 
 run-training-short:
+	python -m ${PROJECT}
 
 run-training-long:
+	echo 'run-training-long currently not implemented'
 
 tests-local: $(PROJECT) $(TESTS) ## run tests locally with active python environment
 	pytest --cov=$(PROJECT) $(TESTS)
