@@ -1,4 +1,4 @@
-name: BlackLinter
+name: FormatCheck
 
 on: [push, pull_request]
 
@@ -10,4 +10,4 @@ jobs:
       - uses: psf/black@stable
         with:
           options: "--check --diff --verbose --line-length=79"
-          src: "./aintelope ./tests"
+          src: "aintelope"
