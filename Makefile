@@ -32,7 +32,7 @@ install-all: install install-dev ## install all packages
 build-local: ## install the project locally
 	pip install -e .
 
-.PHONY: tets-local
+.PHONY: tests-local
 tests-local: ## Run tests locally
 	pytest --cov=$(PROJECT) $(TESTS)
 
