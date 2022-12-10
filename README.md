@@ -15,25 +15,23 @@ and simulate the agents and the environment to a sufficient degree.
 Working document:
 https://docs.google.com/document/d/1qc6a3MY2_guCZH8XJjutpaASNE7Zy6O5z1gblrfPemk/edit#
 
-## Installation
+## Project setup
 
-### Poetry
+### Installation
 
-Dependencies are managed via `poetry`. See installation instructions
-[here](https://python-poetry.org/docs/#installation).
+The project installation is managed via `make` and `pip`. Please see the
+respective commanads in the `Makefile`. To setup the environment follow these
+steps:
 
-To install the python dependencies run `poetry install`. To activate the
-environment via poetry run `poetry shell`. Alternatively, most commands can also
-be executed without an active python environment via `poetry run <command>`.
+1. Create a virtual python environment: `make venv`
+2. Activate the environment: `source venv_aintelope/bin/activate`
+3. Install dependencies: `make install`
 
-To execute the current trainer run `poetry run aintelope`.
+For development and testing follow (active environment):
 
-Unfortunately, Poetry has a key outstanding incompatibility with PyTorch.
-PyTorch often needs you to specify a specific Cuda Version appropriate to your
-local graphics card. The easiest way to fix this is to simply manually install
-the correct version of PyTorch using pip. For example, Nathan needed to do the
-following to get PyTorch with Cuda version 113:
-`pip3 install --use-deprecated=legacy-resolver torch==1.12.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html`
+1. Install development dependencies: `make install-dev`
+2. Install project locally: `make build-local`
+3. Run tests: `make tests-local`
 
 ### Code formatting
 
@@ -41,9 +39,7 @@ To autoformat python files you can use [`black`](https://github.com/psf/black).
 To automatically sort the imports you can run
 [`isort .`](https://github.com/PyCQA/isort) from the root level of the project.
 
-See the `Makefile` for further instructions.
-
-## Running
+## Executing `aintelope`
 
 Try `make run-training-short`. Then look in
 `aintelope/checkpoints/memory_records`. There should be two new files named

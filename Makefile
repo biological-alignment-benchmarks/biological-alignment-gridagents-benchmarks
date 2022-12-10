@@ -1,6 +1,7 @@
 # Variables
 PROJECT = aintelope
 TESTS = tests
+VENV = venv_$(PROJECT)
 
 run-training-short:
 	python -m ${PROJECT}
@@ -8,20 +9,47 @@ run-training-short:
 run-training-long:
 	echo 'run-training-long currently not implemented'
 
-tests-local: $(PROJECT) $(TESTS) ## run tests locally with active python environment
+.PHONY: venv
+venv: ## create virtual environment
+	@if [ ! -f "$(VENV)/bin/activate" ]; then python3 -m venv $(VENV) ; fi;
+
+.PHONY: clean-venv
+clean-venv: ## remove virtual environment
+	if [ -d $(VENV) ]; then rm -r $(VENV) ; fi;
+
+.PHONY: install
+install: ## Install packages
+	pip install -r requirements/$(PROJECT).txt
+
+.PHONY: install-dev
+install-dev: ## Install development packages
+	pip install -r requirements/$(PROJECT)_dev.txt
+
+.PHONY: install-all
+install-all: install install-dev ## install all packages
+
+.PHONY: build-local
+build-local: ## install the project locally
+	pip install -e .
+
+.PHONY: tests-local
+tests-local: ## Run tests locally
 	pytest --cov=$(PROJECT) $(TESTS)
 
-tests-local-p: ## run tests locally without active python environment
-	poetry run pytest --cov=$(PROJECT) $(TESTS)
-
-typecheck-local: $(PROJECT) ## local typechecking with active python environment
+.PHONY: typecheck-local
+typecheck-local: ## Local typechecking
 	mypy $(PROJECT)
 
-typecheck-local-p: $(PROJECT) ## local typechecking without active python environment
-	poetry run mypy $(PROJECT)
-
-isort: ## sort python imports with active python environment
+.PHONY: isort
+isort: ## Sort python imports
 	isort .
 
-isort-p: ## sort python imports without active python environment
-	poetry run isort .
+.PHONY: clean
+clean:
+	rm -rf *.egg-info
+	rm -rf .mypy_cache
+	rm -rf .pytest_cache
+
+.PHONY: help
+help: ## Show this help
+	@sed -ne '/@sed/!s/## //p' $(MAKEFILE_LIST)
