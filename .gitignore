@@ -1,3 +1,6 @@
+# Training outputs
+/outputs
+
 # Nathan-specific mods
 *.toml
 *.lock
