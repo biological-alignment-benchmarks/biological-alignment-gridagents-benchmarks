@@ -13,7 +13,9 @@ from aintelope.agents.shards.savanna_shards import available_shards_dict
 class ShardAgent:
     """Base Agent class handeling the interaction with the environment."""
 
-    def __init__(self, env: gym.Env, model, replay_buffer: ReplayBuffer, target_shards: list = []) -> None:
+    def __init__(
+        self, env: gym.Env, model, replay_buffer: ReplayBuffer, target_shards: list = []
+    ) -> None:
         """
         Args:
             env: training environment
@@ -28,13 +30,17 @@ class ShardAgent:
         self.reset()
 
     def init_shards(self):
-        print('debug target_shards', self.target_shards)
+        print("debug target_shards", self.target_shards)
         for shard_name in self.target_shards:
             if shard_name not in available_shards_dict:
-                print(f'Warning: could not find {shard_name} in available_shards_dict')
+                print(f"Warning: could not find {shard_name} in available_shards_dict")
                 continue
-            
-        self.shards = {shard : available_shards_dict.get(shard)() for shard in self.target_shards if shard in available_shards_dict}
+
+        self.shards = {
+            shard: available_shards_dict.get(shard)()
+            for shard in self.target_shards
+            if shard in available_shards_dict
+        }
         for shard in self.shards.values():
             shard.reset()
 
@@ -44,8 +50,8 @@ class ShardAgent:
         # GYM_INTERACTION
         self.state = self.env.reset()
         if isinstance(self.state, tuple):
-            self.state = self.state[0]  
-        self.init_shards()     
+            self.state = self.state[0]
+        self.init_shards()
 
     def get_action(self, net: nn.Module, epsilon: float, device: str) -> int:
         """Using the given network, decide what action to carry out using an
@@ -64,7 +70,7 @@ class ShardAgent:
             action = self.env.action_space.sample()
         else:
             # TODO: UserWarning: Creating a tensor from a list of numpy.ndarrays is extremely slow. Please consider converting the list to a single numpy.ndarray with numpy.array() before converting to a tensor. (Triggered internally at  ../torch/csrc/utils/tensor_new.cpp:201.)
-            
+
             state = torch.tensor([self.state])
 
             if device not in ["cpu"]:
@@ -82,7 +88,7 @@ class ShardAgent:
         net: nn.Module,
         epsilon: float = 0.0,
         device: str = "cpu",
-        save_path: str = None
+        save_path: str = None,
     ) -> typ.Tuple[float, bool]:
         """Carries out a single interaction step between the agent and the
         environment.
@@ -103,14 +109,14 @@ class ShardAgent:
         # can veto certain actions, for example stepping off a cliff
         # or trying to run fast despite a broken leg
         # this would be like Redwood Research's Harm/Failure Classifier
-        body_veto = 'stub'
-        
+        body_veto = "stub"
+
         # do step in the environment
         # the environment reports the result of that decision
         new_state, env_reward, done, info = self.env.step(action)
-        
+
         # we need a layer of body interpretation of the physical state of the environment
-        # to track things like impact which can cause persistent injuries 
+        # to track things like impact which can cause persistent injuries
         # or death (catatrophic failure of episode). Also, what physical inputs rise above
         # sense thresholds. How 'embodied' do we need to make our agent? Not sure. This
         # requires more thought and discussion.
@@ -124,8 +130,7 @@ class ShardAgent:
             reward = env_reward
         else:
             # interpret new_state and env_reward to compute actual reward
-            
-            
+
             # state = [0] + [agent_x, agent_y] + [[1, x[0], x[1]] for x in self.grass_patches] + [[2, x[0], x[1]] for x in self.water_holes]
             reward = 0
             shard_events = []
@@ -135,19 +140,18 @@ class ShardAgent:
                 if shard_event != 0:
                     shard_events.append((shard_name, shard_event))
 
-
-
         # the action taken, the environment's response, and the body's reward are all recorded together in memory
         exp = Experience(self.state, action, reward, done, new_state)
         if save_path is not None:
-            with open(save_path, 'a+') as f:
+            with open(save_path, "a+") as f:
                 csv_writer = csv.writer(f)
-                csv_writer.writerow([self.state.tolist(),action,reward,done,shard_events,new_state])
-                
+                csv_writer.writerow(
+                    [self.state.tolist(), action, reward, done, shard_events, new_state]
+                )
+
         self.replay_buffer.append(exp)
         self.state = new_state
-        
-        
+
         # if scenario is complete or agent experiences catastrophic failure, end the agent.
         if done:
             self.reset()

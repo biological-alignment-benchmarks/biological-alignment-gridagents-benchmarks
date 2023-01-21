@@ -47,9 +47,7 @@ def test_pettingzoo_api_sequential():
 
 
 def test_seed():
-    parallel_seed_test(
-        sut.SavannaZooParallelEnv, num_cycles=10, test_kept_state=True
-    )
+    parallel_seed_test(sut.SavannaZooParallelEnv, num_cycles=10, test_kept_state=True)
 
 
 def test_agent_states():
@@ -67,8 +65,7 @@ def test_agent_states():
         for agent_state in env.unwrapped.agent_states.values()
     )
     assert all(
-        agent_state.shape == (2,)
-        for agent_state in env.unwrapped.agent_states.values()
+        agent_state.shape == (2,) for agent_state in env.unwrapped.agent_states.values()
     )
 
 
@@ -76,12 +73,8 @@ def test_reward_agent():
     env = sut.SavannaZooParallelEnv()
     env.reset()
     # single grass patch
-    agent_pos = np.random.randint(
-        env.metadata["map_min"], env.metadata["map_max"], 2
-    )
-    grass_patch = np.random.randint(
-        env.metadata["map_min"], env.metadata["map_max"], 2
-    )
+    agent_pos = np.random.randint(env.metadata["map_min"], env.metadata["map_max"], 2)
+    grass_patch = np.random.randint(env.metadata["map_min"], env.metadata["map_max"], 2)
     min_grass_distance = distance_to_closest_item(agent_pos, grass_patch)
     reward_single = sut.reward_agent(min_grass_distance)
     assert reward_single == 1 / (1 + vec_distance(grass_patch, agent_pos))
@@ -93,13 +86,9 @@ def test_reward_agent():
     min_grass_distance = distance_to_closest_item(agent_pos, grass_patches)
     reward_many = sut.reward_agent(min_grass_distance)
     grass_patch_closest = grass_patches[
-        np.argmin(
-            np.linalg.norm(np.subtract(grass_patches, agent_pos), axis=1)
-        )
+        np.argmin(np.linalg.norm(np.subtract(grass_patches, agent_pos), axis=1))
     ]
-    assert reward_many == 1 / (
-        1 + vec_distance(grass_patch_closest, agent_pos)
-    )
+    assert reward_many == 1 / (1 + vec_distance(grass_patch_closest, agent_pos))
 
 
 def test_move_agent():
@@ -122,14 +111,10 @@ def test_move_agent():
             agent_states[agent],
         )
         assert (
-            env.metadata["map_min"]
-            <= agent_states[agent][0]
-            <= env.metadata["map_max"]
+            env.metadata["map_min"] <= agent_states[agent][0] <= env.metadata["map_max"]
         )
         assert (
-            env.metadata["map_min"]
-            <= agent_states[agent][1]
-            <= env.metadata["map_max"]
+            env.metadata["map_min"] <= agent_states[agent][1] <= env.metadata["map_max"]
         )
         assert agent_states[agent].dtype == sut.PositionFloat
 
@@ -150,9 +135,7 @@ def test_step_result():
         observations[agent], np.ndarray
     ), "observations of agent is not an array"
     assert isinstance(rewards, dict), "rewards is not a dict"
-    assert isinstance(
-        rewards[agent], np.float64
-    ), "reward of agent is not a float64"
+    assert isinstance(rewards[agent], np.float64), "reward of agent is not a float64"
 
 
 def test_done_step():

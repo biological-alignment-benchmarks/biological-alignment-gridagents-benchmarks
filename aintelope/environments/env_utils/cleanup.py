@@ -1,7 +1,7 @@
 import gym
 
 
-def cleanup_gym_envs(keyword='savanna'):
+def cleanup_gym_envs(keyword="savanna"):
     registry_keys = list(gym.envs.registration.registry.keys())
     for env in registry_keys:
         # print(env)

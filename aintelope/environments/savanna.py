@@ -21,9 +21,7 @@ class RenderSettings:
     def __init__(self, metadata):
         prefix = "render_"
         settings = {
-            (k.lstrip(prefix), v)
-            for k, v in metadata.items()
-            if k.startswith(prefix)
+            (k.lstrip(prefix), v) for k, v in metadata.items() if k.startswith(prefix)
         }
         self.__dict__.update(settings)
 
@@ -218,9 +216,7 @@ class SavannaEnv:
             self.metadata["map_min"], self.metadata["map_max"], size=(2)
         )
         grass_patches[
-            np.argmin(
-                np.linalg.norm(np.subtract(grass_patches, agent_pos), axis=1)
-            )
+            np.argmin(np.linalg.norm(np.subtract(grass_patches, agent_pos), axis=1))
         ] = replacement_grass
 
         return grass_patches
@@ -232,9 +228,7 @@ class SavannaEnv:
 
         if mode == "human":
             if not self.human_render_state:
-                self.human_render_state = HumanRenderState(
-                    self.render_state.settings
-                )
+                self.human_render_state = HumanRenderState(self.render_state.settings)
             self.human_render_state.render(self.render_state)
         elif mode == "ascii":
             if not self.ascii_render_state:
@@ -243,9 +237,7 @@ class SavannaEnv:
                     self.grass_patches,
                     self.render_state.settings,
                 )
-            self.ascii_render_state.render(
-                self.agent_states, self.grass_patches
-            )
+            self.ascii_render_state.render(self.agent_states, self.grass_patches)
         else:  # rgb_array
             return np.transpose(
                 np.array(pygame.surfarray.pixels3d(self.render_state.canvas)),

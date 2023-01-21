@@ -11,7 +11,7 @@ from aintelope.agents.q_agent import Agent
 from aintelope.environments.savanna import (
     move_agent,
     reward_agent,
-    get_agent_pos_from_state
+    get_agent_pos_from_state,
 )
 from aintelope.environments.env_utils.distance import distance_to_closest_item
 
@@ -64,7 +64,6 @@ class OneStepPerfectPredictionAgent(Agent):
 
 
 class IterativeWeightOptimizationAgent(Agent):
-    
     def reset(self) -> None:
         """Resents the environment and updates the state."""
         self.done = False
@@ -72,8 +71,8 @@ class IterativeWeightOptimizationAgent(Agent):
         # GYM_INTERACTION
         self.state = self.env.reset()
         if isinstance(self.state, tuple):
-            self.state = self.state[0]   
-    
+            self.state = self.state[0]
+
     def get_action(self, epsilon: float, device: str) -> int:
         MIN_WEIGHT = 0.05
         learning_rate = 0.01
@@ -82,7 +81,7 @@ class IterativeWeightOptimizationAgent(Agent):
         LAST_ACTION_KEY = "last_action"
         LAST_REWARD_KEY = "last_reward"
         ACTIONS_WEIGHTS = "actions_weights"
-        
+
         if np.random.random() < epsilon:
             # GYM_INTERACTION
             action = self.action_space.sample()
@@ -90,16 +89,16 @@ class IterativeWeightOptimizationAgent(Agent):
 
         recent_memories = self.replay_buffer.fetch_recent_memories(2)
 
-        print('info', recent_memories)
+        print("info", recent_memories)
 
         # last_action = info.get(LAST_ACTION_KEY)
         # last_reward = info.get(LAST_REWARD_KEY, 0)
         # action_weights = info[ACTIONS_WEIGHTS]
-        
+
         reward = self.replay_buffer.get_reward_from_memory(recent_memories[0])
         previous_reward = self.replay_buffer.get_reward_from_memory(recent_memories[1])
         last_action = self.replay_buffer.get_action_from_memory(recent_memories[0])
-        
+
         # avoid big weight change on the first valid step
         if last_action is not None and previous_reward > EPS:
             last_action_reward_delta = reward - previous_reward
@@ -139,12 +138,7 @@ class IterativeWeightOptimizationAgent(Agent):
         action_weights_cdf = cdf(enumerate(self.action_weights))
         print(
             "cdf",
-            ", ".join(
-                [
-                    f"{iaction}: {w}"
-                    for iaction, w in action_weights_cdf.items()
-                ]
-            ),
+            ", ".join([f"{iaction}: {w}" for iaction, w in action_weights_cdf.items()]),
         )
 
         pprint(action_weights_cdf)

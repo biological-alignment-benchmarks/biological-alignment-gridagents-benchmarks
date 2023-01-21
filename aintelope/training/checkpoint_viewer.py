@@ -37,7 +37,7 @@ class DQNLightning(LightningModule):
         eps_end: float = 0.01,
         episode_length: int = 500,
         warm_start_steps: int = 1000,
-        env_params: dict = {}
+        env_params: dict = {},
     ) -> None:
         """
         Args:
@@ -57,7 +57,7 @@ class DQNLightning(LightningModule):
         """
         super().__init__()
         self.save_hyperparameters()
-        if self.hparams.env == 'savanna_v1':
+        if self.hparams.env == "savanna_v1":
             self.env = SavannaEnv(env_params=env_params)
             obs_size = self.env.observation_space.shape[0]
         else:
@@ -124,15 +124,11 @@ class DQNLightning(LightningModule):
             next_state_values[dones] = 0.0
             next_state_values = next_state_values.detach()
 
-        expected_state_action_values = (
-            next_state_values * self.hparams.gamma + rewards
-        )
+        expected_state_action_values = next_state_values * self.hparams.gamma + rewards
 
         return nn.MSELoss()(state_action_values, expected_state_action_values)
 
-    def training_step(
-        self, batch: typ.Tuple[Tensor, Tensor], nb_batch
-    ) -> OrderedDict:
+    def training_step(self, batch: typ.Tuple[Tensor, Tensor], nb_batch) -> OrderedDict:
         """Carries out a single step through the environment to update the
         replay buffer. Then calculates loss based on the minibatch recieved.
 
@@ -146,8 +142,7 @@ class DQNLightning(LightningModule):
         device = self.get_device(batch)
         epsilon = max(
             self.hparams.eps_end,
-            self.hparams.eps_start
-            - self.global_step * 1 / self.hparams.eps_last_frame,
+            self.hparams.eps_start - self.global_step * 1 / self.hparams.eps_last_frame,
         )
 
         # step through environment with agent
@@ -171,13 +166,17 @@ class DQNLightning(LightningModule):
             self.target_net.load_state_dict(self.net.state_dict())
 
         log = {
-            "total_reward": torch.tensor(self.total_reward, dtype=torch.float32).to(device),
+            "total_reward": torch.tensor(self.total_reward, dtype=torch.float32).to(
+                device
+            ),
             "reward": torch.tensor(reward, dtype=torch.float32).to(device),
             "train_loss": loss,
         }
         status = {
             "steps": torch.tensor(self.global_step).to(device),
-            "total_reward": torch.tensor(self.total_reward, dtype=torch.float32).to(device),
+            "total_reward": torch.tensor(self.total_reward, dtype=torch.float32).to(
+                device
+            ),
         }
 
         # /home/nathan/.pyenv/versions/3.10.3/envs/aintelope/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:229: UserWarning: You called `self.log('episode_reward', ...)` in your `training_step` but the value needs to be floating point. Converting it to torch.float32
@@ -220,57 +219,56 @@ def run_experiment(hparams={}, trainer_params={}):
     model = DQNLightning(**hparams)
     # save any arbitrary metrics like `val_loss`, etc. in name
     # saves a file like: my/path/epoch=2-val_loss=0.02-other_metric=0.03.ckpt
-        # retrieve the best checkpoint after training
+    # retrieve the best checkpoint after training
     # resume from a specific checkpoint
     # trainer = Trainer(resume_from_checkpoint="some/path/to/my_checkpoint.ckpt")
 
     # checkpoint_callback.best_model_path
     checkpoint_callback = ModelCheckpoint(
-         dirpath='checkpoints',
-         filename='savanna-{epoch}-{val_loss:.2f}',
-         auto_insert_metric_name=True,
-         train_time_interval=timedelta(minutes=20), 
-         save_last=True,
-         save_on_train_epoch_end=True
-     )
+        dirpath="checkpoints",
+        filename="savanna-{epoch}-{val_loss:.2f}",
+        auto_insert_metric_name=True,
+        train_time_interval=timedelta(minutes=20),
+        save_last=True,
+        save_on_train_epoch_end=True,
+    )
     trainer = Trainer(
         gpus=AVAIL_GPUS,
-        max_epochs=100, 
-        val_check_interval=100, 
-        resume_from_checkpoint=trainer_params.get('resume_from_checkpoint'), 
+        max_epochs=100,
+        val_check_interval=100,
+        resume_from_checkpoint=trainer_params.get("resume_from_checkpoint"),
         enable_progress_bar=True,
-        callbacks=[checkpoint_callback])
+        callbacks=[checkpoint_callback],
+    )
     trainer.fit(model)
-
 
 
 if __name__ == "__main__":
 
     hparams = {
-        'batch_size': 16,
-        'lr': 1e-3,
-        'env': "savanna_v1",
-        'gamma': 0.99,
-        'sync_rate': 10,
-        'replay_size': 1000,
-        'warm_start_size': 1000,
-        'eps_last_frame': 1000,
-        'eps_start': 1.0,
-        'eps_end': 0.01,
-        'episode_length': 500,
-        'warm_start_steps': 1000,
-        'env_params': {
-            'num_iters': 500,  # duration of the game
-            'map_min': 0,
-            'map_max': 100,
-            'render_map_max': 100,
-            'amount_agents': 1,  # for now only one agent
-            'amount_grass_patches': 2
-        }
-
+        "batch_size": 16,
+        "lr": 1e-3,
+        "env": "savanna_v1",
+        "gamma": 0.99,
+        "sync_rate": 10,
+        "replay_size": 1000,
+        "warm_start_size": 1000,
+        "eps_last_frame": 1000,
+        "eps_start": 1.0,
+        "eps_end": 0.01,
+        "episode_length": 500,
+        "warm_start_steps": 1000,
+        "env_params": {
+            "num_iters": 500,  # duration of the game
+            "map_min": 0,
+            "map_max": 100,
+            "render_map_max": 100,
+            "amount_agents": 1,  # for now only one agent
+            "amount_grass_patches": 2,
+        },
     }
     trainer_params = {
-        'resume_from_checkpoint': None,
+        "resume_from_checkpoint": None,
     }
     run_experiment(hparams, trainer_params)
 
@@ -279,6 +277,3 @@ if __name__ == "__main__":
     # this will be handy for adding tests
     # runs only 1 training and 1 validation batch and the program ends, avoids side-effects
     # trainer = Trainer(fast_dev_run=True, enable_progress_bar=False)
-
-
-

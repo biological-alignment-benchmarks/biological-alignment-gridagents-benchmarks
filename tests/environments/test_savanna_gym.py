@@ -5,4 +5,3 @@ from gym.spaces import Discrete
 
 
 from aintelope.environments.savanna_gym import SavannaGymEnv
-

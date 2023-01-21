@@ -105,15 +105,11 @@ class DQNLightning(LightningModule):
             next_state_values[dones] = 0.0
             next_state_values = next_state_values.detach()
 
-        expected_state_action_values = (
-            next_state_values * self.hparams.gamma + rewards
-        )
+        expected_state_action_values = next_state_values * self.hparams.gamma + rewards
 
         return nn.MSELoss()(state_action_values, expected_state_action_values)
 
-    def training_step(
-        self, batch: typ.Tuple[Tensor, Tensor], nb_batch
-    ) -> OrderedDict:
+    def training_step(self, batch: typ.Tuple[Tensor, Tensor], nb_batch) -> OrderedDict:
         """Carries out a single step through the environment to update the
         replay buffer. Then calculates loss based on the minibatch recieved.
 
@@ -127,8 +123,7 @@ class DQNLightning(LightningModule):
         device = self.get_device(batch)
         epsilon = max(
             self.hparams.eps_end,
-            self.hparams.eps_start
-            - self.global_step * 1 / self.hparams.eps_last_frame,
+            self.hparams.eps_start - self.global_step * 1 / self.hparams.eps_last_frame,
         )
 
         # step through environment with agent
@@ -152,17 +147,17 @@ class DQNLightning(LightningModule):
             self.target_net.load_state_dict(self.net.state_dict())
 
         log = {
-            "total_reward": torch.tensor(
-                self.total_reward, dtype=torch.float32
-            ).to(device),
+            "total_reward": torch.tensor(self.total_reward, dtype=torch.float32).to(
+                device
+            ),
             "reward": torch.tensor(reward, dtype=torch.float32).to(device),
             "train_loss": loss,
         }
         status = {
             "steps": torch.tensor(self.global_step).to(device),
-            "total_reward": torch.tensor(
-                self.total_reward, dtype=torch.float32
-            ).to(device),
+            "total_reward": torch.tensor(self.total_reward, dtype=torch.float32).to(
+                device
+            ),
         }
 
         # /home/nathan/.pyenv/versions/3.10.3/envs/aintelope/lib/python3.10/site-packages/pytorch_lightning/trainer/connectors/logger_connector/result.py:229: UserWarning: You called `self.log('episode_reward', ...)` in your `training_step` but the value needs to be floating point. Converting it to torch.float32
@@ -184,8 +179,7 @@ class DQNLightning(LightningModule):
         device = "cpu"
         epsilon = max(
             self.hparams.eps_end,
-            self.hparams.eps_start
-            - self.global_step * 1 / self.hparams.eps_last_frame,
+            self.hparams.eps_start - self.global_step * 1 / self.hparams.eps_last_frame,
         )
 
         # step through environment with agent
