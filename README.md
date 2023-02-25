@@ -42,12 +42,11 @@ Configurations of the formatters can be found in `pyproject.toml`
 
 ## Executing `aintelope`
 
-Try `make run-training-short`. Then look in
-`aintelope/checkpoints/memory_records`. There should be two new files named
-`Record_{current timestamp}.csv` and `Record_{current timestamp}_plot..png`. The
-plot will be an image of the path the agent took during the test episode, using
-the best agent that the training produced. Green dots are food in the
-environment, blue dots are water.
+Try `make run-training`. Then look in `aintelope/outputs/memory_records`. (WIP)
+There should be two new files named `Record_{current timestamp}.csv` and
+`Record_{current timestamp}_plot.png`. The plot will be an image of the path the
+agent took during the test episode, using the best agent that the training
+produced. Green dots are food in the environment, blue dots are water.
 
 ## Logging
 
@@ -70,9 +69,6 @@ You need at least the following prerequisites:
   available)
 - Pytorch: https://github.com/KoichiYasuoka/CygTorch
 
-Problems:
+## Known Issues
 
-- Windows Python versions don't work with the poetry commands.
-- poetry shell doesn't work with paths with spaces.
 - Even with CygTorch pytorch-lightning can't find a Torch version.
-- other

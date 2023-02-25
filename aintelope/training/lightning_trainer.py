@@ -1,5 +1,6 @@
 import typing as typ
 import logging
+from pathlib import Path
 from collections import OrderedDict
 from datetime import timedelta
 
@@ -171,10 +172,11 @@ class DQNLightning(LightningModule):
 
         return OrderedDict({"loss": loss, "log": log, "progress_bar": status})
 
-    def record_step(self, nb_batch, record_path) -> bool:
+    def record_step(self, nb_batch: int, record_path: Path) -> bool:
+        record_path.parent.mkdir(parents=True, exist_ok=True)
         if nb_batch == 0:
             init_string = "state,action,reward,done,shard_events,new_state\n"
-            with open(record_path, "w") as f:
+            with record_path.open("w", encoding="utf-8") as f:
                 f.write(init_string)
         device = "cpu"
         epsilon = max(
@@ -234,7 +236,7 @@ def run_experiment(cfg: DictConfig) -> None:
     )
 
     if cfg.trainer_params.resume_from_checkpoint:
-        checkpoint = "../checkpoints/last.ckpt"
+        checkpoint = cfg.trainer_params.checkpoint / "model.ckpt"
     else:
         checkpoint = None
     logger.info(f"checkpoint: {checkpoint}")
@@ -249,15 +251,12 @@ def run_experiment(cfg: DictConfig) -> None:
 
     trainer.fit(model, ckpt_path=checkpoint)
 
+    record_path = cfg.trainer_params.record_path / f"{cfg.timestamp}_records.csv"
     count = 0
-    record_done = model.record_step(
-        nb_batch=count, record_path=cfg.trainer_params.record_path
-    )
+    record_done = model.record_step(nb_batch=count, record_path=record_path)
     while not record_done:
         count += 1
-        record_done = model.record_step(
-            nb_batch=count, record_path=cfg.trainer_params.record_path
-        )
+        record_done = model.record_step(nb_batch=count, record_path=record_path)
 
     # Notes
     # resume from a specific checkpoint

@@ -3,11 +3,8 @@ PROJECT = aintelope
 TESTS = tests
 VENV = venv_$(PROJECT)
 
-run-training-short:
+run-training:
 	python -m ${PROJECT}
-
-run-training-long:
-	echo 'run-training-long currently not implemented'
 
 .PHONY: venv
 venv: ## create virtual environment
