@@ -251,7 +251,7 @@ def run_experiment(cfg: DictConfig) -> None:
 
     trainer.fit(model, ckpt_path=checkpoint)
 
-    record_file = cfg.trainer_params.record_path / "records.csv"
+    record_file = cfg.trainer_params.record_path / f"{cfg.timestamp}_records.csv"
     count = 0
     record_done = model.record_step(nb_batch=count, record_file=record_file)
     while not record_done:
