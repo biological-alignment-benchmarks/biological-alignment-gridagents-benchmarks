@@ -3,12 +3,14 @@ import functools
 
 import numpy as np
 import pygame
-from gym import spaces
-from gym.spaces import Discrete
+import gym
+from gym.spaces import Box, Discrete
 from gym.utils import seeding
 
 from aintelope.environments.env_utils.render_ascii import AsciiRenderState
 from aintelope.environments.env_utils.distance import distance_to_closest_item
+
+ObservationFloat = np.float32
 
 logger = logging.getLogger("aintelope.environments.savanna")
 
@@ -129,9 +131,9 @@ class SavannaEnv:
         self.metadata.update(env_params)
         logger.info(f"initializing savanna env with params: {self.metadata}")
         assert self.metadata["amount_agents"] == 1, "agents must == 1 for gym env"
-        self.action_space = Discrete(4)
+        self._action_space = Discrete(4)
         # observation space will be (object_type, pos_x, pos_y)
-        self.observation_space = spaces.Box(
+        self._observation_space = Box(
             low=self.metadata["map_min"],
             high=self.metadata["map_max"],
             shape=(
@@ -150,7 +152,7 @@ class SavannaEnv:
         self.human_render_state = None
         self.ascii_render_state = None
 
-    def _seed(self, seed=None):
+    def _seed(self, seed: typ.Optional[int] = None) -> None:
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
@@ -165,6 +167,7 @@ class SavannaEnv:
             map_min=self.metadata["map_min"],
             map_max=self.metadata["map_max"],
         )
+
         min_grass_distance = distance_to_closest_item(
             self.agent_state, self.grass_patches
         )
@@ -179,7 +182,8 @@ class SavannaEnv:
         observation = self._get_obs()
         return observation, reward, done
 
-    def reset(self):
+    def reset(self, seed=None, options={}):
+        assert not options, ("unused: ", options)
         self.agent_state = self.np_random.integers(
             self.metadata["map_min"], self.metadata["map_max"], 2
         )
@@ -187,12 +191,12 @@ class SavannaEnv:
             self.metadata["map_min"],
             self.metadata["map_max"],
             size=(self.metadata["amount_grass_patches"], 2),
-        )
+        ).astype(PositionFloat)
         self.water_holes = self.np_random.integers(
             self.metadata["map_min"],
             self.metadata["map_max"],
             size=(self.metadata["amount_water_holes"], 2),
-        )
+        ).astype(PositionFloat)
         self.last_action = None
         self.num_moves = 0
         return self._get_obs()
@@ -203,11 +207,9 @@ class SavannaEnv:
             observations += [1, x[0], x[1]]
         for x in self.water_holes:
             observations += [2, x[0], x[1]]
-        return np.array(observations, dtype=np.float64)
+        return np.array(observations, dtype=ObservationFloat)
 
-    def replace_grass(
-        self, agent_pos: np.ndarray, grass_patches: np.ndarray
-    ) -> np.float64:
+    def replace_grass(self, agent_pos: np.ndarray, grass_patches: np.ndarray):
         if len(grass_patches.shape) == 1:
             grass_patches = np.expand_dims(grass_patches, 0)
 
