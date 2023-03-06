@@ -3,7 +3,7 @@ import logging
 import gym
 
 from aintelope.agents.q_agent import Agent as Qagent
-from aintelope.agents.shard_agent import ShardAgent
+from aintelope.agents.instinct_agent import InstinctAgent
 from aintelope.agents.simple_agents import (
     RandomWalkAgent,
     OneStepPerfectPredictionAgent,
@@ -22,7 +22,7 @@ logger = logging.getLogger("aintelope.training.simple_eval")
 # to register a lookup table from hparam name to function?
 AGENT_LOOKUP = {
     "q_agent": Qagent,
-    "shard_agent": ShardAgent,
+    "instinct_agent": InstinctAgent,
     "random_walk_agent": RandomWalkAgent,
     "one_step_perfect_prediction_agent": OneStepPerfectPredictionAgent,
     "iterative_weight_optimization_agent": IterativeWeightOptimizationAgent,
