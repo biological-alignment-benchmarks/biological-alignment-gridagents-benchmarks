@@ -253,8 +253,6 @@ class InstinctAgent:
 
         if style == "thickness":
             ax.plot(agent_df["x"], agent_df["y"], ".r-")
-            # ax.plot(food_df["x"], food_df["y"], "xg", markersize=15)
-            # ax.plot(water_df["x"], water_df["y"], "xb", markersize=15)
         elif style == "colormap":
             cmap = matplotlib.colormaps[color]
 
