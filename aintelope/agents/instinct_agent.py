@@ -2,6 +2,7 @@ import typing as typ
 import logging
 import csv
 
+import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 import gym
@@ -194,9 +195,10 @@ class InstinctAgent:
             data=self.history,
         )
 
-    def plot_history(self) -> Figure:
-        history_df = self.get_history()
-
+    @staticmethod
+    def process_history(
+        history_df: pd.DataFrame,
+    ) -> typ.Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         x = []
         y = []
         event_x = []
@@ -206,6 +208,7 @@ class InstinctAgent:
         food_y = []
         water_x = []
         water_y = []
+
         for _, row in history_df.iterrows():
             state = row["state"]
             x.append(state[1])
@@ -232,10 +235,45 @@ class InstinctAgent:
         event_df = pd.DataFrame(
             data={"x": event_x, "y": event_y, "event_type": event_type}
         )
+        return agent_df, food_df, water_df, event_df
 
-        fig, ax = plt.subplots()
-        ax.plot(agent_df["x"], agent_df["y"], ".r-")
-        ax.plot(food_df["x"], food_df["y"], ".g", markersize=15)
-        ax.plot(water_df["x"], water_df["y"], ".b", markersize=15)
+    def plot_history(self, style: str = "thickness", color: str = "viridis") -> Figure:
+        history_df = self.get_history()
+        agent_df, food_df, water_df, event_df = self.process_history(history_df)
+
+        fig, ax = plt.subplots(figsize=(8, 8))
+
+        if style == "thickness":
+            ax.plot(agent_df["x"], agent_df["y"], ".r-")
+            ax.plot(food_df["x"], food_df["y"], ".g", markersize=15)
+            ax.plot(water_df["x"], water_df["y"], ".b", markersize=15)
+        elif style == "colormap":
+            cmap = matplotlib.colormaps[color]
+
+            agent_arr = agent_df.to_numpy()  # coordinates x y
+            # coordinates are ordered in x1 y1 x2 y2
+            step_pairs = np.concatenate([agent_arr[:-1], agent_arr[1:]], axis=1)
+            unique_steps, step_freq = np.unique(step_pairs, axis=0, return_counts=True)
+
+            for line_segment, col in zip(unique_steps, step_freq / step_freq.max()):
+                if (line_segment[:2] == line_segment[2:]).all():  # agent did not move
+                    im = ax.scatter(
+                        line_segment[0],
+                        line_segment[1],
+                        s=70,
+                        marker="o",
+                        color=cmap(col),
+                    )
+                else:
+                    ax.plot(line_segment[[0, 2]], line_segment[[1, 3]], color=cmap(col))
+
+            ax.plot(food_df["x"], food_df["y"], "xg", markersize=8, label="Food")
+            ax.plot(water_df["x"], water_df["y"], "xb", markersize=8, label="Water")
+            cbar = fig.colorbar(im)
+            cbar.set_label("Relative Frequency Agent")
+        else:
+            raise NotImplementedError(f"{style} is not a valid plot style!")
+
+        ax.legend()
         plt.tight_layout()
         return fig

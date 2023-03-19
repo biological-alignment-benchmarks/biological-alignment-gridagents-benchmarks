@@ -174,8 +174,13 @@ class DQNLightning(LightningModule):
     def on_train_epoch_end(self) -> None:
         if (self.current_epoch + 1) % self.hparams.log_figures_every_n_epochs == 0:
             self.logger.experiment.add_figure(
-                "train_images/agent_history",
+                "train_images/agent_history_thickness",
                 self.agent.plot_history(),
+                self.current_epoch,
+            )
+            self.logger.experiment.add_figure(
+                "train_images/agent_history_colormap",
+                self.agent.plot_history(style="colormap"),
                 self.current_epoch,
             )
 
