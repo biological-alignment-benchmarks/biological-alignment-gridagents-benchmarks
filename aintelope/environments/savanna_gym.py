@@ -109,7 +109,7 @@ class SavannaGymEnv(gym.Env):
 
     def _get_obs(self) -> npt.NDArray[np.float32]:
         """Function to get environment state observation. Environment objects are
-        encoded in triplets as (0) agents (1) grass (2) water.
+        encoded in triplets as (0, x, y) agents (1, x, y) grass (2, x, y) water.
 
         Returns:
             (npt.NDArray[float32]): state array
