@@ -302,7 +302,11 @@ class SavannaEnv:
         for x in self.water_holes:
             observations = stack(observations, x)
         # just put all positions into one row
-        return observations.reshape(-1)
+        res = observations.reshape(-1)
+        assert (
+            res.shape == next(iter(self._observation_spaces.values())).shape
+        ), "observation / observation space shape mismatch"
+        return res
 
     def render(self, mode="human"):
         """Render the environment."""
