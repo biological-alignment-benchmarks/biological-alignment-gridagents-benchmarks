@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from collections import OrderedDict
 from datetime import timedelta
+import os
 
 from omegaconf import DictConfig
 import gym
@@ -103,7 +104,7 @@ class DQNLightning(LightningModule):
         states, actions, rewards, dones, next_states = batch
 
         state_action_values = (
-            self.net(states).gather(1, actions.unsqueeze(-1)).squeeze(-1)
+            self.net(states).gather(1, actions.unsqueeze(-1).long()).squeeze(-1)   # added .long() - Compatibility with newer versions of pytorch: actions.unsqueeze(-1) results in error "gather(): Expected dtype int64 for index" because unsqueeze returns an int tensor and gather requires them to be int64.
         )
 
         with torch.no_grad():
@@ -193,6 +194,7 @@ class DQNLightning(LightningModule):
         record_path.parent.mkdir(parents=True, exist_ok=True)
         if nb_batch == 0:
             init_string = "state,action,reward,done,instinct_events,new_state\n"
+            os.makedirs(os.path.dirname(record_path), exist_ok=True)
             with record_path.open("w", encoding="utf-8") as f:
                 f.write(init_string)
         device = "cpu"
