@@ -5,6 +5,11 @@ from omegaconf import DictConfig, OmegaConf
 import pytest
 
 
+def constants() -> DictConfig:
+    constants_dict = {"PROJECT": "aintelope"}
+    return OmegaConf.create(constants_dict)
+
+
 @pytest.fixture
 def root_dir() -> pathlib.Path:
     return pathlib.Path(__file__).parents[1]
