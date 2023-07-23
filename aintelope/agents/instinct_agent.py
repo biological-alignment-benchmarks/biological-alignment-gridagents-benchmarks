@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from aintelope.agents import Environment, register_agent_class
-from aintelope.agents.q_agent import QAgent
+from aintelope.agents.q_agent import QAgent, HistoryStep
 from aintelope.agents.memory import Experience, ReplayBuffer
 from aintelope.agents.instincts.savanna_instincts import available_instincts_dict
 
@@ -129,7 +129,6 @@ class InstinctAgent(QAgent):
         else:
             # interpret new_state and env_reward to compute actual reward
 
-            # state = [0] + [agent_x, agent_y] + [[1, x[0], x[1]] for x in self.grass_patches] + [[2, x[0], x[1]] for x in self.water_holes]
             reward = 0
             instinct_events = []
             for instinct_name, instinct_object in self.instincts.items():
@@ -143,7 +142,14 @@ class InstinctAgent(QAgent):
         # the action taken, the environment's response, and the body's reward are all recorded together in memory
         exp = Experience(self.state, action, reward, done, new_state)
         self.history.append(
-            (self.state.tolist(), action, reward, done, instinct_events, new_state)
+            HistoryStep(
+                state=self.env.state_to_namedtuple(self.state.tolist()),
+                action=action,
+                reward=reward,
+                done=done,
+                instinct_events=instinct_events,
+                new_state=self.env.state_to_namedtuple(new_state.tolist()),
+            )
         )
 
         if save_path is not None:
