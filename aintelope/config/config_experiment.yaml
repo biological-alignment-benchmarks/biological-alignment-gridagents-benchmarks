@@ -1,19 +1,16 @@
-define: &timestamp ${now:%Y%m%d%H%M%S}
-define: &experiment hunger
-define: &experiment_dir .outputs/{experiment}_{timestamp}/
-
-experiment_name: {experiment}
-timestamp: {timestamp}
+timestamp: &timestamp ${now:%Y%m%d%H%M%S}
+experiment_name: &experiment_name hunger
+experiment_dir: &experiment_dir outputs/${experiment_name}_${timestamp}/
 
 hydra:
   run:
-    dir: {experiment_dir}/hydra_logs/ 
+    dir: ${experiment_dir}/hydra_logs/
 
 trainer_params:
   resume_from_checkpoint: False
   num_workers: 4
   max_epochs: 10
-  checkpoint: {experiment_dir}/checkpoints/ #${abs_path:outputs/checkpoints}
+  checkpoint: ${experiment_dir}/checkpoints/
   device: cpu
   verbose: false
 
