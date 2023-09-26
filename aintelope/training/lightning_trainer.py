@@ -228,7 +228,7 @@ def run_experiment(cfg: DictConfig) -> None:
         save_last=True,
         save_top_k=-1,
         save_on_train_epoch_end=True,
-        every_n_epochs=3,  # should this be enough? or add some other
+        every_n_epochs=cfg.hparams.every_n_epochs,
     )
 
     if cfg.trainer_params.resume_from_checkpoint:
@@ -237,9 +237,7 @@ def run_experiment(cfg: DictConfig) -> None:
     else:
         checkpoint = None
     tb_logger = pl_loggers.TensorBoardLogger(
-        save_dir=dir_out,
-        name=exp_name
-        # save_dir=dir_out, name=dir_logs, version=exp_name
+        save_dir=dir_out, name=exp_name, version=exp_name
     )
 
     trainer = Trainer(

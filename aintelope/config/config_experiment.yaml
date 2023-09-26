@@ -1,6 +1,6 @@
-timestamp: &timestamp ${now:%Y%m%d%H%M%S}
-experiment_name: &experiment_name hunger
-experiment_dir: &experiment_dir outputs/${experiment_name}_${timestamp}/
+timestamp: ${now:%Y%m%d%H%M%S}
+experiment_name: hunger
+experiment_dir: outputs/${experiment_name}_${timestamp}/
 
 hydra:
   run:
@@ -32,6 +32,7 @@ hparams:
   episode_length: 1010
   warm_start_steps: 100
   log_figures_every_n_epochs: 5
+  every_n_epochs: 3 # how often save a model
   env_params:
     num_iters: 1000 # duration of the game
     map_min: 0
