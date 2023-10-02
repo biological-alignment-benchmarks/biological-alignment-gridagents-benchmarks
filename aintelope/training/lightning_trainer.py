@@ -216,26 +216,28 @@ class DQNLightning(LightningModule):
 
 
 def run_experiment(cfg: DictConfig) -> None:
-    dir_out, dir_logs, exp_name = "outputs", "lightning_logs", f"{cfg.experiment_name}"
-    dir_experiment = Path(dir_out) / dir_logs / exp_name
+    dir_out, exp_name = f"{cfg.experiment_dir}", f"{cfg.experiment_name}"
+    dir_experiment = Path(dir_out)
+
     lightning_module = DQNLightning(cfg.hparams)
 
     checkpoint_callback = ModelCheckpoint(
         dirpath=dir_experiment / "checkpoints",
-        filename="savanna-{epoch}-{val_loss:.2f}",
+        filename="{epoch}-{val_loss:.2f}",
         auto_insert_metric_name=True,
-        train_time_interval=timedelta(minutes=20),
         save_last=True,
+        save_top_k=-1,
         save_on_train_epoch_end=True,
+        every_n_epochs=cfg.hparams.every_n_epochs,
     )
 
     if cfg.trainer_params.resume_from_checkpoint:
-        checkpoint = cfg.trainer_params.checkpoint / "model.ckpt"
+        checkpoint = cfg.trainer_params.checkpoint / "last.ckpt"
         logger.info(f"Checkpoint path: {checkpoint}")
     else:
         checkpoint = None
     tb_logger = pl_loggers.TensorBoardLogger(
-        save_dir=dir_out, name=dir_logs, version=exp_name
+        save_dir=dir_out, name=exp_name, version=exp_name
     )
 
     trainer = Trainer(
@@ -249,7 +251,7 @@ def run_experiment(cfg: DictConfig) -> None:
 
     trainer.fit(lightning_module, ckpt_path=checkpoint)
 
-    record_path = dir_experiment / "memory_records" / f"{cfg.timestamp}.csv"
+    record_path = dir_experiment / "memory_records.csv"
     logger.info(f"Saving training records to disk at {record_path}")
     record_path.parent.mkdir(exist_ok=True, parents=True)
     lightning_module.agent.get_history().to_csv(record_path, index=False)
