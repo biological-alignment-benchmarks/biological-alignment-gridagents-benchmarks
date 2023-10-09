@@ -40,6 +40,7 @@ class QAgent(Agent):
         model: nn.Module,
         replay_buffer: ReplayBuffer,
         warm_start_steps: int,
+        target_instincts: List[str] = [],
     ) -> None:
         self.env = env
         if isinstance(env, GymEnv):
@@ -112,13 +113,37 @@ class QAgent(Agent):
         """
 
         # The 'mind' (model) of the agent decides what to do next
-        action = self.get_action(epsilon, device)
+        action = self.get_action(net, epsilon, device)
 
         # do step in the environment
         # the environment reports the result of that decision
         new_state, reward, done, info = self.env.step(action)
 
         exp = Experience(self.state, action, reward, done, new_state)
+        self.history.append(
+            HistoryStep(
+                state=self.env.state_to_namedtuple(self.state.tolist()),
+                action=action,
+                reward=reward,
+                done=done,
+                instinct_events=[],
+                new_state=self.env.state_to_namedtuple(new_state.tolist()),
+            )
+        )
+
+        if save_path is not None:
+            with open(save_path, "a+") as f:
+                csv_writer = csv.writer(f)
+                csv_writer.writerow(
+                    [
+                        self.state.tolist(),
+                        action,
+                        reward,
+                        done,
+                        instinct_events,
+                        new_state,
+                    ]
+                )
 
         self.replay_buffer.append(exp)
         self.state = new_state

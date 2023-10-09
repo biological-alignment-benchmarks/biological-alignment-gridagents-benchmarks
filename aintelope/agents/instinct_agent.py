@@ -103,6 +103,7 @@ class InstinctAgent(QAgent):
                     self, new_state
                 )
                 reward += instinct_reward
+                logger.debug("debug reward instinct", reward)
                 if instinct_event != 0:
                     instinct_events.append((instinct_name, instinct_event))
 

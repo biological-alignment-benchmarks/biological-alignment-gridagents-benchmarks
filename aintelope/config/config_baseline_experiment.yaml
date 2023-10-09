@@ -1,10 +1,6 @@
-timestamp: &timestamp ${now:%Y%m%d%H%M%S}
-experiment_name: &experiment_name hunger
-experiment_dir: &experiment_dir outputs/${experiment_name}_${timestamp}/
-
-hydra:
-  run:
-    dir: ${experiment_dir}/hydra_logs/
+timestamp: ${now:%Y%m%d%H%M%S}
+experiment_name: hunger
+experiment_dir: outputs/${experiment_name}_${timestamp}/
 
 trainer_params:
   resume_from_checkpoint: False
@@ -21,7 +17,7 @@ hparams:
   env_entry_point: "aintelope.environments.savanna_gym:SavannaGymEnv"
   env_type: gym
   model: dqn
-  agent_id: instinct_agent
+  agent_id: q_agent
   gamma: 0.99
   sync_rate: 10
   replay_size: 99
@@ -43,4 +39,8 @@ hparams:
     amount_grass_patches: 1
     amount_water_holes: 0
   agent_params:
-    target_instincts: [smell] #[hunger, thirst, curiosity]
+    target_instincts: [] 
+
+hydra:
+  run:
+    dir: ${experiment_dir}/hydra_logs/
