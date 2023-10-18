@@ -22,4 +22,7 @@ def aintelope_main(config_file: str) -> None:
 
 if __name__ == "__main__":
     register_resolvers()
-    aintelope_main(config_file=sys.argv[2])
+    conf = "config_experiment.yaml"
+    if len(sys.argv) > 1:
+        conf = sys.argv[1]
+    aintelope_main(conf)
