@@ -49,7 +49,7 @@ def test_pettingzoo_api_sequential():
 
 
 def test_seed():
-    parallel_seed_test(sut.SavannaZooParallelEnv, num_cycles=10)
+    parallel_seed_test(sut.SavannaZooParallelEnv, 10)
 
 
 def test_agent_states():
@@ -219,8 +219,3 @@ def test_performance_benchmark():
     # will print only timing to stdout; not shown per default
     # performance_benchmark(sut.SavannaZooParallelEnv())
     pass
-
-
-test_pettingzoo_api_parallel()
-test_pettingzoo_api_sequential()
-test_seed()
