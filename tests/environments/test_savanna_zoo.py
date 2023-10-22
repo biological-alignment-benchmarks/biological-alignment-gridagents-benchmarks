@@ -221,7 +221,6 @@ def test_performance_benchmark():
     pass
 
 
-
 test_pettingzoo_api_parallel()
 test_pettingzoo_api_sequential()
 test_seed()
