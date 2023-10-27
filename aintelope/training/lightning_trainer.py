@@ -2,11 +2,11 @@ import typing as typ
 import logging
 from pathlib import Path
 from collections import OrderedDict
-from datetime import timedelta
-import os
 
 from omegaconf import DictConfig
-import gym
+
+import gymnasium as gym
+
 import torch
 from torch import Tensor, nn
 from torch.optim import Adam, Optimizer
@@ -78,19 +78,6 @@ class DQNLightning(LightningModule):
         """
         for _ in range(steps):
             self.agent.play_step(self.net, epsilon=1.0)
-
-    def forward(self, x: Tensor) -> Tensor:
-        """Passes in a state x through the network and gets the q_values of
-        each action as an output.
-
-        Args:
-            x: environment state
-
-        Returns:
-            q values
-        """
-        output = self.net(x)
-        return output
 
     def dqn_mse_loss(self, batch: typ.Tuple[Tensor, Tensor]) -> Tensor:
         """Calculates the mse loss using a mini batch from the replay buffer.

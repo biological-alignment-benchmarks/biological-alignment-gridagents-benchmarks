@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from aintelope.agents import Environment, register_agent_class
+from aintelope.agents import Environment, register_agent_class, GymEnv, PettingZooEnv
 from aintelope.agents.q_agent import QAgent, HistoryStep
 from aintelope.agents.memory import Experience, ReplayBuffer
 from aintelope.agents.instincts.savanna_instincts import available_instincts_dict
@@ -89,7 +89,17 @@ class InstinctAgent(QAgent):
 
         action = self.get_action(net, epsilon, device)
 
-        new_state, env_reward, done, info = self.env.step(action)
+        if isinstance(self.env, GymEnv):
+            new_state, env_reward, terminated, truncated, info = self.env.step(action)
+            done = terminated or truncated
+        elif isinstance(self.env, PettingZooEnv):
+            new_state, env_reward, terminateds, truncateds, info = self.env.step(action)
+            done = {
+                key: terminated or truncateds[key]
+                for (key, terminated) in terminateds.items()
+            }
+        else:
+            new_state, env_reward, done, info = self.env.step(action)
 
         if len(self.instincts) == 0:
             # use env reward as default

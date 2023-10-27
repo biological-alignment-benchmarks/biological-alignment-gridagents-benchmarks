@@ -1,8 +1,9 @@
-import typing as typ
+from typing import Optional, Dict
 from collections import OrderedDict
 from datetime import timedelta
 
-import gym
+import gymnasium as gym
+
 import torch
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.utilities import DistributedType
@@ -37,7 +38,7 @@ class DQNLightning(LightningModule):
         eps_end: float = 0.01,
         episode_length: int = 500,
         warm_start_steps: int = 1000,
-        env_params: dict = {},
+        env_params: Optional[Dict] = None,
     ) -> None:
         """
         Args:
@@ -57,6 +58,10 @@ class DQNLightning(LightningModule):
         """
         super().__init__()
         self.save_hyperparameters()
+
+        if env_params is None:
+            env_params = {}
+
         if self.hparams.env == "savanna_v1":
             self.env = SavannaEnv(env_params=env_params)
             obs_size = self.env.observation_space.shape[0]
@@ -104,7 +109,7 @@ class DQNLightning(LightningModule):
         output = self.net(x)
         return output
 
-    def dqn_mse_loss(self, batch: typ.Tuple[Tensor, Tensor]) -> Tensor:
+    def dqn_mse_loss(self, batch: Tuple[Tensor, Tensor]) -> Tensor:
         """Calculates the mse loss using a mini batch from the replay buffer.
 
         Args:
@@ -128,7 +133,7 @@ class DQNLightning(LightningModule):
 
         return nn.MSELoss()(state_action_values, expected_state_action_values)
 
-    def training_step(self, batch: typ.Tuple[Tensor, Tensor], nb_batch) -> OrderedDict:
+    def training_step(self, batch: Tuple[Tensor, Tensor], nb_batch) -> OrderedDict:
         """Carries out a single step through the environment to update the
         replay buffer. Then calculates loss based on the minibatch recieved.
 
@@ -190,7 +195,7 @@ class DQNLightning(LightningModule):
 
         return OrderedDict({"loss": loss, "log": log, "progress_bar": status})
 
-    def configure_optimizers(self) -> typ.List[Optimizer]:
+    def configure_optimizers(self) -> List[Optimizer]:
         """Initialize Adam optimizer."""
         optimizer = Adam(self.net.parameters(), lr=self.hparams.lr)
         return [optimizer]
@@ -215,7 +220,14 @@ class DQNLightning(LightningModule):
         return batch[0].device.index if self.on_gpu else "cpu"
 
 
-def run_experiment(hparams={}, trainer_params={}):
+def run_experiment(
+    hparams: Optional[Dict] = None, trainer_params: Optional[Dict] = None
+):
+    if hparams is None:
+        hparams = {}
+    if trainer_params is None:
+        trainer_params = {}
+
     model = DQNLightning(**hparams)
     # save any arbitrary metrics like `val_loss`, etc. in name
     # saves a file like: my/path/epoch=2-val_loss=0.02-other_metric=0.03.ckpt

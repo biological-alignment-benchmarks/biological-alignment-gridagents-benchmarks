@@ -1,6 +1,7 @@
+from typing import Optional, Dict
 import logging
 
-import gym
+import gymnasium as gym
 
 from aintelope.environments.savanna import (
     SavannaEnv,
@@ -28,7 +29,10 @@ class SavannaGymEnv(SavannaEnv, gym.Env):
         "render_window_size": 512,
     }
 
-    def __init__(self, env_params={}):
+    def __init__(self, env_params: Optional[Dict] = None):
+        if env_params is None:
+            env_params = {}
+
         SavannaEnv.__init__(self, env_params)
         gym.Env.__init__(self)
         assert self.metadata["amount_agents"] == 1, "agents must == 1 for gym env"
@@ -39,7 +43,11 @@ class SavannaGymEnv(SavannaEnv, gym.Env):
         # but per agent
         res = SavannaEnv.step(self, actions)
 
-        observations, rewards, dones, infos = res
+        observations, rewards, terminateds, truncateds, infos = res
+        dones = {
+            key: terminated or truncateds[key]
+            for (key, terminated) in terminateds.items()
+        }
 
         # so just return the first
         i = self._agent_id
@@ -48,13 +56,16 @@ class SavannaGymEnv(SavannaEnv, gym.Env):
         done = dones[i]
         info = infos[i]
         logger.warning(res)
-        return observation, reward, done, info
 
-    def reset(self, seed=None, options={}):
-        observations = SavannaEnv.reset(self, seed, options)
-        # FIXME: infos are additional information for the agent, like some position etc.
-        info = {"placeholder": "hmmm"}
-        return (observations[self._agent_id], info)
+        truncated = False
+        return observation, reward, done, truncated, info
+
+    def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None):
+        if options is None:
+            options = {}
+
+        observations, infos = SavannaEnv.reset(self, seed, options)
+        return (observations[self._agent_id], infos[self._agent_id])
 
     @property
     def _agent_id(self):
