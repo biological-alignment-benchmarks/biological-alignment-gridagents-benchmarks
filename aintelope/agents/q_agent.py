@@ -98,7 +98,7 @@ class QAgent(Agent):
         epsilon: float = 0.0,
         device: str = "cpu",
         save_path: Optional[str] = None,
-    ) -> Tuple[float, bool]:
+    ) -> Tuple[float, float, bool]:
         """
         Only for Gym envs, not PettingZoo envs
         Carries out a single interaction step between the agent and the
@@ -110,7 +110,7 @@ class QAgent(Agent):
             device: current device
 
         Returns:
-            reward, done
+            reward, score, done
         """
 
         # The 'mind' (model) of the agent decides what to do next
@@ -119,17 +119,17 @@ class QAgent(Agent):
         # do step in the environment
         # the environment reports the result of that decision
         if isinstance(self.env, GymEnv):
-            new_state, reward, terminated, truncated, info = self.env.step(action)
+            new_state, score, terminated, truncated, info = self.env.step(action)
             done = terminated or truncated
         elif isinstance(self.env, PettingZooEnv):
-            new_state, reward, terminateds, truncateds, info = self.env.step(action)
+            new_state, score, terminateds, truncateds, info = self.env.step(action)
             done = {
                 key: terminated or truncateds[key]
                 for (key, terminated) in terminateds.items()
             }
         else:
-            new_state, reward, done, info = self.env.step(action)
-
+            new_state, score, done, info = self.env.step(action)
+        reward = score  # temporary, until play_step is separated from agent
         exp = Experience(self.state, action, reward, done, new_state)
         self.history.append(
             HistoryStep(
@@ -163,7 +163,7 @@ class QAgent(Agent):
         if done:
             self.reset()
 
-        return reward, done
+        return reward, score, done
 
     def get_history(self) -> pd.DataFrame:
         """

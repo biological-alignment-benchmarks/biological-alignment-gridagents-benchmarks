@@ -24,7 +24,7 @@ class Agent(ABC):
     @abstractmethod
     def play_step(
         self, net: nn.Module, epsilon: float, device: str, save_path: Optional[str]
-    ) -> Tuple[float, bool]:
+    ) -> Tuple[float, float, bool]:
         ...
 
     @abstractmethod

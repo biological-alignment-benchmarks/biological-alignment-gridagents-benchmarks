@@ -124,4 +124,9 @@ class Curiosity:
         return curiosity_reward, event_signal
 
 
-available_instincts_dict = {"smell": Smell, "hunger": Hunger, "thirst": Thirst, "curiosity": Curiosity}
+available_instincts_dict = {
+    "smell": Smell,
+    "hunger": Hunger,
+    "thirst": Thirst,
+    "curiosity": Curiosity,
+}

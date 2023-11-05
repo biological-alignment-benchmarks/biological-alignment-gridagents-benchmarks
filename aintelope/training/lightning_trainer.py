@@ -121,7 +121,9 @@ class DQNLightning(LightningModule):
         )
 
         # step through environment with agent
-        reward, done = self.agent.play_step(self.net, epsilon, device)
+        reward, score, done = self.agent.play_step(
+            self.net, epsilon, device
+        )  # score unused, refactoring later
         self.episode_reward += reward
 
         # calculates training loss

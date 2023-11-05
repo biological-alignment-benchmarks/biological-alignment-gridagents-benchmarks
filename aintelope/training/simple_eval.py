@@ -122,7 +122,7 @@ def run_episode(tparams: DictConfig, hparams: DictConfig) -> None:
             actions = {}
             for agent in agents:
                 # agent doesn't get to play_step, only env can, for multi-agent env compatibility
-                # reward, done = agent.play_step(nets[i], epsilon=1.0)
+                # reward, score, done = agent.play_step(nets[i], epsilon=1.0)
                 actions[agent.name] = agent.get_action(
                     epsilon=epsilon, device=tparams["device"]
                 )
@@ -141,7 +141,7 @@ def run_episode(tparams: DictConfig, hparams: DictConfig) -> None:
         else:
             # the assumption by non-zoo env will be 1 agent generally I think
             for agent, model in zip(agents, models):
-                reward, done = agent.play_step(model, epsilon, tparams["device"])
+                reward, score, done = agent.play_step(model, epsilon, tparams["device"])
                 dones = [done]
         if any(dones):
             for agent in agents:
@@ -162,7 +162,7 @@ def run_episode(tparams: DictConfig, hparams: DictConfig) -> None:
             actions = {}
             for agent in agents:
                 # agent doesn't get to play_step, only env can, for multi-agent env compatibility
-                # reward, done = agent.play_step(nets[i], epsilon=1.0)
+                # reward, score, done = agent.play_step(nets[i], epsilon=1.0)
                 actions[agent.name] = agent.get_action(
                     epsilon=1.0, device=tparams["device"]
                 )
@@ -175,7 +175,7 @@ def run_episode(tparams: DictConfig, hparams: DictConfig) -> None:
         else:
             # the assumption by non-zoo env will be 1 agent generally I think
             for agent, model in zip(agents, models):
-                reward, done = agent.play_step(model, epsilon, tparams["device"])
+                reward, score, done = agent.play_step(model, epsilon, tparams["device"])
                 dones = [done]
                 rewards = [reward]
         episode_rewards += rewards

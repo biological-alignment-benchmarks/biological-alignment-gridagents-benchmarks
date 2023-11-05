@@ -73,7 +73,7 @@ class InstinctAgent(QAgent):
         epsilon: float = 0.0,
         device: str = "cpu",
         save_path: Optional[str] = None,
-    ) -> Tuple[float, bool]:
+    ) -> Tuple[float, float, bool]:
         """Carries out a single interaction step between the agent and the
         environment.
 
@@ -90,23 +90,23 @@ class InstinctAgent(QAgent):
         action = self.get_action(net, epsilon, device)
 
         if isinstance(self.env, GymEnv):
-            new_state, env_reward, terminated, truncated, info = self.env.step(action)
+            new_state, score, terminated, truncated, info = self.env.step(action)
             done = terminated or truncated
         elif isinstance(self.env, PettingZooEnv):
-            new_state, env_reward, terminateds, truncateds, info = self.env.step(action)
+            new_state, score, terminateds, truncateds, info = self.env.step(action)
             done = {
                 key: terminated or truncateds[key]
                 for (key, terminated) in terminateds.items()
             }
         else:
-            new_state, env_reward, done, info = self.env.step(action)
+            new_state, score, done, info = self.env.step(action)
 
         if len(self.instincts) == 0:
             # use env reward as default
             instinct_events = []
-            reward = env_reward
+            reward = score
         else:
-            # interpret new_state and env_reward to compute actual reward
+            # interpret new_state and score to compute actual reward
             reward = 0
             instinct_events = []
             for instinct_name, instinct_object in self.instincts.items():
@@ -151,7 +151,7 @@ class InstinctAgent(QAgent):
         # if scenario is complete or agent experiences catastrophic failure, end the agent.
         if done:
             self.reset()
-        return reward, done
+        return reward, score, done
 
     def init_instincts(self) -> None:
         logger.debug("debug target_instincts", self.target_instincts)
