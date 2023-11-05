@@ -1,11 +1,20 @@
+from typing import Union, List
+
 import numpy as np
 
+from aintelope.environments.savanna import PositionFloat
 
-def vec_distance(vec_a: np.ndarray, vec_b: np.ndarray) -> np.float64:
+
+def vec_distance(
+    vec_a: Union[np.ndarray, List[PositionFloat]],
+    vec_b: Union[np.ndarray, List[PositionFloat]],
+) -> np.float64:
     return np.linalg.norm(np.subtract(vec_a, vec_b))
 
 
-def distance_to_closest_item(agent_pos: np.ndarray, items: np.ndarray) -> np.float64:
+def distance_to_closest_item(
+    agent_pos: Union[np.ndarray, List[PositionFloat]], items: np.ndarray
+) -> np.float64:
     if len(items.shape) == 1:
         items = np.expand_dims(items, 0)
 
