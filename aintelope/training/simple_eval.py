@@ -114,9 +114,10 @@ def run_episode(tparams: DictConfig, hparams: DictConfig) -> None:
             for agent in agents:
                 # agent doesn't get to play_step, only env can, for multi-agent env compatibility
                 # reward, score, done = agent.play_step(nets[i], epsilon=1.0)
-                actions["agent_0"] = agent.get_action(    # TODO: agent_name
-                    models[0],    # TODO: net per agent
-                    epsilon=epsilon, device=tparams["device"]
+                actions["agent_0"] = agent.get_action(  # TODO: agent_name
+                    models[0],  # TODO: net per agent
+                    epsilon=epsilon,
+                    device=tparams["device"],
                 )
             logger.debug("debug actions", actions)
             logger.debug("debug step")

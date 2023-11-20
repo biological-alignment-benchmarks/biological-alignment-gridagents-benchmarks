@@ -44,9 +44,6 @@ def test_observation_spaces():
     pass  # TODO
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_grass_patches()
     test_get_agent_pos_from_stats()
-
-
-
