@@ -6,5 +6,5 @@ pandas==1.5.3
 PettingZoo==1.24.1
 pygame==2.4
 pytorch-lightning==1.6.4
--e ai-safety-gridworlds @ git+https://github.com/levitation-opensource/ai-safety-gridworlds
+-e git+git://github.com/levitation-opensource/ai-safety-gridworlds
 absl-py==1.4.0

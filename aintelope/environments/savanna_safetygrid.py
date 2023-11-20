@@ -155,6 +155,12 @@ class GridworldZooBaseEnv:
 
         return agent_observations
 
+    @property
+    def grass_patches(self):
+        any_agent = self._last_infos["agent_0"]  # any agent is good here since we are using global coordinates here
+        grass_patches = np.array(any_agent[INFO_OBSERVATION_COORDINATES][FOOD_CHR])
+        return grass_patches
+
     def calc_min_grass_distance(self, agent, info):
         agent_chr = self.agent_name_mapping[agent]
         agent_location = np.array(info[INFO_OBSERVATION_COORDINATES][agent_chr][0])
@@ -232,9 +238,11 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
         GridworldZooBaseEnv.__init__(self, env_params)
         GridworldZooParallelEnv.__init__(self, **self.super_initargs)
         self.init_observation_spaces()
+        self._last_infos = {}
 
     def reset(self, seed: Optional[int] = None, options=None):
         observations, infos = GridworldZooParallelEnv.reset(self)
+        self._last_infos = infos
 
         # transform observations
         observations2 = {}
@@ -261,6 +269,7 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
         observations, rewards, dones, terminateds, infos = GridworldZooParallelEnv.step(
             self, actions
         )
+        self._last_infos = infos
 
         observations2 = {}
         rewards2 = {}
@@ -285,6 +294,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         GridworldZooBaseEnv.__init__(self, env_params)
         GridworldZooAecEnv.__init__(self, **self.super_initargs)
         self.init_observation_spaces()
+        self._last_infos = {}
 
     def reset(self, seed: Optional[int] = None, options=None):
         GridworldZooAecEnv.reset(self)
@@ -295,7 +305,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             info = self.observe_info(agent)
             observations2[agent] = self.transform_observation(agent, info)
 
-        return observations2, infos
+        return observations2, infos   # TODO: infos
 
     def step(self, actions: Dict[str, Action]) -> Step:
         """step(action) takes in an action for each agent and should return the
@@ -349,4 +359,4 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
                 rewards[agent] = self.reward_agent(min_grass_distance)
 
         logger.debug("debug return", observations, rewards, dones, terminateds, infos)
-        return observations2, rewards2, dones, terminateds, infos
+        return observations2, rewards2, dones, terminateds, infos   # TODO: infos
