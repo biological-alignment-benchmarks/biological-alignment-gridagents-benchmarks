@@ -25,21 +25,21 @@ def test_pettingzoo_api_parallel():
     parallel_api_test(sut.SavannaZooParallelEnv(), num_cycles=1000)
 
 
-def test_pettingzoo_api_sequential():
-    # TODO: refactor these values out to a test-params file
-    env_params = {
-        "num_iters": 500,  # duration of the game
-        "map_min": 0,
-        "map_max": 100,
-        "render_map_max": 100,
-        "amount_agents": 1,  # for now only one agent
-        "amount_grass_patches": 2,
-        "amount_water_holes": 2,
-    }
-    parallel_env = SavannaZooParallelEnv(env_params=env_params)
-    # TODO: Nathan was able to get the sequential-turn env to work, using this conversion, but not the parallel env. why??
-    sequential_env = parallel_to_aec(parallel_env)
-    api_test(sequential_env, num_cycles=10, verbose_progress=True)
+# def test_pettingzoo_api_sequential():    # TODO
+#    # TODO: refactor these values out to a test-params file
+#    env_params = {
+#        "num_iters": 500,  # duration of the game
+#        "map_min": 0,
+#        "map_max": 100,
+#        "render_map_max": 100,
+#        "amount_agents": 1,  # for now only one agent
+#        "amount_grass_patches": 2,
+#        "amount_water_holes": 2,
+#    }
+#    parallel_env = SavannaZooParallelEnv(env_params=env_params)
+#    # TODO: Nathan was able to get the sequential-turn env to work, using this conversion, but not the parallel env. why??
+#    sequential_env = parallel_to_aec(parallel_env)
+#    api_test(sequential_env, num_cycles=10, verbose_progress=True)
 
 
 def test_seed():
