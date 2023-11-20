@@ -1,3 +1,4 @@
+import sys
 import typing as typ
 import logging
 from pathlib import Path
@@ -20,6 +21,12 @@ from aintelope.agents import get_agent_class
 from aintelope.agents.instinct_agent import InstinctAgent
 from aintelope.models.dqn import DQN
 from aintelope.environments.savanna_gym import SavannaGymEnv
+from aintelope.environments.savanna_safetygrid import SavannaGridworldParallelEnv
+from aintelope.environments.savanna_safetygrid import SavannaGridworldSequentialEnv
+
+from ai_safety_gridworlds.helpers.factory import register_with_gym
+register_with_gym()
+
 
 logger = logging.getLogger("aintelope.training.lightning_trainer")
 
@@ -38,9 +45,20 @@ class DQNLightning(LightningModule):
         super().__init__()
         self.save_hyperparameters(hparams)  # make hparams available as self.hparams
 
-        if hparams.env == "savanna-gym-v2":
+        if hparams.env == "savanna-safetygrid-parallel-v1":
+            self.env = SavannaGridworldParallelEnv(env_params=hparams.env_params)
+            # observation_space and action_space require agent argument: https://pettingzoo.farama.org/content/basic_usage/#additional-environment-api
+            obs_size = self.env.observation_space("agent_0").shape[0] 
+            n_actions = self.env.action_space("agent_0").n
+        elif hparams.env == "savanna-safetygrid-sequential-v1":
+            self.env = SavannaGridworldSequentialEnv(env_params=hparams.env_params)
+            # observation_space and action_space require agent argument: https://pettingzoo.farama.org/content/basic_usage/#additional-environment-api
+            obs_size = self.env.observation_space("agent_0").shape[0]
+            n_actions = self.env.action_space("agent_0").n
+        elif hparams.env == "savanna-gym-v2":
             self.env = SavannaGymEnv(env_params=hparams.env_params)
             obs_size = self.env.observation_space.shape[0]
+            n_actions = self.env.action_space.n
         else:
             # GYM_INTERACTION
             # can't register as a gym env unless we rewrite as a gym env
@@ -51,8 +69,7 @@ class DQNLightning(LightningModule):
             # )
             self.env = gym.make(hparams.env)
             obs_size = self.env.observation_space.shape[0]
-
-        n_actions = self.env.action_space.n
+            n_actions = self.env.action_space.n
 
         self.net = DQN(obs_size, n_actions)
         self.target_net = DQN(obs_size, n_actions)

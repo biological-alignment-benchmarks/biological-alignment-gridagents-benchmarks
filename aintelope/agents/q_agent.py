@@ -46,7 +46,7 @@ class QAgent(Agent):
         if isinstance(env, GymEnv):
             self.action_space = self.env.action_space
         elif isinstance(env, PettingZooEnv):
-            self.action_space = self.env.action_space("agent0")
+            self.action_space = self.env.action_space("agent_0")
         else:
             raise TypeError(f"{type(env)} is not a valid environment")
         # self.model = model
@@ -57,10 +57,19 @@ class QAgent(Agent):
 
     def reset(self) -> None:
         """Resents the environment and updates the state."""
-        self.done = False
+        self.done = False   # TODO: multi-agent handling
         self.state = self.env.reset()
         if isinstance(self.state, tuple):
             self.state = self.state[0]
+
+        if isinstance(self.env, GymEnv):
+            pass
+        elif isinstance(self.env, PettingZooEnv):
+            # TODO: multi-agent handling
+            self.state = self.state["agent_0"] 
+        else:
+            # TODO: multi-agent handling
+            self.state = self.state["agent_0"] 
 
     def get_action(self, net: nn.Module, epsilon: float, device: str) -> Optional[int]:
         """Using the given network, decide what action to carry out using an
@@ -122,13 +131,23 @@ class QAgent(Agent):
             new_state, score, terminated, truncated, info = self.env.step(action)
             done = terminated or truncated
         elif isinstance(self.env, PettingZooEnv):
-            new_state, score, terminateds, truncateds, info = self.env.step(action)
+            actions = {"agent_0": action}   # TODO: multi-agent handling
+            new_state, score, terminateds, truncateds, info = self.env.step(actions)
             done = {
                 key: terminated or truncateds[key]
                 for (key, terminated) in terminateds.items()
             }
+            # TODO: multi-agent handling
+            new_state = new_state["agent_0"]    
+            score = score["agent_0"]
+            done = done["agent_0"]
         else:
             new_state, score, done, info = self.env.step(action)
+            # TODO: multi-agent handling
+            new_state = new_state["agent_0"]    
+            score = score["agent_0"]
+            done = done["agent_0"]
+
         reward = score  # temporary, until play_step is separated from agent
         exp = Experience(self.state, action, reward, done, new_state)
         self.history.append(

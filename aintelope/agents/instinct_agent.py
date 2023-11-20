@@ -93,13 +93,22 @@ class InstinctAgent(QAgent):
             new_state, score, terminated, truncated, info = self.env.step(action)
             done = terminated or truncated
         elif isinstance(self.env, PettingZooEnv):
-            new_state, score, terminateds, truncateds, info = self.env.step(action)
+            actions = {"agent_0": action}   # TODO: multi-agent handling
+            new_state, score, terminateds, truncateds, info = self.env.step(actions)
             done = {
                 key: terminated or truncateds[key]
                 for (key, terminated) in terminateds.items()
             }
+            # TODO: multi-agent handling
+            new_state = new_state["agent_0"]    
+            score = score["agent_0"]
+            done = done["agent_0"]
         else:
             new_state, score, done, info = self.env.step(action)
+            # TODO: multi-agent handling
+            new_state = new_state["agent_0"]    
+            score = score["agent_0"]
+            done = done["agent_0"]
 
         if len(self.instincts) == 0:
             # use env reward as default

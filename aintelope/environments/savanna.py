@@ -246,6 +246,7 @@ class SavannaEnv:
         - observations
         - rewards
         - dones
+        - terminateds
         - info
         dicts where each dict looks like {agent_1: action_of_agent_1, agent_2: action_of_agent_2}
         or generally {<agent_name>: <agent_action or None if agent is done>}
@@ -254,7 +255,7 @@ class SavannaEnv:
         # If a user passes in actions with no agents, then just return empty observations, etc.
         if not actions:
             self.agents = []
-            return {}, {}, {}, {}
+            return {}, {}, {}, {}, {}
 
         if self.agents == []:
             raise ValueError("No agents found; num_iters reached?")

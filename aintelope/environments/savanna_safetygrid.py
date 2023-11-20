@@ -1,0 +1,356 @@
+from typing import Dict, List, Optional, Tuple, NamedTuple
+import logging
+from collections import namedtuple
+
+import numpy as np
+import numpy.typing as npt
+
+from gymnasium.spaces import Box, Discrete
+from pettingzoo import AECEnv, ParallelEnv
+
+from aintelope.environments.env_utils.distance import distance_to_closest_item
+
+# from ai_safety_gridworlds.environments.shared.mo_reward import mo_reward
+from ai_safety_gridworlds.helpers.gridworld_zoo_aec_env import GridworldZooAecEnv
+from ai_safety_gridworlds.helpers.gridworld_zoo_parallel_env import (
+    GridworldZooParallelEnv,
+    Actions,
+    INFO_OBSERVATION_COORDINATES,
+    INFO_OBSERVATION_LAYERS_DICT,
+    INFO_OBSERVATION_LAYERS_CUBE,
+    INFO_AGENT_OBSERVATIONS,
+    INFO_AGENT_OBSERVATION_COORDINATES,
+    INFO_AGENT_OBSERVATION_LAYERS_DICT,
+    INFO_AGENT_OBSERVATION_LAYERS_CUBE,
+)
+
+from ai_safety_gridworlds.environments.aintelope.aintelope_smell import (
+    # TODO: import agent char map from env object instead?
+    GAME_ART,
+    AGENT_CHR1,
+    AGENT_CHR2,
+    AGENT_CHR3,
+    DRINK_CHR,
+    FOOD_CHR,
+)
+
+
+
+logger = logging.getLogger("aintelope.environments.savanna_safetygrid")
+
+# typing aliases
+ObservationFloat = np.float32
+#PositionFloat = np.float32
+Action = Actions  # int
+AgentId = str
+#AgentStates = Dict[AgentId, np.ndarray]
+
+Observation = np.ndarray
+Reward = float    #  TODO: use mo_reward and aggregate only before action selection
+Info = dict
+
+Step = Tuple[
+    Dict[AgentId, Observation],
+    Dict[AgentId, Reward],
+    Dict[AgentId, bool],
+    Dict[AgentId, bool],
+    Dict[AgentId, Info],
+]
+
+
+class GridworldZooBaseEnv:
+
+    metadata = {
+        #"name": "savanna-safetygrid-v1",
+        #"render_fps": 3,
+        "render_agent_radius": 5,
+        #"render_agent_color": (200, 50, 0),
+        #"render_grass_radius": 5,
+        #"render_grass_color": (20, 200, 0),
+        #"render_modes": ("human", "ascii", "offline"),
+        #"render_window_size": 512,
+        "amount_agents": 1,
+        #"map_min": 0,
+        #"map_max": 10,   # TODO
+        "amount_grass_patches": 2,
+        "amount_water_holes": 0,
+        "num_iters": 1,
+        "observation_direction_mode": 0,  # TODO: Joel wanted to use relative direction, so need to use mode 1 or 2 in this case  # 0 - fixed, 1 - relative, depending on last move, 2 - relative, controlled by separate turning actions.
+        "action_direction_mode": 0,  # TODO: Joel wanted to use relative direction, so need to use mode 1 or 2 in this case    # 0 - fixed, 1 - relative, depending on last move, 2 - relative, controlled by separate turning actions.
+        "map_randomization_frequency": 1,    # TODO   # 0 - off, 1 - once per experiment run, 2 - once per trial (a trial is a sequence of training episodes separated by env.reset call, but using a same model instance), 3 - once per training episode.
+    }
+
+    def __init__(self, env_params: Optional[Dict] = None):
+        if env_params is None:
+            env_params = {}
+        self.metadata.update(env_params)
+        logger.info(f"initializing savanna env with params: {self.metadata}")
+
+        self.super_initargs = {
+            "env_name": "aintelope.aintelope_smell", 
+            "max_iterations": self.metadata["num_iters"],
+            "amount_food_patches": self.metadata["amount_grass_patches"],
+            "amount_drink_holes": self.metadata["amount_water_holes"],
+            "amount_agents": self.metadata["amount_agents"],
+            "observation_radius": self.metadata["render_agent_radius"],  # TODO: is render_agent_radius meant as diameter actually?
+            "observation_direction_mode": self.metadata["observation_direction_mode"],  # 0 - fixed, 1 - relative, depending on last move, 2 - relative, controlled by separate turning actions.
+            "action_direction_mode": self.metadata["action_direction_mode"],    # 0 - fixed, 1 - relative, depending on last move, 2 - relative, controlled by separate turning actions.
+        }
+
+
+    def init_observation_spaces(self):
+
+        # for @zoo-api
+        #self._action_spaces = {
+        #    agent: Discrete(4) for agent in self.possible_agents
+        #}  # agents can walk in 4 directions
+
+        # for @zoo-api
+        self.transformed_observation_spaces = {
+            agent: Box(
+                low=0,
+                high=len(GAME_ART[0][0]),   # TODO: consider height as well and read it from env object
+                shape=(
+                    2
+                    * (
+                        self.metadata["amount_agents"]
+                        + self.metadata["amount_grass_patches"]
+                        + self.metadata["amount_water_holes"]
+                    ),
+                ),
+            )
+            for agent in self.possible_agents
+        }
+
+        qqq = True    # for debugging
+
+
+    def transform_observation(self, agent: str, info) -> npt.NDArray[ObservationFloat]:
+
+        # NB! So far the savanna code has been using absolute coordinates, not relative coordinates.
+        # In case of relative coordinates, sometimes an object might be outside of agent's observation distance.
+        # If you want to return object location as agent-centric boolean bitmap, then it is easy to set all cells to False. But with coordinates you need either special values or an additional boolean dimension which indicates whether the coordinate is available or not. 
+
+        # TODO: import agent char map from env instead
+        agent_observations = []
+        for agent_name, agent_chr in self.agent_name_mapping.items():
+            agent_observations += list(info[INFO_OBSERVATION_COORDINATES][agent_chr][0])  # convert tuple to list
+        for x in info[INFO_OBSERVATION_COORDINATES][FOOD_CHR]:
+            agent_observations += list(x)   # convert tuple to list
+        for x in info[INFO_OBSERVATION_COORDINATES][DRINK_CHR]:
+            agent_observations += list(x)   # convert tuple to list
+
+        agent_observations = np.array(agent_observations)
+
+        assert (
+            agent_observations.shape == self.observation_space(agent).shape
+        ), "observation / observation space shape mismatch"
+
+        return agent_observations
+
+
+    def calc_min_grass_distance(self, agent, info):
+
+        agent_chr = self.agent_name_mapping[agent]
+        agent_location = np.array(info[INFO_OBSERVATION_COORDINATES][agent_chr][0])
+        grass_patches = np.array(info[INFO_OBSERVATION_COORDINATES][FOOD_CHR])
+        min_grass_distance = distance_to_closest_item(
+            agent_location, grass_patches
+        )
+        return min_grass_distance
+
+
+    def reward_agent(self, min_grass_distance):
+        # For now measure if agent can eat. Was #1 / (1 + min_grass_distance), moving to instincts
+        if min_grass_distance > 1:
+            return np.float64(0.0)
+        else:
+            return np.float64(1.0)
+
+
+    def observation_space(self, agent):
+        return self.transformed_observation_spaces[agent]
+
+    #def action_space(self, agent):
+    #    return self.action_spaces[agent]
+
+
+    # called by DQNLightning
+    def state_to_namedtuple(self, state: npt.NDArray[ObservationFloat]) -> NamedTuple:
+        """Method to convert a state array into a named tuple."""
+        agent_coords = {"agent_coords": state[:2]}    # TODO: make it dependant on number of agents
+        grass_patches_coords = {}
+        gp_offset = 2
+        water_holes_coords = {}
+        wh_offset = 2 + self.metadata["amount_grass_patches"] * 2
+        for i in range(self.metadata["amount_grass_patches"]):
+            grass_patches_coords[f"grass_patch_{i}"] = state[
+                gp_offset + i : gp_offset + i + 2
+            ]
+        for i in range(self.metadata["amount_water_holes"]):
+            water_holes_coords[f"water_hole_{i}"] = state[
+                wh_offset + i : wh_offset + i + 2
+            ]
+
+        keys = (
+            list(agent_coords) + list(grass_patches_coords) + list(water_holes_coords)
+        )
+        StateTuple = namedtuple("StateTuple", {k: np.ndarray for k in keys})
+        return StateTuple(**agent_coords, **grass_patches_coords, **water_holes_coords)
+
+
+    #def observe(self, agent: str) -> npt.NDArray[ObservationFloat]:
+    #    """Return observation of given agent."""
+
+    #    def stack(*args) -> npt.NDArray[ObservationFloat]:
+    #        return np.hstack(args, dtype=ObservationFloat)
+
+    #    observations = stack(self.agent_states[agent])
+    #    for x in self.grass_patches:
+    #        observations = stack(observations, x)
+    #    for x in self.water_holes:
+    #        observations = stack(observations, x)
+    #    # just put all positions into one row
+    #    res = observations.reshape(-1)
+    #    assert (
+    #        res.shape == next(iter(self._observation_spaces.values())).shape
+    #    ), "observation / observation space shape mismatch"
+    #    return res
+
+    #@functools.lru_cache(maxsize=None)
+    #def observation_space(self, agent: str):
+    #    return self._observation_spaces[agent]
+
+    #@functools.lru_cache(maxsize=None)
+    #def action_space(self, agent: str):
+    #    return self._action_spaces[agent]
+  
+
+
+class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
+
+    def __init__(self, env_params: Optional[Dict] = None):
+        GridworldZooBaseEnv.__init__(self, env_params)
+        GridworldZooParallelEnv.__init__(self, **self.super_initargs)
+        self.init_observation_spaces()
+
+    def reset(self, seed: Optional[int] = None, options=None):
+
+        observations, infos = GridworldZooParallelEnv.reset(self)
+
+        # transform observations
+        observations2 = {}
+        for agent in infos.keys():
+            observations2[agent] = self.transform_observation(agent, infos[agent])
+
+        return observations2, infos
+
+
+    def step(self, actions: Dict[str, Action]) -> Step:
+        """step(action) takes in an action for each agent and should return the
+        - observations
+        - rewards
+        - dones
+        - terminateds
+        - info
+        dicts where each dict looks like {agent_1: action_of_agent_1, agent_2: action_of_agent_2}
+        or generally {<agent_name>: <agent_action or None if agent is done>}
+        """
+        logger.debug("debug actions", actions)
+        # If a user passes in actions with no agents, then just return empty observations, etc.
+        if not actions:
+            return {}, {}, {}, {}, {}
+
+        observations, rewards, dones, terminateds, infos = GridworldZooParallelEnv.step(self, actions)
+
+        observations2 = {}
+        rewards2 = {}
+
+        # transform observations and rewards
+        for agent in infos.keys():
+            observations2[agent] = self.transform_observation(agent, infos[agent])
+
+            min_grass_distance = self.calc_min_grass_distance(agent, infos[agent])
+            rewards2[agent] = self.reward_agent(min_grass_distance)
+
+
+        logger.debug("debug return", observations2, rewards, dones, terminateds, infos)
+        return observations2, rewards2, dones, terminateds, infos
+
+
+class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
+
+    def __init__(self, env_params: Optional[Dict] = None):
+
+        self.observe_immediately_after_agent_action = env_params.get("observe_immediately_after_agent_action", False)   # TODO: configure
+
+        GridworldZooBaseEnv.__init__(self, env_params)
+        GridworldZooAecEnv.__init__(self, **self.super_initargs)
+        self.init_observation_spaces()
+
+    def reset(self, seed: Optional[int] = None, options=None):
+
+        GridworldZooAecEnv.reset(self)
+
+        # observe observations, transform observations
+        observations2 = {}
+        for agent in self.possible_agents:
+            info = self.observe_info(agent)
+            observations2[agent] = self.transform_observation(agent, info)
+
+        return observations2, infos
+
+
+    def step(self, actions: Dict[str, Action]) -> Step:
+        """step(action) takes in an action for each agent and should return the
+        - observations
+        - rewards
+        - dones
+        - terminateds
+        - info
+        dicts where each dict looks like {agent_1: action_of_agent_1, agent_2: action_of_agent_2}
+        or generally {<agent_name>: <agent_action or None if agent is done>}
+        """
+        logger.debug("debug actions", actions)
+        # If a user passes in actions with no agents, then just return empty observations, etc.
+        if not actions:
+            return {}, {}, {}, {}, {}
+
+
+        alive_agents = []
+        observations2 = {}
+        rewards2 = {}
+
+        # loop over all agents in ENV NOT IN ACTIONS DICT
+        for index in range(0, self.max_num_agents):   # do one iteration over all agents
+            agent = self.agent_selection
+            done = self.terminations[agent] or self.truncations[agent]
+            if not done:
+                alive_agents.append(agent)
+                action = actions.get(agent, None)
+                if action is None:
+                   action = Actions.NOOP
+                GridworldZooAecEnv.step(self, action)
+
+                if self.observe_immediately_after_agent_action:  # observe BEFORE next agent takes its step?
+                    # observe observations, transform observations and rewards
+                    info = self.observe_info(agent)
+                    observations2[agent] = self.transform_observation(agent, info)
+
+                    min_grass_distance = self.calc_min_grass_distance(agent, info)
+                    rewards[agent] = self.reward_agent(min_grass_distance)
+
+
+        if not self.observe_immediately_after_agent_action:  # observe only after ALL agents are done stepping?
+            # observe observations, transform observations and rewards
+            for agent in alive_agents:
+                info = self.observe_info(agent)
+                observations2[agent] = self.transform_observation(agent, info)
+
+                min_grass_distance = self.calc_min_grass_distance(agent, info)
+                rewards[agent] = self.reward_agent(min_grass_distance)
+
+
+        logger.debug("debug return", observations, rewards, dones, terminateds, infos)
+        return observations2, rewards2, dones, terminateds, infos
+

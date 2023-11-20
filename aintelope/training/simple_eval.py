@@ -130,10 +130,10 @@ def run_episode(tparams: DictConfig, hparams: DictConfig) -> None:
             logger.debug("debug step")
             logger.debug(env.__dict__)
 
+            observations, rewards, terminateds, truncateds, infos = env.step(actions)
             logger.debug(
-                env.step(actions)
-            )  # TODO: is this a bug? env.step() is called two times - on this line and below
-            observations, rewards, terminateds, truncateds, infos = env.step(action)
+                (observations, rewards, terminateds, truncateds, infos)
+            )
             dones = {
                 key: terminated or truncateds[key]
                 for (key, terminated) in terminateds.items()
@@ -167,7 +167,7 @@ def run_episode(tparams: DictConfig, hparams: DictConfig) -> None:
                     epsilon=1.0, device=tparams["device"]
                 )
 
-            observations, rewards, terminateds, truncateds, infos = env.step(action)
+            observations, rewards, terminateds, truncateds, infos = env.step(actions)
             dones = {
                 key: terminated or truncateds[key]
                 for (key, terminated) in terminateds.items()
