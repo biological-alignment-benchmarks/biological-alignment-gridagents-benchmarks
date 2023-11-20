@@ -57,7 +57,7 @@ class QAgent(Agent):
 
     def reset(self) -> None:
         """Resents the environment and updates the state."""
-        self.done = False   # TODO: multi-agent handling
+        self.done = False  # TODO: multi-agent handling
         self.state = self.env.reset()
         if isinstance(self.state, tuple):
             self.state = self.state[0]
@@ -66,10 +66,10 @@ class QAgent(Agent):
             pass
         elif isinstance(self.env, PettingZooEnv):
             # TODO: multi-agent handling
-            self.state = self.state["agent_0"] 
+            self.state = self.state["agent_0"]
         else:
             # TODO: multi-agent handling
-            self.state = self.state["agent_0"] 
+            self.state = self.state["agent_0"]
 
     def get_action(self, net: nn.Module, epsilon: float, device: str) -> Optional[int]:
         """Using the given network, decide what action to carry out using an
@@ -131,21 +131,21 @@ class QAgent(Agent):
             new_state, env_reward, terminated, truncated, _ = self.env.step(action)
             done = terminated or truncated
         elif isinstance(self.env, PettingZooEnv):
-            actions = {"agent_0": action}   # TODO: multi-agent handling
+            actions = {"agent_0": action}  # TODO: multi-agent handling
             new_state, env_reward, terminateds, truncateds, _ = self.env.step(action)
             done = {
                 key: terminated or truncateds[key]
                 for (key, terminated) in terminateds.items()
             }
             # TODO: multi-agent handling
-            new_state = new_state["agent_0"]    
+            new_state = new_state["agent_0"]
             score = score["agent_0"]
             done = done["agent_0"]
         else:
             logger.warning(f"{self.env} is not of type GymEnv or PettingZooEnv")
             new_state, env_reward, done, _ = self.env.step(action)
             # TODO: multi-agent handling
-            new_state = new_state["agent_0"]    
+            new_state = new_state["agent_0"]
             score = score["agent_0"]
             done = done["agent_0"]
 

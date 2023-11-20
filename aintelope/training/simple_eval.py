@@ -131,9 +131,7 @@ def run_episode(tparams: DictConfig, hparams: DictConfig) -> None:
             logger.debug(env.__dict__)
 
             observations, rewards, terminateds, truncateds, infos = env.step(actions)
-            logger.debug(
-                (observations, rewards, terminateds, truncateds, infos)
-            )
+            logger.debug((observations, rewards, terminateds, truncateds, infos))
             dones = {
                 key: terminated or truncateds[key]
                 for (key, terminated) in terminateds.items()

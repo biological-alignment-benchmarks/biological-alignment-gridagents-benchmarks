@@ -25,6 +25,7 @@ from aintelope.environments.savanna_safetygrid import SavannaGridworldParallelEn
 from aintelope.environments.savanna_safetygrid import SavannaGridworldSequentialEnv
 
 from ai_safety_gridworlds.helpers.factory import register_with_gym
+
 register_with_gym()
 
 
@@ -48,7 +49,7 @@ class DQNLightning(LightningModule):
         if hparams.env == "savanna-safetygrid-parallel-v1":
             self.env = SavannaGridworldParallelEnv(env_params=hparams.env_params)
             # observation_space and action_space require agent argument: https://pettingzoo.farama.org/content/basic_usage/#additional-environment-api
-            obs_size = self.env.observation_space("agent_0").shape[0] 
+            obs_size = self.env.observation_space("agent_0").shape[0]
             n_actions = self.env.action_space("agent_0").n
         elif hparams.env == "savanna-safetygrid-sequential-v1":
             self.env = SavannaGridworldSequentialEnv(env_params=hparams.env_params)
