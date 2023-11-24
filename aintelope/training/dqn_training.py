@@ -56,6 +56,7 @@ class Trainer:
     def __init__(self, params, n_observations, action_space):
         self.policy_nets = {}
         self.target_nets = {}
+        self.losses = {}  # loss statistics of policy net
         self.replay_memories = {}
 
         self.n_observations = n_observations
@@ -186,7 +187,8 @@ class Trainer:
             loss = criterion(
                 state_action_values, expected_state_action_values.unsqueeze(1)
             )
-
+            self.losses[agent_id] = loss
+            
             # Optimize the model
             self.optimizer.zero_grad()
             loss.backward()
@@ -205,3 +207,19 @@ class Trainer:
                     1 - self.hparams.tau
                 )
             target_net.load_state_dict(target_net_state_dict)
+
+    def save_models(self, episode, path):
+        for agent_id in self.policy_nets.keys():
+            model = self.policy_nets[agent_id]
+            loss = 1.0
+            if agent_id in self.losses: 
+                loss = self.losses[agent_id]
+            torch.save(
+                {
+                    "epoch": episode,
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": self.optimizer.state_dict(),
+                    "loss": loss,
+                },
+                path + "_" + agent_id,
+            )

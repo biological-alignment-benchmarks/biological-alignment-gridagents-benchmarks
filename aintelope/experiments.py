@@ -84,7 +84,7 @@ def run_experiment(cfg: DictConfig) -> None:
 
                 # Agent is updated based on what the env shows. All commented above included ^
                 done = terminated or truncated
-                dones[agent.id] = True
+                dones[agent.id] = done
                 if terminated:
                     observation = None
                 agent.update(
@@ -93,10 +93,17 @@ def run_experiment(cfg: DictConfig) -> None:
 
                 # Perform one step of the optimization (on the policy network)
                 trainer.optimize_models(step)
-
+            
             # Break when all agents are done
             if all(dones.values()):
                 break
+
+        # Save models
+        # https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
+        dir_out = f"{cfg.experiment_dir}"
+        file_name = f"{i_episode}"
+        if i_episode % cfg.hparams.every_n_episodes == 0:
+            trainer.save_models(i_episode, dir_out + "/" + file_name)
 
 
 # @hydra.main(version_base=None, config_path="config", config_name="config_experiment")
