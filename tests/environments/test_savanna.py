@@ -46,5 +46,4 @@ def test_observation_spaces():
 
 
 if __name__ == "__main__" and sys.gettrace() is not None:  # detect debugging
-    test_grass_patches()
-    test_get_agent_pos_from_stats()
+    pytest.main([__file__])   # run tests only in this file

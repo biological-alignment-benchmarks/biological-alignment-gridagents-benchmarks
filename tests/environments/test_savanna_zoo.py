@@ -230,12 +230,4 @@ def test_performance_benchmark():
 
 
 if __name__ == "__main__" and sys.gettrace() is not None:  # detect debugging
-    test_seed()
-    test_agent_states()
-    test_reward_agent()
-    test_move_agent()
-    test_step_result()
-    test_done_step()
-    test_agents()
-    test_action_spaces()
-    test_action_space_valid_step()
+    pytest.main([__file__])   # run tests only in this file
