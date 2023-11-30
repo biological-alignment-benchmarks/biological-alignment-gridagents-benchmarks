@@ -77,7 +77,7 @@ class InstinctAgent(QAgent):
             done: boolean whether run is done
 
         Returns:
-            None
+            Reward: float
         """
         next_state = observation
         # For future: add state (interoception) handling here when needed
@@ -141,6 +141,7 @@ class InstinctAgent(QAgent):
             self.id, self.state, self.last_action, score, done, next_state
         )
         self.state = next_state
+        return reward
 
     def init_instincts(self) -> None:
         logger.debug(f"target_instincts: {self.target_instincts}")

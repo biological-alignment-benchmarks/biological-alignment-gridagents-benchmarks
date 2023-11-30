@@ -100,7 +100,7 @@ class QAgent(Agent):
             done: boolean whether run is done
 
         Returns:
-            None
+            reward: float
         """
         next_state = observation
         # For future: add state (interoception) handling here when needed
@@ -140,6 +140,7 @@ class QAgent(Agent):
             self.id, self.state, self.last_action, score, done, next_state
         )
         self.state = next_state
+        return score
 
     def get_history(self) -> pd.DataFrame:
         """
