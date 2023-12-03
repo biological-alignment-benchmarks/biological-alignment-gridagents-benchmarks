@@ -145,6 +145,7 @@ class QAgent(Agent):
     def get_history(self) -> pd.DataFrame:
         """
         Method to get the history of the agent. Note that warm_start_steps are excluded.
+        warm_start_steps not used atm.
         """
         return pd.DataFrame(
             columns=[
@@ -155,7 +156,7 @@ class QAgent(Agent):
                 "instinct_events",
                 "next_state",
             ],
-            data=self.history[self.warm_start_steps :],
+            data=self.history,  # self.warm_start_steps :],
         )
 
     @staticmethod
