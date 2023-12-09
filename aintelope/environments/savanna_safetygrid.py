@@ -250,6 +250,20 @@ class GridworldZooBaseEnv:
         StateTuple = namedtuple("StateTuple", {k: np.ndarray for k in keys})
         return StateTuple(**agent_coords, **grass_patches_coords, **water_holes_coords)
 
+    @property
+    def rewards(self):  # needed for tests
+        rewards = super(GridworldZooBaseEnv, self).rewards
+
+        rewards2 = {}
+        # transform rewards
+        for agent in rewards.keys():
+            min_grass_distance = self.calc_min_grass_distance(
+                agent, self._last_infos[agent]
+            )
+            rewards2[agent] = self.reward_agent(min_grass_distance)
+
+        return rewards2
+
     # This API is intended primarily as input for the neural network.
     # if observe_bitmap_layers == True then observe() method returns same value as observe_relative_bitmaps()
     # Relative observation bitmap is agent centric and considers the agent's observation radius. Environments with different sizes will have same-shaped relative observation bitmaps as long as the agent's observation radius is same.
