@@ -296,6 +296,8 @@ class GridworldZooBaseEnv:
 
 class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
     def __init__(self, env_params: Optional[Dict] = None):
+        if env_params is None:
+            env_params = {}
         GridworldZooBaseEnv.__init__(self, env_params)
         GridworldZooParallelEnv.__init__(self, **self.super_initargs)
         self.init_observation_spaces()
@@ -365,6 +367,8 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
 
 class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
     def __init__(self, env_params: Optional[Dict] = None):
+        if env_params is None:
+            env_params = {}
         self.observe_immediately_after_agent_action = env_params.get(
             "observe_immediately_after_agent_action", False
         )  # TODO: configure
@@ -405,6 +409,19 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
 
         self._last_infos = infos
         return self.observations2, infos
+
+    def last(self):
+        observation, reward, terminated, truncated, info = GridworldZooAecEnv.last(self)
+
+        agent = self.agent_selection
+
+        observation2 = self.transform_observation(agent, info)
+        self.observations2[agent] = observation2
+
+        min_grass_distance = self.calc_min_grass_distance(agent, info)
+        reward2 = self.reward_agent(min_grass_distance)
+
+        return observation2, reward2, terminated, truncated, info
 
     def step_single_agent(self, action: Action) -> Step:
         """step(action) takes in an action for each agent and should return the
