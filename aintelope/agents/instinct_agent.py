@@ -61,7 +61,7 @@ class InstinctAgent(QAgent):
 
     def update(
         self,
-        env: SavannaGymEnv = None,  # TODO hack, figure out if state_to_namedtuple can be static somewhere
+        env: PettingZooEnv = None,  # TODO hack, figure out if state_to_namedtuple can be static somewhere
         observation: npt.NDArray[ObservationFloat] = None,
         score: float = 0.0,
         done: bool = False,
@@ -88,7 +88,7 @@ class InstinctAgent(QAgent):
         if len(self.instincts) == 0:
             # use env reward if no instincts available
             instinct_events = []
-            reward = env_reward
+            reward = score
         else:
             # interpret new_state and score to compute actual reward
             reward = 0
@@ -141,12 +141,6 @@ class InstinctAgent(QAgent):
         )
         self.state = next_state
         return reward
-
-        # if scenario is complete or agent experiences catastrophic failure,
-        # end the agent.
-        if done:
-            self.reset()
-        return reward, done
 
     def init_instincts(self) -> None:
         logger.debug(f"target_instincts: {self.target_instincts}")
