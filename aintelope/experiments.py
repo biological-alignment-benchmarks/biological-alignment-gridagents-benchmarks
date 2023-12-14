@@ -25,7 +25,6 @@ from aintelope.environments.savanna_safetygrid import (
     SavannaGridworldParallelEnv,
     SavannaGridworldSequentialEnv,
 )
-from aintelope.environments.savanna_safetygrid import SavannaGridworldSequentialEnv
 from aintelope.environments import get_env_class
 
 # initialize agent registries
@@ -37,48 +36,17 @@ def run_experiment(cfg: DictConfig) -> None:
     logger = logging.getLogger("aintelope.experiment")
 
     # Environment
-    '''
-    hparams = cfg.hparams
-    if hparams.env == "savanna-zoo-parallel-v2":
-        env = SavannaZooParallelEnv(env_params=hparams.env_params)
-    elif hparams.env == "savanna-safetygrid-parallel-v1":
-        env = SavannaGridworldParallelEnv(env_params=hparams.env_params)
-    elif hparams.env == "savanna-zoo-sequential-v2":
-        env = SavannaZooSequentialEnv(env_params=hparams.env_params)
-    elif hparams.env == "savanna-safetygrid-sequential-v1":
-        env = SavannaGridworldSequentialEnv(env_params=hparams.env_params)
-    else:
-        raise NotImplementedError()
-    '''
     env = get_env_class(cfg.hparams.env)(env_params=cfg.hparams.env_params)
-
-    if isinstance(env, ParallelEnv):
-        (
-            observations,
-            infos,
-        ) = env.reset()  # TODO: each agent has their own state, refactor
-        # TODO: each agent has their own observation size    # observation_space and action_space require agent argument: https://pettingzoo.farama.org/content/basic_usage/#additional-environment-api
-        n_observations = len(  # TODO: support for 3D-observation cube
-            observations["agent_0"]
-        )
-    elif isinstance(env, AECEnv):
-        env.reset()
-        # TODO: each agent has their own observation size    # observation_space and action_space require agent argument: https://pettingzoo.farama.org/content/basic_usage/#additional-environment-api
-        observation = env.observe(
-            "agent_0"
-        )  # TODO: each agent has their own state, refactor
-        n_observations = len(observation)  # TODO: support for 3D-observation cube
-    else:
+    if not isinstance(env, Environment):
         raise NotImplementedError(f"Unknown environment type {type(env)}")
-
+    env.reset()
+    
     # Common trainer for each agent's models
-    trainer = Trainer(
-        cfg, n_observations, env.action_space
-    )  # TODO: have a section in params for trainer? its trainer and hparams now tho
+    trainer = Trainer(cfg)
 
     # Agents
     agents = []
-    dones = {}  # are agents done
+    dones = {}
     for i in range(cfg.hparams.env_params.amount_agents):
         agent_id = f"agent_{i}"
         agents.append(
@@ -91,7 +59,7 @@ def run_experiment(cfg: DictConfig) -> None:
         )
         observation = env.observe(agent_id)  # TODO parallel env observation handling
         agents[-1].reset(observation)
-        trainer.add_agent(agent_id)
+        trainer.add_agent(agent_id, observation.shape, env.action_space)
 
     agents_dict = {agent.id: agent for agent in agents}
 
@@ -178,7 +146,7 @@ def run_experiment(cfg: DictConfig) -> None:
                 raise NotImplementedError(f"Unknown environment type {type(env)}")
 
             # Perform one step of the optimization (on the policy network)
-            trainer.optimize_models(step)
+            trainer.optimize_models()
 
             # Break when all agents are done
             if all(dones.values()):

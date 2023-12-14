@@ -39,24 +39,24 @@ class ReplayMemory(object):
         return len(self.memory)
 
 
-def load_checkpoint(PATH, obs_size, action_space):
+def load_checkpoint(path, obs_size, action_space_size):
     """
     https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
     Load a model from a checkpoint. Commented parts optional for later.
 
     Args:
         path: str
-        obs_size: int, input size
-        action_space: int, output size
+        obs_size: tuple, input size, numpy shape
+        action_space_size: int, output size
 
     Returns:
         model: torch.nn.Module
     """
 
-    model = DQN(obs_size, action_space)
+    model = DQN(obs_size, action_space_size)
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
-    checkpoint = torch.load(PATH)
+    checkpoint = torch.load(path)
     model.load_state_dict(checkpoint["model_state_dict"])
     # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     # epoch = checkpoint['epoch']
@@ -73,42 +73,48 @@ class Trainer:
     https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
     """
 
-    def __init__(self, params, n_observations, action_space):
+    def __init__(self, params):
         self.policy_nets = {}
         self.target_nets = {}
         self.losses = {}
         self.replay_memories = {}
+        self.optimizer = {} 
+        self.n_observations = {}
+        self.action_spaces = {}
 
-        self.n_observations = n_observations
-        self.action_space = action_space
         self.hparams = params.hparams
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.optimizer = optim.AdamW(
-            DQN(self.n_observations, self.action_space("agent_0").n).parameters(),
-            lr=self.hparams.lr,
-            amsgrad=True,
-        )
 
-    def add_agent(self, agent_id):
+    def add_agent(self, agent_id, n_obs, action_space):
         """
         Register an agent.
 
         Args:
-            agent_id: str, same as elsewhere ("agent_0" among them)
+            agent_id: str, same as elsewhere (f.ex. "agent_0")
+            n_obs: int, size of the observations
+            action_space: Discrete, action_space from environment
 
         Returns:
             None
         """
+        self.n_observations[agent_id] = n_obs
+        self.action_spaces[agent_id] = action_space
         self.replay_memories[agent_id] = ReplayMemory(self.hparams.replay_size)
         self.policy_nets[agent_id] = DQN(
-            self.n_observations, self.action_space(agent_id).n
+            self.n_observations, self.action_spaces(agent_id).n
         ).to(self.device)
         self.target_nets[agent_id] = DQN(
-            self.n_observations, self.action_space(agent_id).n
+            self.n_observations, self.action_spaces(agent_id).n
         ).to(self.device)
         self.target_nets[agent_id].load_state_dict(
             self.policy_nets[agent_id].state_dict()
+        )    
+        self.optimizer[agent_id] = optim.AdamW(
+            self.policy_nets[agent_id].parameters(),
+            lr=self.hparams.lr,
+            amsgrad=True,
         )
+            
 
     @torch.no_grad()
     def get_action(
@@ -137,7 +143,7 @@ class Trainer:
             epsilon = 0.0
 
         if np.random.random() < epsilon:
-            action = self.action_space(agent_id).sample()
+            action = self.action_spaces(agent_id).sample()
         else:
             logger.debug("debug observation", type(observation))
             observation = torch.tensor(np.expand_dims(observation, 0))
@@ -185,7 +191,7 @@ class Trainer:
         ).unsqueeze(0)
         self.replay_memories[agent_id].push(state, action, reward, done, next_state)
 
-    def optimize_models(self, step):
+    def optimize_models(self):
         """
         Optimize personal models based on contents of ReplayMemory of each agent.
         Check: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
