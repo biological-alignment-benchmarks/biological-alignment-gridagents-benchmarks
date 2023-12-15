@@ -53,7 +53,6 @@ def run_experiment(cfg: DictConfig) -> None:
             get_agent_class(cfg.hparams.agent_id)(
                 agent_id,
                 trainer,
-                cfg.hparams.warm_start_steps,
                 **cfg.hparams.agent_params,
             )
         )

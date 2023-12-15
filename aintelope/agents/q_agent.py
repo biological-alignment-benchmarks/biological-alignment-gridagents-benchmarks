@@ -41,11 +41,9 @@ class QAgent(Agent):
         self,
         agent_id: str,
         trainer: Trainer,
-        action_space: Discrete,
         target_instincts: List[str] = [],
     ) -> None:
         self.id = agent_id
-        self.action_space = action_space
         self.trainer = trainer
         self.history: List[HistoryStep] = []
         self.done = False
