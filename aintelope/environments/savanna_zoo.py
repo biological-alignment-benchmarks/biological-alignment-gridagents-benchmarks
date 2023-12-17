@@ -130,5 +130,6 @@ class SavannaZooSequentialEnv(SavannaEnv, AECEnv):
 
     # / def _move_to_next_agent(self):
 
+
 register_env_class("savanna-zoo-sequential-v2", SavannaZooSequentialEnv)
 register_env_class("savanna-zoo-parallel-v2", SavannaZooParallelEnv)

@@ -184,6 +184,9 @@ class SavannaEnv:
             )
             for agent in self.possible_agents
         }
+        self.agent_name_mapping = dict(
+            zip(self.possible_agents, list(range(self.metadata["amount_agents"])))
+        )
 
         # our own state
         self.agent_states: AgentStates = {}

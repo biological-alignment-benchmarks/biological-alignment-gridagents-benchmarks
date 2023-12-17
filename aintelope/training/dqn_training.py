@@ -78,43 +78,42 @@ class Trainer:
         self.target_nets = {}
         self.losses = {}
         self.replay_memories = {}
-        self.optimizer = {} 
-        self.n_observations = {}
+        self.optimizers = {}
+        self.observation_shapes = {}
         self.action_spaces = {}
 
         self.hparams = params.hparams
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def add_agent(self, agent_id, n_obs, action_space):
+    def add_agent(self, agent_id, observation_shape, action_space):
         """
         Register an agent.
 
         Args:
             agent_id: str, same as elsewhere (f.ex. "agent_0")
-            n_obs: int, size of the observations
+            observation_shape: int-tuple, shape of the observations
             action_space: Discrete, action_space from environment
 
         Returns:
             None
         """
-        self.n_observations[agent_id] = n_obs
-        self.action_spaces[agent_id] = action_space
+        self.observation_shapes[agent_id] = observation_shape
+        self.action_spaces[agent_id] = action_space(agent_id)
         self.replay_memories[agent_id] = ReplayMemory(self.hparams.replay_size)
         self.policy_nets[agent_id] = DQN(
-            self.n_observations, self.action_spaces(agent_id).n
+            self.observation_shapes[agent_id], self.action_spaces[agent_id].n
         ).to(self.device)
         self.target_nets[agent_id] = DQN(
-            self.n_observations, self.action_spaces(agent_id).n
+            self.observation_shapes[agent_id], self.action_spaces[agent_id].n
         ).to(self.device)
         self.target_nets[agent_id].load_state_dict(
             self.policy_nets[agent_id].state_dict()
-        )    
-        self.optimizer[agent_id] = optim.AdamW(
+        )
+        self.optimizers[agent_id] = optim.AdamW(
             self.policy_nets[agent_id].parameters(),
             lr=self.hparams.lr,
             amsgrad=True,
         )
-            
 
     @torch.no_grad()
     def get_action(
@@ -143,7 +142,7 @@ class Trainer:
             epsilon = 0.0
 
         if np.random.random() < epsilon:
-            action = self.action_spaces(agent_id).sample()
+            action = self.action_spaces[agent_id].sample()
         else:
             logger.debug("debug observation", type(observation))
             observation = torch.tensor(np.expand_dims(observation, 0))
@@ -241,10 +240,10 @@ class Trainer:
             )
             self.losses[agent_id] = loss
 
-            self.optimizer.zero_grad()
+            self.optimizers[agent_id].zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_value_(policy_net.parameters(), 100)
-            self.optimizer.step()
+            self.optimizers[agent_id].step()
 
             target_net_state_dict = target_net.state_dict()
             policy_net_state_dict = policy_net.state_dict()
@@ -270,6 +269,7 @@ class Trainer:
         """
         for agent_id in self.policy_nets.keys():
             model = self.policy_nets[agent_id]
+            optimizer = self.optimizers[agent_id]
             loss = 1.0
             if agent_id in self.losses:
                 loss = self.losses[agent_id]
@@ -277,7 +277,7 @@ class Trainer:
                 {
                     "epoch": episode,
                     "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": self.optimizer.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
                     "loss": loss,
                 },
                 path + agent_id + "_" + str(episode),

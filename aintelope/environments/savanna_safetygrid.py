@@ -633,5 +633,6 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         )
         return self.observations2, rewards2, terminateds, truncateds, infos
 
+
 register_env_class("savanna-safetygrid-sequential-v1", SavannaGridworldSequentialEnv)
 register_env_class("savanna-safetygrid-parallel-v1", SavannaGridworldParallelEnv)

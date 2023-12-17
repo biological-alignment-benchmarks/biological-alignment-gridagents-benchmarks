@@ -29,8 +29,9 @@ from aintelope.environments import get_env_class
 
 # initialize agent registries
 from aintelope.agents.instinct_agent import InstinctAgent
-from aintelope.agents.q_agent import QAgent 
+from aintelope.agents.q_agent import QAgent
 from aintelope.agents import get_agent_class
+
 
 def run_experiment(cfg: DictConfig) -> None:
     logger = logging.getLogger("aintelope.experiment")
@@ -40,7 +41,7 @@ def run_experiment(cfg: DictConfig) -> None:
     if not isinstance(env, Environment):
         raise NotImplementedError(f"Unknown environment type {type(env)}")
     env.reset()
-    
+
     # Common trainer for each agent's models
     trainer = Trainer(cfg)
 
@@ -61,7 +62,7 @@ def run_experiment(cfg: DictConfig) -> None:
         trainer.add_agent(agent_id, observation.shape, env.action_space)
 
     # Warmup NIY
-    #for _ in range(hparams.warm_start_steps):
+    # for _ in range(hparams.warm_start_steps):
     #    agents.play_step(self.net, epsilon=1.0)
 
     # Main loop
@@ -81,8 +82,8 @@ def run_experiment(cfg: DictConfig) -> None:
             for agent in agents:
                 agent.reset(env.observe(agent.id))
                 dones[agent.id] = False
-        
-        # Iterations within the episode 
+
+        # Iterations within the episode
         for step in range(cfg.hparams.env_params.num_iters):
             if isinstance(env, ParallelEnv):
                 # loop: get observations and collect actions

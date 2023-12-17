@@ -11,8 +11,10 @@ Environment = Union[gym.Env, PettingZooEnv]
 
 ENV_REGISTRY: Mapping[str, Type[Environment]] = {}
 
-class Irrelevant(ABC): # Needed to import the below functions
+
+class Irrelevant(ABC):  # CLEANUP: Needed to import the below functions
     ...
+
 
 def register_env_class(env_id: str, env_class: Type[Environment]):
     if env_id in ENV_REGISTRY:

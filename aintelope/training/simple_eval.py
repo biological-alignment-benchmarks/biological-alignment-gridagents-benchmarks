@@ -76,7 +76,7 @@ def run_episode(full_params: Dict) -> None:
 
         # TODO: multi-agent compatibility
         # TODO: support for 3D-observation cube
-        obs_size = env.observation_space("agent_0").shape[0]
+        obs_size = env.observation_space("agent_0").shape
         logger.info("obs size", obs_size)
 
         # TODO: multi-agent compatibility
@@ -99,23 +99,16 @@ def run_episode(full_params: Dict) -> None:
             infos,
         ) = env.reset()  # TODO: each agent has their own state, refactor
         # TODO: each agent has their own observation size    # observation_space and action_space require agent argument: https://pettingzoo.farama.org/content/basic_usage/#additional-environment-api
-        n_observations = len(  # TODO: support for 3D-observation cube
-            observations["agent_0"]
-        )
+        observation = observations["agent_0"]
     elif isinstance(env, AECEnv):
         env.reset()
         # TODO: each agent has their own observation size    # observation_space and action_space require agent argument: https://pettingzoo.farama.org/content/basic_usage/#additional-environment-api
-        observation = env.observe(
-            "agent_0"
-        )  # TODO: each agent has their own state, refactor
-        n_observations = len(observation)  # TODO: support for 3D-observation cube
+        observation = env.observe("agent_0")
     else:
         raise NotImplementedError(f"Unknown environment type {type(env)}")
 
     # Common trainer for each agent's models
-    trainer = Trainer(
-        full_params, n_observations, action_space
-    ) 
+    trainer = Trainer(full_params)
 
     model_spec = hparams["model"]
     if isinstance(model_spec, list):
@@ -131,18 +124,18 @@ def run_episode(full_params: Dict) -> None:
             models *= len(agent_spec)
         agents = [
             AGENT_LOOKUP[agent](
-                agent_id="agent_0",  
+                agent_id="agent_0",
                 trainer=trainer,
-                target_instincts = [],
+                target_instincts=[],
             )
             for agent in agent_spec
         ]
     else:
         agents = [
             AGENT_LOOKUP[agent_spec](
-                agent_id="agent_0", 
+                agent_id="agent_0",
                 trainer=trainer,
-                target_instincts = [],
+                target_instincts=[],
             )
         ]
 
@@ -150,7 +143,7 @@ def run_episode(full_params: Dict) -> None:
     for agent in agents:
         observation = env.observe(agent.id)  # TODO parallel env observation handling
         agent.reset(observation)
-        trainer.add_agent(agent.id)
+        trainer.add_agent(agent.id, observation.shape, env.action_space)
 
     agents_dict = {agent.id: agent for agent in agents}
 
@@ -193,9 +186,7 @@ def run_episode(full_params: Dict) -> None:
                 dones[agent.id] = done
 
         else:
-            logger.warning(
-                        "Simple_eval: non-zoo env, test not yet implemented!"
-                    )
+            logger.warning("Simple_eval: non-zoo env, test not yet implemented!")
             pass
 
         if any(dones.values()):
@@ -210,7 +201,7 @@ def run_episode(full_params: Dict) -> None:
 
     step = -1
     while not all(dones.values()):
-        step += 1 # debugging only
+        step += 1  # debugging only
         if env_type == "zoo":
             rewards = {}
             for agent_id in env.agent_iter(
@@ -241,9 +232,7 @@ def run_episode(full_params: Dict) -> None:
                 dones[agent.id] = done
                 rewards[agent] = reward
         else:
-            logger.warning(
-                        "Simple_eval: non-zoo env, test not yet implemented!"
-                    )
+            logger.warning("Simple_eval: non-zoo env, test not yet implemented!")
             pass
 
         episode_rewards += rewards  # Counter class allows addition per dictionary keys
