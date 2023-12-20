@@ -40,6 +40,28 @@ def test_pettingzoo_api_parallel():
     parallel_api_test(env, num_cycles=10)
 
 
+def test_pettingzoo_api_parallel_with_death():
+    for index in range(
+        0, 10
+    ):  # construct the environment multiple times with different seeds
+        # TODO: refactor these values out to a test-params file
+        env_params = {
+            "num_iters": 500,  # duration of the game
+            "map_min": 0,
+            "map_max": 100,
+            "render_map_max": 100,
+            "amount_agents": 2,  # needed for death test
+            "amount_grass_patches": 2,
+            "amount_water_holes": 2,
+            "test_death": True,
+        }
+        env = zoo.SavannaZooParallelEnv(env_params=env_params)
+
+        # sequential_env = parallel_to_aec(env)
+        env.seed(index)
+        parallel_api_test(env, num_cycles=10)
+
+
 def test_zoo_seed():
     try:
         parallel_seed_test(zoo.SavannaZooParallelEnv, num_cycles=10)
@@ -228,3 +250,4 @@ def test_performance_benchmark():
 
 if __name__ == "__main__" and os.name == "nt":  # detect debugging
     pytest.main([__file__])  # run tests only in this file
+    # test_pettingzoo_api_parallel_with_death()

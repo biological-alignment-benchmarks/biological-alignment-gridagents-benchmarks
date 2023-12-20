@@ -37,7 +37,6 @@ def test_gridworlds_api_sequential():
         "amount_agents": 1,  # for now only one agent
         "amount_grass_patches": 2,
         "amount_water_holes": 2,
-        # "seed": seed,    # TODO
     }
     env = safetygrid.SavannaGridworldSequentialEnv(env_params=env_params)
 
@@ -45,15 +44,38 @@ def test_gridworlds_api_sequential():
     api_test(env, num_cycles=10, verbose_progress=True)
 
 
+def test_gridworlds_api_sequential_with_death():
+    for index in range(
+        0, 10
+    ):  # construct the environment multiple times with different seeds
+        # TODO: refactor these values out to a test-params file
+        # seed = int(time.time()) & 0xFFFFFFFF
+        # np.random.seed(seed)
+        # print(seed)
+        env_params = {
+            "num_iters": 500,  # duration of the game
+            "map_min": 0,
+            "map_max": 100,
+            "render_map_max": 100,
+            "amount_agents": 2,  # needed for death test
+            "amount_grass_patches": 2,
+            "amount_water_holes": 2,
+            "test_death": False,
+            "seed": index,  # for Gridworlds, the seed needs to be specified during environment construction since it affects map randomisation, while seed called later does not change map
+        }
+        env = safetygrid.SavannaGridworldSequentialEnv(env_params=env_params)
+
+        # env = parallel_to_aec(parallel_env)
+        api_test(env, num_cycles=10, verbose_progress=True)
+
+
 def test_gridworlds_seed():
-    seed = 0
     for index in range(
         0, 3
     ):  # construct the environment multiple times with different seeds
-        seed += 1
         env_params = {
             "override_infos": True,  # Zoo seed_test is unable to compare infos unless they have simple structure.
-            "seed": seed,
+            "seed": index,  # for Gridworlds, the seed needs to be specified during environment construction since it affects map randomisation, while seed called later does not change map
         }
         env = lambda: safetygrid.SavannaGridworldSequentialEnv(
             env_params=env_params
@@ -168,3 +190,4 @@ def test_performance_benchmark():
 
 if __name__ == "__main__" and os.name == "nt":  # detect debugging
     pytest.main([__file__])  # run tests only in this file
+    # test_gridworlds_api_sequential_with_death()

@@ -8,6 +8,7 @@ from omegaconf import OmegaConf, DictConfig
 from tests.test_config import (
     root_dir,
     tparams_hparams,
+    tparams_hparams_debug,
 )
 from aintelope.training.simple_eval import run_episode
 
@@ -33,6 +34,30 @@ def test_instinctagent_in_savanna_zoo_sequential(tparams_hparams: Dict) -> None:
     run_episode(full_params=full_params)
 
 
+def test_instinctagent_in_savanna_zoo_sequential_with_death(
+    tparams_hparams: Dict,
+) -> None:
+    full_params = tparams_hparams
+    params_savanna_zoo = {
+        "agent_id": "instinct_agent",
+        "env": "savanna-zoo-sequential-v2",
+        "env_entry_point": "aintelope.environments.savanna_zoo:SavannaZooSequentialEnv",
+        "env_type": "zoo",
+        "env_params": {
+            "num_iters": 40,  # duration of the game
+            "map_min": 0,
+            "map_max": 20,
+            "render_map_max": 20,
+            "amount_agents": 2,  # needed for death test
+            "amount_grass_patches": 2,
+            "amount_water_holes": 1,
+            "test_death": True,
+        },
+    }
+    full_params.hparams = OmegaConf.merge(full_params.hparams, params_savanna_zoo)
+    run_episode(full_params=full_params)
+
+
 def test_instinctagent_in_savanna_gridworlds_sequential(tparams_hparams: Dict) -> None:
     full_params = tparams_hparams
     params_savanna_zoo = {
@@ -48,6 +73,30 @@ def test_instinctagent_in_savanna_gridworlds_sequential(tparams_hparams: Dict) -
             "amount_agents": 1,  # for now only one agent
             "amount_grass_patches": 2,
             "amount_water_holes": 1,
+        },
+    }
+    full_params.hparams = OmegaConf.merge(full_params.hparams, params_savanna_zoo)
+    run_episode(full_params=full_params)
+
+
+def test_instinctagent_in_savanna_gridworlds_sequential_with_death(
+    tparams_hparams: Dict,
+) -> None:
+    full_params = tparams_hparams
+    params_savanna_zoo = {
+        "agent_id": "instinct_agent",
+        "env": "savanna-safetygrid-sequential-v1",
+        "env_entry_point": "aintelope.environments.savanna_safetygrid:SavannaGridworldSequentialEnv",
+        "env_type": "zoo",
+        "env_params": {
+            "num_iters": 40,  # duration of the game
+            "map_min": 0,
+            "map_max": 20,
+            "render_map_max": 20,
+            "amount_agents": 2,  # needed for death test
+            "amount_grass_patches": 2,
+            "amount_water_holes": 1,
+            "test_death": True,
         },
     }
     full_params.hparams = OmegaConf.merge(full_params.hparams, params_savanna_zoo)
@@ -103,4 +152,8 @@ def test_instinctagent_in_savanna_gridworlds_sequential(tparams_hparams: Dict) -
 
 
 if __name__ == "__main__" and os.name == "nt":  # detect debugging
-    pytest.main([__file__])  # run tests only in this file
+    # pytest.main([__file__])  # run tests only in this file
+    test_instinctagent_in_savanna_zoo_sequential_with_death(tparams_hparams_debug())
+    test_instinctagent_in_savanna_gridworlds_sequential_with_death(
+        tparams_hparams_debug()
+    )

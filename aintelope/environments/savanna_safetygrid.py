@@ -83,6 +83,8 @@ class GridworldZooBaseEnv:
         "remove_unused_tile_types_from_layers": True,  # Whether to remove tile types not present on initial map from observation layers. - set to False when same agent brain is trained over multiple environments
         "observe_bitmap_layers": False,  # Alternate observation format to current vector of absolute coordinates. Bitmap representation enables representing objects which might be outside of agent's observation zone for time being.
         "override_infos": False,  # Needed for tests. Zoo is unable to compare infos unless they have simple structure.
+        "test_death": False,
+        "test_death_probability": 0.33,
     }
 
     def __init__(self, env_params: Optional[Dict] = None):
@@ -115,6 +117,8 @@ class GridworldZooBaseEnv:
             "remove_unused_tile_types_from_layers": self.metadata[
                 "remove_unused_tile_types_from_layers"
             ],  # Whether to remove tile types not present on initial map from observation layers. - set to False when same agent brain is trained over multiple environments
+            "test_death": self.metadata["test_death"],
+            "test_death_probability": self.metadata["test_death_probability"],
         }
 
         self._observe_bitmap_layers = self.metadata["observe_bitmap_layers"]
@@ -390,11 +394,15 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
         rewards2 = {}
 
         # transform observations and rewards
-        for agent in infos.keys():
-            self.observations2[agent] = self.transform_observation(agent, infos[agent])
-
-            min_grass_distance = self.calc_min_grass_distance(agent, infos[agent])
-            rewards2[agent] = self.reward_agent(min_grass_distance)
+        for agent in list(self.observations2.keys()):
+            if agent in observations:
+                self.observations2[agent] = self.transform_observation(
+                    agent, infos[agent]
+                )
+                min_grass_distance = self.calc_min_grass_distance(agent, infos[agent])
+                rewards2[agent] = self.reward_agent(min_grass_distance)
+            else:  # dead agent, needs to be removed from observations2
+                del self.observations2[agent]
 
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}
@@ -520,12 +528,26 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
 
         self._cumulative_rewards2[agent] = 0
 
+        # need to set current step rewards to zero for other agents
+        for agent in self.agents:
+            # the agent should be visible in .rewards after it dies (until its "dead step"), but during next agent's step it should get zero reward
+            if self.terminations[agent] or self.truncations[agent]:
+                self._last_rewards2[agent] = 0.0
+
         GridworldZooAecEnv.step(self, {"step": action})
+
+        if agent not in self.agents:  # was "dead step"
+            # dead agent needs to be removed from observations2 and _last_rewards2
+            del self.observations2[agent]
+            del self._last_rewards2[agent]
+            return
 
         info = self.observe_info(agent)
         min_grass_distance = self.calc_min_grass_distance(agent, info)
         reward2 = self.reward_agent(min_grass_distance)
         self._last_rewards2[agent] = reward2
+
+        # NB! if the action of current agent somehow affects the rewards of other agents then the cumulative reward of the other agents needs to be updated here as well.
         self._cumulative_rewards2[agent] += reward2
 
     def step_single_agent(self, action: Action):
@@ -539,12 +561,22 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         logger.debug("debug action", action)
 
         agent = self.agent_selection
+
         self._cumulative_rewards2[agent] = 0
-        if action is None:
-            action = (
-                Actions.NOOP
-            )  # all agents need to take a step, the stepping order cannot be modified
+
+        # need to set current step rewards to zero for other agents
+        for agent in self.agents:
+            # the agent should be visible in .rewards after it dies (until its "dead step"), but during next agent's step it should get zero reward
+            if self.terminations[agent] or self.truncations[agent]:
+                self._last_rewards2[agent] = 0.0
+
         GridworldZooAecEnv.step(self, {"step": action})
+
+        if agent not in self.agents:  # was "dead step"
+            # dead agent needs to be removed from observations2 and _last_rewards2
+            del self.observations2[agent]
+            del self._last_rewards2[agent]
+            return
 
         # observe observations, transform observations and rewards
         info = self.observe_info(agent)
@@ -556,6 +588,8 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         min_grass_distance = self.calc_min_grass_distance(agent, info)
         reward2 = self.reward_agent(min_grass_distance)
         self._last_rewards2[agent] = reward2
+
+        # NB! if the action of current agent somehow affects the rewards of other agents then the cumulative reward of the other agents needs to be updated here as well.
         self._cumulative_rewards2[agent] += reward2
 
         terminated = self.terminations[agent]
@@ -582,7 +616,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         if not actions:
             return {}, {}, {}, {}, {}
 
-        alive_agents = []
+        stepped_agents = []
         rewards2 = {}
         infos = {}
 
@@ -591,28 +625,45 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             0, self.num_agents
         ):  # do one iteration over all ALIVE agents
             agent = self.agent_selection  # this returns only alive agents
-            alive_agents.append(agent)
+            stepped_agents.append(agent)
             action = actions.get(agent, None)
-            if action is None:
-                action = (
-                    Actions.NOOP
-                )  # all agents need to take a step, the stepping order cannot be modified
+
             GridworldZooAecEnv.step(self, {"step": action})
 
             if (
-                self.observe_immediately_after_agent_action
-            ):  # observe BEFORE next agent takes its step?
-                # observe observations, transform observations and rewards
-                info = self.observe_info(agent)
-                # self.observe_from_location({agent: [1, 1]})    # for debugging
-                infos[agent] = info
-                self._last_infos[agent] = info
-                self.observations2[agent] = self.transform_observation(agent, info)
+                agent not in self.agents
+            ):  # was not "dead step" in which case the agent was removed in the above call from self.agents list
+                # dead agent needs to be removed from observations2 and _last_rewards2
+                del self.observations2[agent]
+                del self._last_rewards2[agent]
+            else:
+                if (
+                    self.observe_immediately_after_agent_action
+                ):  # observe BEFORE next agent takes its step?
+                    # observe observations, transform observations and rewards
+                    info = self.observe_info(agent)
+                    # self.observe_from_location({agent: [1, 1]})    # for debugging
+                    infos[agent] = info
+                    self._last_infos[agent] = info
+                    self.observations2[agent] = self.transform_observation(agent, info)
 
-                min_grass_distance = self.calc_min_grass_distance(agent, info)
-                reward2 = self.reward_agent(min_grass_distance)
-                rewards2[agent] = reward2
-                self._last_rewards2[agent] = reward2
+                    min_grass_distance = self.calc_min_grass_distance(agent, info)
+                    reward2 = self.reward_agent(min_grass_distance)
+                    rewards2[agent] = reward2
+                    self._last_rewards2[agent] = reward2
+
+                    # NB! if the action of current agent somehow affects the rewards of other agents then the cumulative reward of the other agents needs to be updated here as well.
+                    self._cumulative_rewards2[agent] += reward2
+
+                else:
+                    info = self.observe_info(agent)
+                    min_grass_distance = self.calc_min_grass_distance(agent, info)
+                    reward2 = self.reward_agent(min_grass_distance)
+                    rewards2[agent] = reward2
+                    self._last_rewards2[agent] = reward2
+
+                    # NB! if the action of current agent somehow affects the rewards of other agents then the cumulative reward of the other agents needs to be updated here as well.
+                    self._cumulative_rewards2[agent] += reward2
 
         # / for index in range(0, self.num_agents)
 
@@ -620,17 +671,18 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             not self.observe_immediately_after_agent_action
         ):  # observe only after ALL agents are done stepping?
             # observe observations, transform observations and rewards
-            for agent in alive_agents:
-                info = self.observe_info(agent)
-                # self.observe_from_location({agent: [1, 1]})    # for debugging
-                infos[agent] = info
-                self._last_infos[agent] = info
-                self.observations2[agent] = self.transform_observation(agent, info)
+            for agent in stepped_agents:
+                if agent in self.agents:  # was not "dead step"
+                    info = self.observe_info(agent)
+                    # self.observe_from_location({agent: [1, 1]})    # for debugging
+                    infos[agent] = info
+                    self._last_infos[agent] = info
+                    self.observations2[agent] = self.transform_observation(agent, info)
 
-                min_grass_distance = self.calc_min_grass_distance(agent, info)
-                reward2 = self.reward_agent(min_grass_distance)
-                rewards2[agent] = reward2
-                self._last_rewards2[agent] = reward2
+                    # min_grass_distance = self.calc_min_grass_distance(agent, info)
+                    # reward2 = self.reward_agent(min_grass_distance)
+                    # rewards2[agent] = reward2
+                    # self._last_rewards2[agent] = reward2
 
         terminateds = self.terminations
         truncateds = self.truncations

@@ -40,15 +40,35 @@ def test_gridworlds_api_parallel():
     parallel_api_test(env, num_cycles=10)
 
 
+def test_gridworlds_api_parallel_with_death():
+    for index in range(
+        0, 10
+    ):  # construct the environment multiple times with different seeds
+        # TODO: refactor these values out to a test-params file
+        env_params = {
+            "num_iters": 500,  # duration of the game
+            "map_min": 0,
+            "map_max": 100,
+            "render_map_max": 100,
+            "amount_agents": 2,  # needed for death test
+            "amount_grass_patches": 2,
+            "amount_water_holes": 2,
+            "test_death": True,
+            "seed": index,  # for Gridworlds, the seed needs to be specified during environment construction since it affects map randomisation, while seed called later does not change map
+        }
+        env = safetygrid.SavannaGridworldParallelEnv(env_params=env_params)
+
+        # sequential_env = parallel_to_aec(env)
+        parallel_api_test(env, num_cycles=10)
+
+
 def test_gridworlds_seed():
-    seed = 0
     for index in range(
         0, 3
     ):  # construct the environment multiple times with different seeds
-        seed += 1
         env_params = {
             "override_infos": True,  # Zoo parallel_seed_test is unable to compare infos unless they have simple structure.
-            "seed": seed,
+            "seed": index,  # for Gridworlds, the seed needs to be specified during environment construction since it affects map randomisation, while seed called later does not change map
         }
         env = lambda: safetygrid.SavannaGridworldParallelEnv(
             env_params=env_params
@@ -161,3 +181,4 @@ def test_performance_benchmark():
 
 if __name__ == "__main__" and os.name == "nt":  # detect debugging
     pytest.main([__file__])  # run tests only in this file
+    # test_gridworlds_api_parallel_with_death()

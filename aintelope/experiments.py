@@ -146,28 +146,35 @@ def run_experiment(cfg: DictConfig) -> None:
                 ):  # num_agents returns number of alive (non-done) agents
                     agent = agents_dict[agent_id]
 
-                    observation = env.observe(agent.id)
-                    action = agent.get_action(observation, step)
+                    # Per Zoo API, a dead agent must call .step(None) once more after becoming dead. Only after that call will this dead agent be removed from various dictionaries and from .agent_iter loop.
+                    if env.terminations[agent.id] or env.truncations[agent.id]:
+                        action = None
+                    else:
+                        observation = env.observe(agent.id)
+                        action = agent.get_action(observation, step)
 
                     # Env step
                     # NB! both AIntelope Zoo and Gridworlds Zoo wrapper in AIntelope provide slightly modified Zoo API. Normal Zoo sequential API step() method does not return values and is not allowed to return values else Zoo API tests will fail.
                     result = env.step_single_agent(action)
-                    (
-                        observation,
-                        score,
-                        terminated,
-                        truncated,
-                        info,
-                    ) = result
-                    done = terminated or truncated
 
-                    # Agent is updated based on what the env shows. All commented above included ^
-                    dones[agent.id] = done
-                    if terminated:
-                        observation = None
-                    agent.update(
-                        env, observation, score, done
-                    )  # note that score is used ONLY by baseline
+                    if agent.id in env.agents:  # was not "dead step"
+                        (
+                            observation,
+                            score,  # NB! This is only initial reward upon agent's own step. When other agents take their turns then the reward of the agent may change. If you need to learn an agent's accumulated reward over other agents turns (plus its own step's reward) then use env.last property.
+                            terminated,
+                            truncated,
+                            info,
+                        ) = result
+
+                        done = terminated or truncated
+
+                        # Agent is updated based on what the env shows. All commented above included ^
+                        dones[agent.id] = done
+                        if terminated:
+                            observation = None
+                        agent.update(
+                            env, observation, score, done
+                        )  # note that score is used ONLY by baseline
 
             else:
                 raise NotImplementedError(f"Unknown environment type {type(env)}")
