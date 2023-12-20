@@ -63,11 +63,13 @@ def run_experiment(cfg: DictConfig) -> None:
                 **cfg.hparams.agent_params,
             )
         )
-		# TODO: it is possible to call env.observation_space(agent_id) directly to get the observation shape. No need to call observe().
-		if isinstance(env, ParallelEnv):
-        	observation = observations[agent_id]
-		elif isinstance(env, AECEnv):
-			observation = env.observe(agent_id)
+
+        # TODO: it is possible to call env.observation_space(agent_id) directly to get the observation shape. No need to call observe().
+        if isinstance(env, ParallelEnv):
+            observation = observations[agent_id]
+        elif isinstance(env, AECEnv):
+            observation = env.observe(agent_id)
+
         agents[-1].reset(observation)
         trainer.add_agent(agent_id, observation.shape, env.action_space)
 

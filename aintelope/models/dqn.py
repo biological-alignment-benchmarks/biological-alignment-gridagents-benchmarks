@@ -13,7 +13,9 @@ class DQN(nn.Module):
         """
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(obs_size[0], hidden_size),	# TODO: consider all obs_size dimensions
+            nn.Linear(
+                obs_size[0], hidden_size
+            ),  # TODO: consider all obs_size dimensions
             nn.ReLU(),
             nn.Linear(hidden_size, n_actions),
         )
