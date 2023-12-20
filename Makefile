@@ -19,11 +19,11 @@ clean-venv: ## remove virtual environment
 
 .PHONY: install
 install: ## Install packages
-	pip install -r requirements/$(PROJECT).txt
+	pip install -r requirements/api.txt
 
 .PHONY: install-dev
 install-dev: ## Install development packages
-	pip install -r requirements/$(PROJECT)_dev.txt
+	pip install -r requirements/dev.txt
 
 .PHONY: install-all
 install-all: install install-dev ## install all packages
