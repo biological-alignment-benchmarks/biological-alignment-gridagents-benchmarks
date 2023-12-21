@@ -93,48 +93,61 @@ def test_gridworlds_move_agent():
 
 
 def test_gridworlds_step_result():
-    env = safetygrid.SavannaGridworldParallelEnv(
-        env_params={"num_iters": 2}
-    )  # default is 1 iter which means that the env is done after 1 step below and the test will fail
-    num_agents = len(env.possible_agents)
-    assert num_agents, f"expected 1 agent, got: {num_agents}"
-    env.reset()
+    for test_index in range(0, 10):
+        env = safetygrid.SavannaGridworldParallelEnv(
+            env_params={
+                "num_iters": 2,
+                "seed": test_index,
+            }
+        )  # default is 1 iter which means that the env is done after 1 step below and the test will fail
+        num_agents = len(env.possible_agents)
+        assert num_agents, f"expected 1 agent, got: {num_agents}"
+        env.reset()
 
-    agent = env.possible_agents[0]
-    action = {agent: env.action_space(agent).sample()}
-
-    observations, rewards, terminateds, truncateds, infos = env.step(action)
-    dones = {
-        key: terminated or truncateds[key] for (key, terminated) in terminateds.items()
-    }
-
-    assert not dones[agent]
-    assert isinstance(observations, dict), "observations is not a dict"
-    assert isinstance(
-        observations[agent], np.ndarray
-    ), "observations of agent is not an array"
-    assert isinstance(rewards, dict), "rewards is not a dict"
-    assert isinstance(rewards[agent], np.float64), "reward of agent is not a float64"
-
-
-def test_gridworlds_done_step():
-    env = safetygrid.SavannaGridworldParallelEnv(env_params={"amount_agents": 1})
-    assert len(env.possible_agents) == 1
-    env.reset()
-
-    agent = env.possible_agents[0]  # TODO: multi-agent iteration
-    for _ in range(env.metadata["num_iters"]):
+        agent = env.possible_agents[0]
         action = {agent: env.action_space(agent).sample()}
-        _, _, terminateds, truncateds, _ = env.step(action)
+
+        observations, rewards, terminateds, truncateds, infos = env.step(action)
         dones = {
             key: terminated or truncateds[key]
             for (key, terminated) in terminateds.items()
         }
 
-    assert dones[agent]
-    with pytest.raises(ValueError):
-        action = {agent: env.action_space(agent).sample()}
-        env.step(action)
+        assert not dones[agent]
+        assert isinstance(observations, dict), "observations is not a dict"
+        assert isinstance(
+            observations[agent], np.ndarray
+        ), "observations of agent is not an array"
+        assert isinstance(rewards, dict), "rewards is not a dict"
+        assert isinstance(
+            rewards[agent], np.float64
+        ), "reward of agent is not a float64"
+
+
+def test_gridworlds_done_step():
+    for test_index in range(0, 10):
+        env = safetygrid.SavannaGridworldParallelEnv(
+            env_params={
+                "amount_agents": 1,
+                "seed": test_index,
+            }
+        )
+        assert len(env.possible_agents) == 1
+        env.reset()
+
+        agent = env.possible_agents[0]  # TODO: multi-agent iteration
+        for _ in range(env.metadata["num_iters"]):
+            action = {agent: env.action_space(agent).sample()}
+            _, _, terminateds, truncateds, _ = env.step(action)
+            dones = {
+                key: terminated or truncateds[key]
+                for (key, terminated) in terminateds.items()
+            }
+
+        assert dones[agent]
+        with pytest.raises(ValueError):
+            action = {agent: env.action_space(agent).sample()}
+            env.step(action)
 
 
 def test_gridworlds_agents():

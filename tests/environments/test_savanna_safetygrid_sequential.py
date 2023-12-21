@@ -100,50 +100,62 @@ def test_gridworlds_move_agent():
 
 
 def test_gridworlds_step_result():
-    env = safetygrid.SavannaGridworldSequentialEnv(
-        env_params={"num_iters": 2}
-    )  # default is 1 iter which means that the env is done after 1 step below and the test will fail
-    num_agents = len(env.possible_agents)
-    assert num_agents, f"expected 1 agent, got: {num_agents}"
-    env.reset()
+    for test_index in range(0, 10):
+        env = safetygrid.SavannaGridworldSequentialEnv(
+            env_params={
+                "num_iters": 2,
+                "seed": test_index,
+            }
+        )  # default is 1 iter which means that the env is done after 1 step below and the test will fail
+        num_agents = len(env.possible_agents)
+        assert num_agents, f"expected 1 agent, got: {num_agents}"
+        env.reset()
 
-    agent = env.agent_selection
-    action = env.action_space(agent).sample()
+        agent = env.agent_selection
+        action = env.action_space(agent).sample()
 
-    env.step(action)
-    # NB! env.last() provides observation from NEXT agent in case of multi-agent environment
-    (
-        observation,
-        reward,
-        terminated,
-        truncated,
-        info,
-    ) = env.last()  # TODO: multi-agent iteration
-    done = terminated or truncated
+        env.step(action)
+        # NB! env.last() provides observation from NEXT agent in case of multi-agent environment
+        (
+            observation,
+            reward,
+            terminated,
+            truncated,
+            info,
+        ) = env.last()  # TODO: multi-agent iteration
+        done = terminated or truncated
 
-    assert not done
-    assert isinstance(observation, np.ndarray), "observation of agent is not an array"
-    assert isinstance(reward, np.float64), "reward of agent is not a float64"
+        assert not done
+        assert isinstance(
+            observation, np.ndarray
+        ), "observation of agent is not an array"
+        assert isinstance(reward, np.float64), "reward of agent is not a float64"
 
 
 def test_gridworlds_done_step():
-    env = safetygrid.SavannaGridworldSequentialEnv(env_params={"amount_agents": 1})
-    assert len(env.possible_agents) == 1
-    env.reset()
+    for test_index in range(0, 10):
+        env = safetygrid.SavannaGridworldSequentialEnv(
+            env_params={
+                "amount_agents": 1,
+                "seed": test_index,
+            }
+        )
+        assert len(env.possible_agents) == 1
+        env.reset()
 
-    for _ in range(env.metadata["num_iters"]):
-        agent = env.agent_selection
-        action = env.action_space(agent).sample()
-        env.step(action)
-        # env.last() provides observation from NEXT agent in case of multi-agent environment
-        terminated = env.terminations[agent]
-        truncated = env.truncations[agent]
-        done = terminated or truncated
+        for _ in range(env.metadata["num_iters"]):
+            agent = env.agent_selection
+            action = env.action_space(agent).sample()
+            env.step(action)
+            # env.last() provides observation from NEXT agent in case of multi-agent environment
+            terminated = env.terminations[agent]
+            truncated = env.truncations[agent]
+            done = terminated or truncated
 
-    assert done
-    with pytest.raises(ValueError):
-        action = env.action_space(agent).sample()
-        env.step(action)
+        assert done
+        with pytest.raises(ValueError):
+            action = env.action_space(agent).sample()
+            env.step(action)
 
 
 def test_gridworlds_agents():
