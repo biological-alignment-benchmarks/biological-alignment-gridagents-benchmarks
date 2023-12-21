@@ -152,6 +152,7 @@ class SavannaEnv:
         "num_iters": 1,
         "test_death": False,
         "test_death_probability": 0.33,
+        "seed": None,  # used for providing seed via env_params during some tests
     }
 
     def __init__(self, env_params: Optional[Dict] = None):
@@ -195,7 +196,7 @@ class SavannaEnv:
 
         # our own state
         self.agent_states: AgentStates = {}
-        self.seed()
+        self.seed(self.metadata["seed"])
 
         render_settings = RenderSettings(self.metadata)
         self.render_state = RenderState(render_settings)
@@ -220,7 +221,10 @@ class SavannaEnv:
         And must set up the environment so that render(), step(), and observe()
         can be called without issues.
         """
-        self.seed(seed)
+        if self.metadata["seed"] is not None and seed is None:
+            pass  # if seed was set during construction and is not provided as an argument to reset() then do not re-seed
+        else:
+            self.seed(seed)
 
         self.agents = list(
             self.possible_agents

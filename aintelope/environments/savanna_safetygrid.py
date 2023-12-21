@@ -64,7 +64,7 @@ Step = Tuple[
 
 class GridworldZooBaseEnv:
     metadata = {
-        "seed": None,  # This seed is used only for environment map randomisation. Later the test calls .seed() method on the wrapper and this will determine the random action sampling and other random events during the game play.
+        "seed": None,  # This seed is used mainly for environment map randomisation. Later the test calls .seed() method on the wrapper and this will determine the random action sampling and other random events during the game play.
         # "name": "savanna-safetygrid-v1",
         # "render_fps": 3,
         "render_agent_radius": 5,
@@ -102,7 +102,7 @@ class GridworldZooBaseEnv:
             "env_name": "aintelope.aintelope_smell",
             "seed": self.metadata[
                 "seed"
-            ],  # This seed is used only for environment map randomisation. Later the test calls .seed() method on the wrapper and this will determine the random action sampling and other random events during the game play.
+            ],  # This seed is used mainly for environment map randomisation. Later the test calls .seed() method on the wrapper and this will determine the random action sampling and other random events during the game play.
             "max_iterations": self.metadata["num_iters"],
             "amount_food_patches": self.metadata["amount_grass_patches"],
             "amount_drink_holes": self.metadata["amount_water_holes"],
