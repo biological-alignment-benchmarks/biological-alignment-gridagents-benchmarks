@@ -228,7 +228,7 @@ class SavannaEnv:
         self.rewards = {
             agent: 0.0 for agent in self.agents
         }  # storing in self is needed for Zoo sequential API
-        # self._cumulative_rewards = {agent: 0 for agent in self.agents}
+        self._cumulative_rewards = {agent: 0.0 for agent in self.agents}
         self.grass_patches = self.np_random.integers(
             self.metadata["map_min"],
             self.metadata["map_max"],
@@ -296,6 +296,7 @@ class SavannaEnv:
                 self.agent_states[agent], self.grass_patches
             )
             self.rewards[agent] = reward_agent(min_grass_distance)
+            self._cumulative_rewards[agent] += self.rewards[agent]
 
             # NB! any agent could die at any other agent's step
             if (

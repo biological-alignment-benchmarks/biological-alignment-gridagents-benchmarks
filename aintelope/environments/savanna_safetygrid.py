@@ -531,7 +531,9 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
 
         agent = self.agent_selection
 
-        self._cumulative_rewards2[agent] = 0
+        self._cumulative_rewards2[
+            agent
+        ] = 0.0  # this needs to be so according to Zoo unit test. See https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/test/api_test.py
 
         # need to set current step rewards to zero for other agents
         for agent in self.agents:
@@ -568,7 +570,9 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
 
         agent = self.agent_selection
 
-        self._cumulative_rewards2[agent] = 0
+        self._cumulative_rewards2[
+            agent
+        ] = 0.0  # this needs to be so according to Zoo unit test. See https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/test/api_test.py
 
         # need to set current step rewards to zero for other agents
         for agent in self.agents:
@@ -626,6 +630,11 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         stepped_agents = []
         rewards2 = {}
         infos = {}
+
+        for agent in actions.keys():
+            self._cumulative_rewards2[
+                agent
+            ] = 0.0  # this needs to be so according to Zoo unit test. See https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/test/api_test.py
 
         # loop over all agents in ENV NOT IN ACTIONS DICT
         for index in range(

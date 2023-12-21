@@ -89,11 +89,6 @@ class SavannaZooSequentialEnv(SavannaEnv, AECEnv):
     def agent_selection(self):
         return self._next_agent
 
-    @property
-    def _cumulative_rewards(self):
-        # TODO: this current code works only with single agent. In case of multi-agent, the cumulative rewards should cumulate each agent rewards when other agents are taking their turns and affecting other agents. Cumulative rewards is set back to 0 before an agent takes its next step.
-        return self.rewards
-
     def reset(self, *args, **kwargs):
         self._next_agent = self.possible_agents[0]
         self._next_agent_index = 0
@@ -129,8 +124,12 @@ class SavannaZooSequentialEnv(SavannaEnv, AECEnv):
             if self.dones[agent]:
                 self.rewards[agent] = 0.0
 
+        self._cumulative_rewards[
+            self._next_agent
+        ] = 0.0  # this needs to be so according to Zoo unit test. See https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/test/api_test.py
+
         # NB! both AIntelope Zoo and Gridworlds Zoo wrapper in AIntelope provide slightly modified Zoo API. Normal Zoo sequential API step() method does not return values.
-        result = SavannaEnv.step(self, {self.agent_selection: action}, *args, **kwargs)
+        result = SavannaEnv.step(self, {self._next_agent: action}, *args, **kwargs)
         (
             observations,
             scores,
@@ -140,7 +139,7 @@ class SavannaZooSequentialEnv(SavannaEnv, AECEnv):
         ) = result
 
         step_agent = (
-            self.agent_selection
+            self._next_agent
         )  # NB! the agent_selection will change after call to _move_to_next_agent() so we need to save the agent_id which just took the step
         self._move_to_next_agent()
         return (
