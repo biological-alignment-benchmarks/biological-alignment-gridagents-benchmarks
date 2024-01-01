@@ -1,27 +1,12 @@
 import os
-import sys
-import time
-import pytest
+
 import numpy as np
-import numpy.testing as npt
-
-from gymnasium.spaces import Discrete, MultiDiscrete
-
-from pettingzoo.test import (
-    max_cycles_test,
-    render_test,
-    performance_benchmark,
-)
+import pytest
+from gymnasium.spaces import MultiDiscrete
 from pettingzoo.test import api_test
 from pettingzoo.test.seed_test import seed_test
 
-# from pettingzoo.utils import parallel_to_aec
-
-
 from aintelope.environments import savanna_safetygrid as safetygrid
-from aintelope.environments.savanna import ACTION_MAP
-from aintelope.environments.savanna_safetygrid import SavannaGridworldSequentialEnv
-from aintelope.environments.env_utils.distance import distance_to_closest_item
 
 
 @pytest.mark.parametrize("execution_number", range(10))
@@ -113,7 +98,8 @@ def test_gridworlds_step_result(execution_number):
     action = env.action_space(agent).sample()
 
     env.step(action)
-    # NB! env.last() provides observation from NEXT agent in case of multi-agent environment
+    # NB! env.last() provides observation from NEXT agent in case of multi-agent
+    # environment
     (
         observation,
         reward,
@@ -143,7 +129,8 @@ def test_gridworlds_done_step(execution_number):
         agent = env.agent_selection
         action = env.action_space(agent).sample()
         env.step(action)
-        # env.last() provides observation from NEXT agent in case of multi-agent environment
+        # env.last() provides observation from NEXT agent in case of multi-agent
+        # environment
         terminated = env.terminations[agent]
         truncated = env.truncations[agent]
         done = terminated or truncated

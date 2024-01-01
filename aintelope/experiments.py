@@ -1,10 +1,8 @@
-from collections import namedtuple
-
 import logging
-from omegaconf import DictConfig
-
 import os
 from pathlib import Path
+
+from omegaconf import DictConfig
 
 from aintelope.training.dqn_training import Trainer
 
@@ -17,10 +15,9 @@ from aintelope.agents import (
 
 # initialize environment registries
 from pettingzoo import AECEnv, ParallelEnv
-from aintelope.environments.savanna_zoo import (
-    SavannaZooParallelEnv,
-    SavannaZooSequentialEnv,
-)
+
+import aintelope.agents.instinct_agent  # noqa: F401
+from aintelope.agents import get_agent_class
 from aintelope.environments.savanna_safetygrid import (
     SavannaGridworldParallelEnv,
     SavannaGridworldSequentialEnv,
@@ -31,6 +28,10 @@ from aintelope.environments import get_env_class
 from aintelope.agents.instinct_agent import InstinctAgent
 from aintelope.agents.q_agent import QAgent
 from aintelope.agents import get_agent_class
+from aintelope.environments.savanna_zoo import (
+    SavannaZooParallelEnv,
+    SavannaZooSequentialEnv,
+)
 
 
 def run_experiment(cfg: DictConfig) -> None:
@@ -147,7 +148,10 @@ def run_experiment(cfg: DictConfig) -> None:
                         action = agent.get_action(observation, step)
 
                     # Env step
-                    # NB! both AIntelope Zoo and Gridworlds Zoo wrapper in AIntelope provide slightly modified Zoo API. Normal Zoo sequential API step() method does not return values and is not allowed to return values else Zoo API tests will fail.
+                    # NB! both AIntelope Zoo and Gridworlds Zoo wrapper in AIntelope
+                    # provide slightly modified Zoo API. Normal Zoo sequential API
+                    # step() method does not return values and is not allowed to return
+                    # values else Zoo API tests will fail.
                     result = env.step_single_agent(action)
 
                     if agent.id in env.agents:  # was not "dead step"
@@ -189,7 +193,8 @@ def run_experiment(cfg: DictConfig) -> None:
                 break
 
         # Save models
-        # https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
+        # https://pytorch.org/tutorials/recipes/recipes/
+        # saving_and_loading_a_general_checkpoint.html
         dir_out = f"{cfg.experiment_dir}"
         if i_episode % cfg.hparams.every_n_episodes == 0:
             dir_cp = dir_out + "checkpoints/"

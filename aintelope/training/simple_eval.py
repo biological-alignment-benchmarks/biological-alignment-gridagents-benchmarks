@@ -1,33 +1,31 @@
-from collections import Counter
-
 import logging
-
-import gymnasium as gym
-
-from omegaconf import OmegaConf, DictConfig
+from collections import Counter
 from typing import Dict
 
 from pettingzoo import AECEnv, ParallelEnv
 
-from aintelope.agents.q_agent import QAgent
 from aintelope.agents.instinct_agent import InstinctAgent
+from aintelope.agents.q_agent import QAgent
 from aintelope.agents.simple_agents import (
-    RandomWalkAgent,
-    OneStepPerfectPredictionAgent,
     IterativeWeightOptimizationAgent,
 )
 from aintelope.models.dqn import DQN
 from aintelope.environments.savanna_zoo import (
     SavannaZooParallelEnv,
     SavannaZooSequentialEnv,
+    OneStepPerfectPredictionAgent,
+    RandomWalkAgent,
 )
 from aintelope.environments.savanna_safetygrid import (
     SavannaGridworldParallelEnv,
     SavannaGridworldSequentialEnv,
 )
-
+from aintelope.environments.savanna_zoo import (
+    SavannaZooParallelEnv,
+    SavannaZooSequentialEnv,
+)
+from aintelope.models.dqn import DQN
 from aintelope.training.dqn_training import Trainer
-
 
 logger = logging.getLogger("aintelope.training.simple_eval")
 
@@ -56,17 +54,18 @@ def run_episode(full_params: Dict) -> None:
     hparams = full_params.hparams
 
     env_params = hparams["env_params"]
-    agent_params = hparams["agent_params"]
     render_mode = env_params["render_mode"]
     verbose = tparams["verbose"]
 
     env_type = hparams["env_type"]
     logger.info("env type", env_type)
-    # gym_vec_env_v0(env, num_envs) creates a Gym vector environment with num_envs copies of the environment.
+    # gym_vec_env_v0(env, num_envs) creates a Gym vector environment with num_envs
+    # copies of the environment.
     # https://tristandeleu.github.io/gym/vector/
     # https://github.com/Farama-Foundation/SuperSuit
 
-    # stable_baselines3_vec_env_v0(env, num_envs) creates a stable_baselines vector environment with num_envs copies of the environment.
+    # stable_baselines3_vec_env_v0(env, num_envs) creates a stable_baselines vector
+    # environment with num_envs copies of the environment.
 
     if env_type == "zoo":
         env = ENV_LOOKUP[hparams["env"]](env_params=env_params)
@@ -332,6 +331,6 @@ def run_episode(full_params: Dict) -> None:
 
     if verbose:
         logger.info(
-            f"Simple Episode Evaluation completed."
+            "Simple Episode Evaluation completed."
             "Final episode rewards: {episode_rewards}"
         )

@@ -1,6 +1,6 @@
-from typing import Optional, Dict
-import logging
 import functools
+import logging
+from typing import Dict, Optional
 
 from pettingzoo import AECEnv, ParallelEnv
 
@@ -140,14 +140,18 @@ class SavannaZooSequentialEnv(SavannaEnv, AECEnv):
 
     def _move_to_next_agent(
         self,
-    ):  # https://pettingzoo.farama.org/content/basic_usage/#interacting-with-environments
+    ):
+        """
+        https://pettingzoo.farama.org/content/basic_usage/#interacting-with-environments
+        """
+
         continue_search_for_non_done_agent = True
         search_loops_count = 0
 
         while continue_search_for_non_done_agent:
             self._next_agent_index = (self._next_agent_index + 1) % len(
                 self.possible_agents
-            )  # loop over agents repeatedly     # https://pettingzoo.farama.org/content/basic_usage/#interacting-with-environments
+            )  # loop over agents repeatedly
             agent = self.possible_agents[self._next_agent_index]
             done = agent not in self.agents
             continue_search_for_non_done_agent = done
@@ -155,7 +159,7 @@ class SavannaZooSequentialEnv(SavannaEnv, AECEnv):
             search_loops_count += 1
             if continue_search_for_non_done_agent and search_loops_count == len(
                 self.possible_agents
-            ):  # all agents are done     # https://pettingzoo.farama.org/content/basic_usage/#interacting-with-environments
+            ):  # all agents are done
                 self._next_agent_index = -1
                 self._next_agent = None
                 self._all_agents_done = True
