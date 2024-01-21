@@ -4,11 +4,11 @@ from typing import List, Optional
 
 import numpy.typing as npt
 
-from aintelope.agents import PettingZooEnv, register_agent_class
+from aintelope.environments.typing import ObservationFloat, PettingZooEnv
+from aintelope.agents.q_agent import QAgent, HistoryStep
 from aintelope.agents.instincts.savanna_instincts import available_instincts_dict
-from aintelope.agents.q_agent import HistoryStep, QAgent
-from aintelope.environments.typing import ObservationFloat
 from aintelope.training.dqn_training import Trainer
+
 
 logger = logging.getLogger("aintelope.agents.instinct_agent")
 
@@ -152,6 +152,3 @@ class InstinctAgent(QAgent):
         }
         for instinct in self.instincts.values():
             instinct.reset()
-
-
-register_agent_class("instinct_agent", InstinctAgent)

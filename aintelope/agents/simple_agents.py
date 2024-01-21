@@ -7,7 +7,6 @@ import random
 
 import numpy as np
 
-from aintelope.agents import register_agent_class
 from aintelope.agents.q_agent import QAgent
 from aintelope.environments.env_utils.distance import distance_to_closest_item
 from aintelope.environments.savanna import (
@@ -140,10 +139,3 @@ class IterativeWeightOptimizationAgent(QAgent):
             action = self.action_space.sample()
         logger.info("chose action", action)
         return action
-
-
-register_agent_class("random_walk_agent", RandomWalkAgent)
-register_agent_class("one_step_perfect_prediction_agent", OneStepPerfectPredictionAgent)
-register_agent_class(
-    "iterative_weight_optimization_agent", IterativeWeightOptimizationAgent
-)

@@ -9,10 +9,11 @@ import numpy.typing as npt
 import pandas as pd
 from matplotlib.figure import Figure
 
-from aintelope.agents import Agent, register_agent_class
+from aintelope.agents import Agent
 from aintelope.environments.savanna_gym import SavannaGymEnv  # TODO used for hack
 from aintelope.environments.typing import ObservationFloat
 from aintelope.training.dqn_training import Trainer
+
 
 logger = logging.getLogger("aintelope.agents.q_agent")
 
@@ -212,6 +213,3 @@ class QAgent(Agent):
         ax.legend()
         plt.tight_layout()
         return fig
-
-
-register_agent_class("q_agent", QAgent)
