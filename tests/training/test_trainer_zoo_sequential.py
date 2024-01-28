@@ -2,10 +2,11 @@ import subprocess
 import os
 import sys
 import pytest
+
 from aintelope.config.config_utils import register_resolvers
 from aintelope.__main__ import aintelope_main
 
-from tests.test_config import constants
+from tests.conftest import constants
 
 
 def test_training_pipeline_main():

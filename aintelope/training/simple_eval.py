@@ -8,23 +8,18 @@ from aintelope.agents.instinct_agent import InstinctAgent
 from aintelope.agents.q_agent import QAgent
 from aintelope.agents.simple_agents import (
     IterativeWeightOptimizationAgent,
+    OneStepPerfectPredictionAgent,
+    RandomWalkAgent,
 )
 from aintelope.models.dqn import DQN
 from aintelope.environments.savanna_zoo import (
     SavannaZooParallelEnv,
     SavannaZooSequentialEnv,
-    OneStepPerfectPredictionAgent,
-    RandomWalkAgent,
 )
 from aintelope.environments.savanna_safetygrid import (
     SavannaGridworldParallelEnv,
     SavannaGridworldSequentialEnv,
 )
-from aintelope.environments.savanna_zoo import (
-    SavannaZooParallelEnv,
-    SavannaZooSequentialEnv,
-)
-from aintelope.models.dqn import DQN
 from aintelope.training.dqn_training import Trainer
 
 logger = logging.getLogger("aintelope.training.simple_eval")

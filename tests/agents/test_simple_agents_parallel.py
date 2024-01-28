@@ -1,19 +1,11 @@
-import sys
 import os
 import pytest
 import numpy as np
-from typing import Tuple, Dict
+from typing import Dict
 
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import OmegaConf
 
-from tests.test_config import (
-    root_dir,
-    tparams_hparams,
-)
 from aintelope.training.simple_eval import run_episode
-
-
-# disabled parallel agent tests for time being since simple_eval.py does not support parallel environments yet
 
 
 @pytest.mark.parametrize("execution_number", range(10))

@@ -4,25 +4,17 @@ from typing import Dict, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
-
-from gymnasium.spaces import Box, Discrete
-from pettingzoo import AECEnv, ParallelEnv
+from gymnasium.spaces import Box
 
 from aintelope.environments.env_utils.distance import distance_to_closest_item
-
 from aintelope.environments import register_env_class
-
-# from ai_safety_gridworlds.environments.shared.mo_reward import mo_reward
 from ai_safety_gridworlds.helpers.gridworld_zoo_aec_env import GridworldZooAecEnv
 from ai_safety_gridworlds.helpers.gridworld_zoo_parallel_env import (
     GridworldZooParallelEnv,
     Actions,
     INFO_OBSERVATION_COORDINATES,
-    INFO_OBSERVATION_LAYERS_DICT,
     INFO_OBSERVATION_LAYERS_CUBE,
-    INFO_AGENT_OBSERVATIONS,
     INFO_AGENT_OBSERVATION_COORDINATES,
-    INFO_AGENT_OBSERVATION_LAYERS_DICT,
     INFO_AGENT_OBSERVATION_LAYERS_CUBE,
 )
 from ai_safety_gridworlds.environments.aintelope.aintelope_smell import (
@@ -30,9 +22,6 @@ from ai_safety_gridworlds.environments.aintelope.aintelope_smell import (
     FOOD_CHR,
     GAME_ART,
 )
-from gymnasium.spaces import Box
-
-from aintelope.environments.env_utils.distance import distance_to_closest_item
 from aintelope.environments.typing import Reward  # TODO: use np.ndarray or mo_reward
 from aintelope.environments.typing import AgentId, Info, Observation, ObservationFloat
 
@@ -52,7 +41,10 @@ Step = Tuple[
 
 class GridworldZooBaseEnv:
     metadata = {
-        "seed": None,  # This seed is used mainly for environment map randomisation. Later the test calls .seed() method on the wrapper and this will determine the random action sampling and other random events during the game play.
+        # This seed is used mainly for environment map randomisation.
+        # Later the test calls .seed() method on the wrapper and this will determine
+        # the random action sampling and other random events during the game play.
+        "seed": None,
         # "name": "savanna-safetygrid-v1",
         # "render_fps": 3,
         "render_agent_radius": 5,
@@ -577,7 +569,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             observation2 = None  # that's how Zoo api_test.py requires it
 
         # rewards should be only updated after step, not on each observation before step
-        reward2 = self._last_rewards2[agent]
+        reward2 = self._cumulative_rewards2[agent]
 
         if self._override_infos:
             info = {}
