@@ -54,7 +54,7 @@ def run_experiment(cfg: DictConfig) -> None:
     # Agents
     agents = []
     dones = {}
-    for i in range(cfg.hparams.env_params.amount_agents):
+    for i in range(env.max_num_agents):
         agent_id = f"agent_{i}"
         agents.append(
             get_agent_class(cfg.hparams.agent_id)(

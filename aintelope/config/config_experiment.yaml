@@ -13,9 +13,9 @@ trainer_params:
 hparams:
   batch_size: 16
   lr: 0.001
-  env: savanna-zoo-sequential-v2
-  env_entry_point: "aintelope.environments.savanna_zoo:SavannaZooSequentialEnv"
-  env_type: zoo
+  env: savanna-safetygrid-parallel-v1
+  env_entry_point: "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+  env_type: zoo  
   model: dqn
   agent_id: q_agent
   gamma: 0.99
@@ -31,14 +31,15 @@ hparams:
   log_figures_every_n_epochs: 5
   every_n_episodes: 1 # how often save a model
   env_params:
+    env_experiment: "experiments.aintelope.food_unbounded"
     num_iters: 200 # duration of a single episode. NB! warm_start_steps will be subtracted from this value
     map_min: 0
     map_max: 5
     render_mode: null
     render_map_max: 5
-    amount_agents: 1 
-    amount_grass_patches: 1
-    amount_water_holes: 0
+    # amount_agents: 1 
+    # amount_grass_patches: 1
+    # amount_water_holes: 0
     test_death: False      # needed for trainer tests
     seed: null      # needed for trainer tests
   agent_params:

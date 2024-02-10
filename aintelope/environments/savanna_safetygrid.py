@@ -26,7 +26,7 @@ from ai_safety_gridworlds.helpers.gridworld_zoo_parallel_env import (
     INFO_AGENT_OBSERVATION_LAYERS_CUBE,
 )
 
-from ai_safety_gridworlds.environments.aintelope.aintelope_smell import (
+from ai_safety_gridworlds.environments.aintelope.aintelope_savanna import (
     # TODO: import agent char map from env object instead?
     GAME_ART,
     AGENT_CHR1,
@@ -73,17 +73,17 @@ class GridworldZooBaseEnv:
         # "render_grass_color": (20, 200, 0),
         # "render_modes": ("human", "ascii", "offline"),
         # "render_window_size": 512,
-        "amount_agents": 1,
+        #"amount_agents": 1,
         # "map_min": 0,
         # "map_max": 10,   # TODO
-        "amount_grass_patches": 2,
-        "amount_water_holes": 0,
+        #"amount_grass_patches": 2,
+        #"amount_water_holes": 0,
         "num_iters": 1,
         "observation_direction_mode": 0,  # TODO: Joel wanted to use relative direction, so need to use mode 1 or 2 in this case  # 0 - fixed, 1 - relative, depending on last move, 2 - relative, controlled by separate turning actions.
         "action_direction_mode": 0,  # TODO: Joel wanted to use relative direction, so need to use mode 1 or 2 in this case    # 0 - fixed, 1 - relative, depending on last move, 2 - relative, controlled by separate turning actions.
         "map_randomization_frequency": 1,  # TODO   # 0 - off, 1 - once per experiment run, 2 - once per trial (a trial is a sequence of training episodes separated by env.reset call, but using a same model instance), 3 - once per training episode.
         "remove_unused_tile_types_from_layers": True,  # Whether to remove tile types not present on initial map from observation layers. - set to False when same agent brain is trained over multiple environments
-        "observe_bitmap_layers": False,  # Alternate observation format to current vector of absolute coordinates. Bitmap representation enables representing objects which might be outside of agent's observation zone for time being.
+        "observe_bitmap_layers": True,  # Alternate observation format to current vector of absolute coordinates. Bitmap representation enables representing objects which might be outside of agent's observation zone for time being.
         "override_infos": False,  # Needed for tests. Zoo is unable to compare infos unless they have simple structure.
         "test_death": False,
         "test_death_probability": 0.33,
@@ -99,14 +99,14 @@ class GridworldZooBaseEnv:
         logger.info(f"initializing savanna env with params: {self.metadata}")
 
         self.super_initargs = {
-            "env_name": "aintelope.aintelope_smell",
+            "env_name": self.metadata.get("env_experiment", "aintelope.aintelope_savanna"),
             "seed": self.metadata[
                 "seed"
             ],  # This seed is used mainly for environment map randomisation. Later the test calls .seed() method on the wrapper and this will determine the random action sampling and other random events during the game play.
             "max_iterations": self.metadata["num_iters"],
-            "amount_food_patches": self.metadata["amount_grass_patches"],
-            "amount_drink_holes": self.metadata["amount_water_holes"],
-            "amount_agents": self.metadata["amount_agents"],
+            #"amount_food_patches": self.metadata["amount_grass_patches"],
+            #"amount_drink_holes": self.metadata["amount_water_holes"],
+            #"amount_agents": self.metadata["amount_agents"],
             "observation_radius": self.metadata[
                 "render_agent_radius"
             ],  # TODO: is render_agent_radius meant as diameter actually?
@@ -131,30 +131,31 @@ class GridworldZooBaseEnv:
 
     def init_observation_spaces(self):
         # for @zoo-api
-        self.transformed_observation_spaces = {
-            agent: Box(
-                low=0,
-                high=len(
-                    GAME_ART[0][0]
-                ),  # TODO: consider height as well and read it from env object
-                shape=(
-                    2
-                    * (
-                        self.metadata["amount_agents"]
-                        + self.metadata["amount_grass_patches"]
-                        + self.metadata["amount_water_holes"]
+        if not self._observe_bitmap_layers:
+            self.transformed_observation_spaces = {
+                agent: Box(
+                    low=0,
+                    high=len(
+                        GAME_ART[0][0]
+                    ),  # TODO: consider height as well and read it from env object
+                    shape=(
+                        2
+                        * (
+                            self.metadata["amount_agents"]
+                            + self.metadata["amount_grass_patches"]
+                            + self.metadata["amount_water_holes"]
+                        ),
                     ),
-                ),
-            )
-            for agent in self.possible_agents
-        }
-
+                )
+                for agent in self.possible_agents
+            }
+        
         qqq = True  # for debugging
 
     # this method has no side effects
     def transform_observation(self, agent: str, info) -> npt.NDArray[ObservationFloat]:
         if self._observe_bitmap_layers:
-            return info[INFO_OBSERVATION_LAYERS_CUBE]
+            return info[INFO_OBSERVATION_LAYERS_CUBE].astype(np.float32)
 
         else:
             # NB! So far the savanna code has been using absolute coordinates, not relative coordinates.
@@ -236,7 +237,10 @@ class GridworldZooBaseEnv:
             return np.float64(1.0)
 
     def observation_space(self, agent):
-        return self.transformed_observation_spaces[agent]
+        if self._observe_bitmap_layers:
+            return self.observation_spaces[agent]
+        else:
+            return self.transformed_observation_spaces[agent]        
 
     # called by DQNLightning
     def state_to_namedtuple(self, state: npt.NDArray[ObservationFloat]) -> NamedTuple:
