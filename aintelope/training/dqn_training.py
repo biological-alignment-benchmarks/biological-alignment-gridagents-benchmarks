@@ -66,7 +66,7 @@ class Trainer:
         self.hparams = params.hparams
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def add_agent(self, agent_id, observation_shape, action_space, checkpoint):
+    def add_agent(self, agent_id, observation_shape, action_space, checkpoint: Optional[str] = None):
         """
         Register an agent.
 
@@ -74,7 +74,7 @@ class Trainer:
             agent_id (str): same as elsewhere (f.ex. "agent_0")
             observation_shape (tuple): numpy shape of the observations
             action_space (Discrete): action_space from environment
-            checkpoint: Path to checkpoint, False if not available
+            checkpoint: Path (string) to checkpoint, None if not available
 
         Returns:
             None

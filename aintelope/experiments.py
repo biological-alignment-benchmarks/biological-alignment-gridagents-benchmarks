@@ -78,7 +78,7 @@ def run_experiment(cfg: DictConfig) -> None:
         )  # TODO: is this reset necessary here? In main loop below, there is also a reset call
 
         # Get latest checkpoint if existing
-        checkpoint = False
+        checkpoint = None
         checkpoints = glob.glob(dir_cp + agent_id + "*")
         if len(checkpoints) > 0:
             checkpoint = max(checkpoints, key=os.path.getctime)
