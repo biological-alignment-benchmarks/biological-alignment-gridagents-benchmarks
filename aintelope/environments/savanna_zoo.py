@@ -77,6 +77,9 @@ class SavannaZooSequentialEnv(SavannaEnv, AECEnv):
     def agent_selection(self):
         return self._next_agent
 
+    def observe_info(self, agent):
+        return self.infos[agent]
+
     def reset(self, *args, **kwargs):
         self._next_agent = self.possible_agents[0]
         self._next_agent_index = 0

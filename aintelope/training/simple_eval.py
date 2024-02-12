@@ -147,10 +147,12 @@ def run_episode(full_params: Dict) -> None:
     for agent in agents:
         if isinstance(env, ParallelEnv):
             observation = observations[agent.id]
+            info = infos[agent.id]
         elif isinstance(env, AECEnv):
             observation = env.observe(agent.id)
+            info = env.observe_info(agent.id)
 
-        agent.reset(observation)
+        agent.reset(observation, info)
         trainer.add_agent(agent.id, observation.shape, env.action_space)
 
     agents_dict = {agent.id: agent for agent in agents}
@@ -172,7 +174,8 @@ def run_episode(full_params: Dict) -> None:
                     if dones[agent.id]:
                         continue
                     observation = observations[agent.id]
-                    actions[agent.id] = agent.get_action(observation, step)
+                    info = infos[agent.id]
+                    actions[agent.id] = agent.get_action(observation, info, step)
 
                 logger.debug("debug actions", actions)
                 logger.debug("debug step")
@@ -196,7 +199,8 @@ def run_episode(full_params: Dict) -> None:
                     max_iter=env.num_agents
                 ):  # num_agents returns number of alive (non-done) agents
                     agent = agents_dict[agent_id]
-                    observation = env.observe(agent.id)  # TODO: parallel env support
+                    observation = env.observe(agent.id)
+                    info = env.observe_info(agent.id)
                     # agent doesn't get to play_step, only env can, for multi-agent env compatibility
                     # reward, score, done = agent.play_step(nets[i], epsilon=1.0)
                     # Per Zoo API, a dead agent must call .step(None) once more after becoming dead. Only after that call will this dead agent be removed from various dictionaries and from .agent_iter loop.
@@ -206,6 +210,7 @@ def run_episode(full_params: Dict) -> None:
                         # action = action_space(agent.id).sample()
                         action = agent.get_action(
                             observation,
+                            info,
                             step,  # TODO: there was step=0 but we have step index available in this iteration. So is it okay if I use the step variable here?
                         )
 
