@@ -1,8 +1,8 @@
-from typing import Tuple, Dict
 import pathlib
+from typing import Dict, Tuple
 
-from omegaconf import DictConfig, OmegaConf
 import pytest
+from omegaconf import DictConfig, OmegaConf
 
 
 def constants() -> DictConfig:

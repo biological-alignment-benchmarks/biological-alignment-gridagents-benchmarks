@@ -1,16 +1,15 @@
-import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-
-from typing import Optional, Tuple, NamedTuple, List
-import logging
 import csv
-
-from pathlib import Path
+import logging
 import os
 import sys
+from pathlib import Path
+from typing import List, NamedTuple, Optional, Tuple
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.figure import Figure
 
 # Library for handling saving to file
 

@@ -1,13 +1,11 @@
 import logging
-
-
-import numpy as np
-
 # Code to enable Visual Studio debugging with non-legacy-debugger.
 # If you want to avoid exceptions during code start altogether then an alternative is to use "legacy debugger":
 # Visual Studio -> Tools -> Options -> Python -> Debugging -> Enable "Use legacy debugger".
 import os
 import sys
+
+import numpy as np
 
 if (
     os.name == "nt"
@@ -22,7 +20,8 @@ if (
 
     os.get_terminal_size = get_terminal_size
 
-from gemini import Scene, Sprite, txtcolours as tc, sleep
+from gemini import Scene, Sprite, sleep
+from gemini import txtcolours as tc
 
 logger = logging.getLogger("aintelope.environments.env_utils.render_ascii")
 

@@ -1,13 +1,13 @@
-import pandas as pd
-from matplotlib import pyplot as plt
-import numpy as np
-from matplotlib import cm
+from typing import Optional
+
+import dateutil.parser as dparser
 import matplotlib.collections as mcoll
 import matplotlib.path as mpath
-import dateutil.parser as dparser
+import numpy as np
+import pandas as pd
 import seaborn as sns
-
-from typing import Optional
+from matplotlib import cm
+from matplotlib import pyplot as plt
 
 """
 Create and return plots for various analytics.

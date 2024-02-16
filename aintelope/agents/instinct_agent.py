@@ -1,18 +1,15 @@
-from typing import Optional, List
-import logging
 import csv
+import logging
+from typing import List, Optional
+
 import numpy.typing as npt
 
-from gymnasium.spaces import Discrete
-
-from aintelope.agents import Environment, register_agent_class, PettingZooEnv
-from aintelope.agents.q_agent import QAgent, HistoryStep
-from aintelope.training.dqn_training import Trainer
+from aintelope.agents import Environment, PettingZooEnv, register_agent_class
 from aintelope.agents.instincts.savanna_instincts import available_instincts_dict
-
-from aintelope.environments.typing import (
-    ObservationFloat,
-)
+from aintelope.agents.q_agent import HistoryStep, QAgent
+from aintelope.environments.typing import ObservationFloat
+from aintelope.training.dqn_training import Trainer
+from gymnasium.spaces import Discrete
 
 logger = logging.getLogger("aintelope.agents.instinct_agent")
 

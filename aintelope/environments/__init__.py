@@ -1,8 +1,7 @@
-from typing import Union, Mapping, Type
 from abc import ABC, abstractmethod
+from typing import Mapping, Type, Union
 
 import gymnasium as gym
-
 from pettingzoo import AECEnv, ParallelEnv
 
 PettingZooEnv = Union[AECEnv, ParallelEnv]

@@ -1,18 +1,17 @@
-from typing import Optional, Tuple
+import datetime
 import logging
 from collections import namedtuple
-import datetime
+from typing import Optional, Tuple
 
-import numpy.typing as npt
 import numpy as np
-
+import numpy.typing as npt
 import torch
-from torch import nn
 import torch.optim as optim
+from torch import nn
 
+from aintelope.environments.typing import ObservationFloat
 from aintelope.models.dqn import DQN
 from aintelope.training.memory import ReplayMemory
-from aintelope.environments.typing import ObservationFloat
 
 logger = logging.getLogger("aintelope.training.dqn_training")
 Transition = namedtuple(

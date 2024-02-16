@@ -1,20 +1,14 @@
-from typing import Optional, Tuple, NamedTuple, List
-import logging
 import csv
+import logging
+from typing import List, NamedTuple, Optional, Tuple
+
 import numpy.typing as npt
 
-from gymnasium.spaces import Discrete
-
+from aintelope.agents import Agent, register_agent_class
 from aintelope.environments.savanna_gym import SavannaGymEnv  # TODO used for hack
+from aintelope.environments.typing import ObservationFloat
 from aintelope.training.dqn_training import Trainer
-from aintelope.agents import (
-    Agent,
-    register_agent_class,
-)
-
-from aintelope.environments.typing import (
-    ObservationFloat,
-)
+from gymnasium.spaces import Discrete
 
 logger = logging.getLogger("aintelope.agents.q_agent")
 

@@ -1,33 +1,22 @@
-from collections import Counter
-
 import logging
-
-import gymnasium as gym
-
-from omegaconf import OmegaConf, DictConfig
+from collections import Counter
 from typing import Dict
 
-from pettingzoo import AECEnv, ParallelEnv
+from omegaconf import DictConfig, OmegaConf
 
-from aintelope.agents.q_agent import QAgent
+import gymnasium as gym
 from aintelope.agents.instinct_agent import InstinctAgent
-from aintelope.agents.simple_agents import (
-    RandomWalkAgent,
-    OneStepPerfectPredictionAgent,
-    IterativeWeightOptimizationAgent,
-)
+from aintelope.agents.q_agent import QAgent
+from aintelope.agents.simple_agents import (IterativeWeightOptimizationAgent,
+                                            OneStepPerfectPredictionAgent,
+                                            RandomWalkAgent)
+from aintelope.environments.savanna_safetygrid import (SavannaGridworldParallelEnv,
+                                                       SavannaGridworldSequentialEnv)
+from aintelope.environments.savanna_zoo import (SavannaZooParallelEnv,
+                                                SavannaZooSequentialEnv)
 from aintelope.models.dqn import DQN
-from aintelope.environments.savanna_zoo import (
-    SavannaZooParallelEnv,
-    SavannaZooSequentialEnv,
-)
-from aintelope.environments.savanna_safetygrid import (
-    SavannaGridworldParallelEnv,
-    SavannaGridworldSequentialEnv,
-)
-
 from aintelope.training.dqn_training import Trainer
-
+from pettingzoo import AECEnv, ParallelEnv
 
 logger = logging.getLogger("aintelope.training.simple_eval")
 

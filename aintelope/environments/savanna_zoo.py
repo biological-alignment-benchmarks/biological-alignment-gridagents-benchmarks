@@ -1,22 +1,12 @@
-from typing import Optional, Dict
-import logging
 import functools
-
-from pettingzoo import AECEnv, ParallelEnv
+import logging
+from typing import Dict, Optional
 
 from aintelope.environments import register_env_class
-
-from aintelope.environments.savanna import (
-    SavannaEnv,
-    RenderSettings,
-    RenderState,
-    HumanRenderState,
-    move_agent,
-    reward_agent,
-    PositionFloat,
-    Action,
-    Step,
-)
+from aintelope.environments.savanna import (Action, HumanRenderState, PositionFloat,
+                                            RenderSettings, RenderState, SavannaEnv,
+                                            Step, move_agent, reward_agent)
+from pettingzoo import AECEnv, ParallelEnv
 
 logger = logging.getLogger("aintelope.environments.savanna_zoo")
 

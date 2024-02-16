@@ -1,7 +1,7 @@
-import torch
-from torch import nn
 import numpy as np
+import torch
 import torch.nn.functional as F
+from torch import nn
 
 # class DQN(nn.Module):
 #    """Simple MLP network."""

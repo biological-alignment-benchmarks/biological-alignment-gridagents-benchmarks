@@ -9,12 +9,9 @@ import numpy as np
 
 from aintelope.agents import register_agent_class
 from aintelope.agents.q_agent import QAgent
-from aintelope.environments.savanna import (
-    move_agent,
-    reward_agent,
-    get_agent_pos_from_state,
-)
 from aintelope.environments.env_utils.distance import distance_to_closest_item
+from aintelope.environments.savanna import (get_agent_pos_from_state, move_agent,
+                                            reward_agent)
 
 logger = logging.getLogger("aintelope.agents.simple_agents")
 

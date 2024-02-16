@@ -2,7 +2,6 @@ import logging
 import sys
 
 import hydra
-
 from omegaconf import DictConfig, OmegaConf
 
 from aintelope.config.config_utils import register_resolvers

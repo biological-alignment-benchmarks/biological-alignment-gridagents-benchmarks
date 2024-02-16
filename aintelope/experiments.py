@@ -1,40 +1,27 @@
-from collections import namedtuple
-
-import logging
-from omegaconf import DictConfig
-
-import os
-from pathlib import Path
 import glob
+import logging
+import os
+from collections import namedtuple
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+from omegaconf import DictConfig
 
-from aintelope.training.dqn_training import Trainer
-from aintelope.analytics import recording as rec
-
-from aintelope.agents import (
-    Agent,
-    PettingZooEnv,
-    Environment,
-    register_agent_class,
-)
-
-# initialize environment registries
-from pettingzoo import AECEnv, ParallelEnv
-from aintelope.environments.savanna_zoo import (
-    SavannaZooParallelEnv,
-    SavannaZooSequentialEnv,
-)
-from aintelope.environments.savanna_safetygrid import (
-    SavannaGridworldParallelEnv,
-    SavannaGridworldSequentialEnv,
-)
-from aintelope.environments import get_env_class
-
+from aintelope.agents import (Agent, Environment, PettingZooEnv, get_agent_class,
+                              register_agent_class)
 # initialize agent registries
 from aintelope.agents.instinct_agent import InstinctAgent
 from aintelope.agents.q_agent import QAgent
-from aintelope.agents import get_agent_class
+from aintelope.analytics import recording as rec
+from aintelope.environments import get_env_class
+from aintelope.environments.savanna_safetygrid import (SavannaGridworldParallelEnv,
+                                                       SavannaGridworldSequentialEnv)
+from aintelope.environments.savanna_zoo import (SavannaZooParallelEnv,
+                                                SavannaZooSequentialEnv)
+from aintelope.training.dqn_training import Trainer
+# initialize environment registries
+from pettingzoo import AECEnv, ParallelEnv
 
 
 def run_experiment(cfg: DictConfig) -> None:

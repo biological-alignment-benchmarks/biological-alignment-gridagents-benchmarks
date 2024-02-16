@@ -1,6 +1,8 @@
-import pytest
-import sys
 import os
+import sys
+
+import pytest
+
 from aintelope.config.config_utils import register_resolvers
 
 if __name__ == "__main__" and os.name == "nt":  # detect debugging

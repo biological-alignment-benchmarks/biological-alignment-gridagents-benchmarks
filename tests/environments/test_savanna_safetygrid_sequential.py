@@ -1,27 +1,21 @@
 import os
 import sys
 import time
-import pytest
+
 import numpy as np
 import numpy.testing as npt
+import pytest
 
+from aintelope.environments import savanna_safetygrid as safetygrid
+from aintelope.environments.env_utils.distance import distance_to_closest_item
+from aintelope.environments.savanna import ACTION_MAP
+from aintelope.environments.savanna_safetygrid import SavannaGridworldSequentialEnv
 from gymnasium.spaces import Discrete, MultiDiscrete
-
-from pettingzoo.test import (
-    max_cycles_test,
-    render_test,
-    performance_benchmark,
-)
-from pettingzoo.test import api_test
+from pettingzoo.test import (api_test, max_cycles_test, performance_benchmark,
+                             render_test)
 from pettingzoo.test.seed_test import seed_test
 
 # from pettingzoo.utils import parallel_to_aec
-
-
-from aintelope.environments import savanna_safetygrid as safetygrid
-from aintelope.environments.savanna import ACTION_MAP
-from aintelope.environments.savanna_safetygrid import SavannaGridworldSequentialEnv
-from aintelope.environments.env_utils.distance import distance_to_closest_item
 
 
 @pytest.mark.parametrize("execution_number", range(1))

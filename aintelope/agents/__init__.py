@@ -1,13 +1,11 @@
-from typing import Union, Mapping, Optional, Type
 from abc import ABC, abstractmethod
+from typing import Mapping, Optional, Type, Union
+
+import numpy.typing as npt
 
 import gymnasium as gym
-
+from aintelope.environments.typing import ObservationFloat
 from pettingzoo import AECEnv, ParallelEnv
-import numpy.typing as npt
-from aintelope.environments.typing import (
-    ObservationFloat,
-)
 
 PettingZooEnv = Union[AECEnv, ParallelEnv]
 Environment = Union[gym.Env, PettingZooEnv]

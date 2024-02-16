@@ -1,36 +1,22 @@
-from typing import Dict, List, Optional, NamedTuple, Tuple
 import logging
 from collections import namedtuple
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
 import pygame
 
 import gymnasium.spaces  # cannot import gymnasium.spaces.Tuple directly since it is already used by typing
+from aintelope.environments.env_utils.distance import distance_to_closest_item
+from aintelope.environments.env_utils.render_ascii import AsciiRenderState
+from aintelope.environments.savanna_safetygrid import (
+    AGENT_CHR1, AGENT_CHR2, FOOD_CHR, INFO_AGENT_OBSERVATION_COORDINATES,
+    INFO_AGENT_OBSERVATION_LAYERS_ORDER)
+from aintelope.environments.typing import (Action, AgentId, AgentStates, Info,
+                                           Observation, ObservationFloat, PositionFloat,
+                                           Reward)
 from gymnasium.spaces import Box, Discrete
 from gymnasium.utils import seeding
-
-from aintelope.environments.typing import (
-    ObservationFloat,
-    PositionFloat,
-    Action,
-    AgentId,
-    AgentStates,
-    Observation,
-    Reward,
-    Info,
-)
-from aintelope.environments.env_utils.render_ascii import AsciiRenderState
-from aintelope.environments.env_utils.distance import distance_to_closest_item
-
-from aintelope.environments.savanna_safetygrid import (
-    INFO_AGENT_OBSERVATION_LAYERS_ORDER,
-    INFO_AGENT_OBSERVATION_COORDINATES,
-    FOOD_CHR,
-    AGENT_CHR1,
-    AGENT_CHR2,
-)
-
 
 logger = logging.getLogger("aintelope.environments.savanna")
 
@@ -156,7 +142,7 @@ def get_grass_pos_from_state(agent_state, info) -> List[PositionFloat]:
 
 def get_agent_pos_from_state(agent_state, info, agent_name) -> List[PositionFloat]:
     if len(agent_state.shape) == 3:  # new obseration format
-        agent_chr = agent_name[-1]  # TODO: use env.agent_name_mapping instead
+        agent_chr = agent_name[-1]  # TODO: use env.agent_mapping instead
         if (
             False
         ):  # enable if you want to use raw 3D observation and no coordinates in info

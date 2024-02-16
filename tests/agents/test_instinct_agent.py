@@ -1,16 +1,13 @@
-import sys
 import os
-import pytest
+import sys
+from typing import Dict, Tuple
+
 import numpy as np
-from typing import Tuple, Dict
+import pytest
+from omegaconf import DictConfig, OmegaConf
 
-from omegaconf import OmegaConf, DictConfig
-
-from tests.test_config import (
-    root_dir,
-    tparams_hparams,
-)
 from aintelope.training.simple_eval import run_episode
+from tests.test_config import root_dir, tparams_hparams
 
 
 @pytest.mark.parametrize("execution_number", range(1))

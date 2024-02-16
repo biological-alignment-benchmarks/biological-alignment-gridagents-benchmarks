@@ -1,55 +1,28 @@
-from typing import Dict, List, Optional, Tuple, NamedTuple, Union
 import logging
-from collections import namedtuple, OrderedDict
+from collections import OrderedDict, namedtuple
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
 
 import gymnasium.spaces  # cannot import gymnasium.spaces.Tuple directly since it is already used by typing
-from gymnasium.spaces import Box, Discrete
-from pettingzoo import AECEnv, ParallelEnv
-
-from aintelope.environments.env_utils.distance import distance_to_closest_item
-
-from aintelope.environments import register_env_class
-
+from ai_safety_gridworlds.environments.aintelope.aintelope_savanna import (  # TODO: import agent char map from env object instead?; AGENT_CHR3,
+    AGENT_CHR1, AGENT_CHR2, DRINK_CHR, FOOD_CHR, GAME_ART)
 # from ai_safety_gridworlds.environments.shared.mo_reward import mo_reward
 from ai_safety_gridworlds.helpers.gridworld_zoo_aec_env import GridworldZooAecEnv
 from ai_safety_gridworlds.helpers.gridworld_zoo_parallel_env import (
-    GridworldZooParallelEnv,
-    Actions,
-    INFO_OBSERVATION_COORDINATES,
-    INFO_OBSERVATION_LAYERS_DICT,
-    INFO_OBSERVATION_LAYERS_ORDER,
-    INFO_OBSERVATION_LAYERS_CUBE,
-    INFO_AGENT_OBSERVATIONS,
-    INFO_AGENT_OBSERVATION_COORDINATES,
-    INFO_AGENT_OBSERVATION_LAYERS_DICT,
-    INFO_AGENT_OBSERVATION_LAYERS_ORDER,
-    INFO_AGENT_OBSERVATION_LAYERS_CUBE,
-)
-
-from ai_safety_gridworlds.environments.aintelope.aintelope_savanna import (
-    # TODO: import agent char map from env object instead?
-    GAME_ART,
-    AGENT_CHR1,
-    AGENT_CHR2,
-    # AGENT_CHR3,
-    DRINK_CHR,
-    FOOD_CHR,
-)
-
-from aintelope.environments.typing import (
-    ObservationFloat,
-    # PositionFloat,
-    # Action,
-    AgentId,
-    # AgentStates,
-    Observation,
-    Reward,  #  TODO: use np.ndarray or mo_reward
-    Info,
-)
-
+    INFO_AGENT_OBSERVATION_COORDINATES, INFO_AGENT_OBSERVATION_LAYERS_CUBE,
+    INFO_AGENT_OBSERVATION_LAYERS_DICT, INFO_AGENT_OBSERVATION_LAYERS_ORDER,
+    INFO_AGENT_OBSERVATIONS, INFO_OBSERVATION_COORDINATES, INFO_OBSERVATION_LAYERS_CUBE,
+    INFO_OBSERVATION_LAYERS_DICT, INFO_OBSERVATION_LAYERS_ORDER, Actions,
+    GridworldZooParallelEnv)
+from aintelope.environments import register_env_class
+from aintelope.environments.env_utils.distance import distance_to_closest_item
+from aintelope.environments.typing import Reward  # TODO: use np.ndarray or mo_reward
+from aintelope.environments.typing import (  # PositionFloat,; Action,; AgentStates,
+    AgentId, Info, Observation, ObservationFloat)
+from gymnasium.spaces import Box, Discrete
+from pettingzoo import AECEnv, ParallelEnv
 
 INFO_AGENT_INTEROCEPTION_ORDER = "info_agent_interoception_order"
 INFO_AGENT_INTEROCEPTION_VECTOR = "info_agent_interoception_vector"

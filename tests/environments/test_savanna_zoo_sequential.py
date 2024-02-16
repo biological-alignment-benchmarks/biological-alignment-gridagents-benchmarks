@@ -1,26 +1,20 @@
-import sys
 import os
-import pytest
+import sys
+
 import numpy as np
 import numpy.testing as npt
+import pytest
 
+from aintelope.environments import savanna_zoo as zoo
+from aintelope.environments.env_utils.distance import distance_to_closest_item
+from aintelope.environments.savanna import ACTION_MAP
+from aintelope.environments.savanna_zoo import SavannaZooSequentialEnv
 from gymnasium.spaces import Discrete, MultiDiscrete
-
-from pettingzoo.test import (
-    max_cycles_test,
-    render_test,
-    performance_benchmark,
-)
-from pettingzoo.test import api_test
+from pettingzoo.test import (api_test, max_cycles_test, performance_benchmark,
+                             render_test)
 from pettingzoo.test.seed_test import seed_test
 
 # from pettingzoo.utils import parallel_to_aec
-
-
-from aintelope.environments import savanna_zoo as zoo
-from aintelope.environments.savanna import ACTION_MAP
-from aintelope.environments.savanna_zoo import SavannaZooSequentialEnv
-from aintelope.environments.env_utils.distance import distance_to_closest_item
 
 
 @pytest.mark.parametrize("execution_number", range(1))
@@ -269,4 +263,5 @@ def test_performance_benchmark():
 
 if __name__ == "__main__" and os.name == "nt":  # detect debugging
     pytest.main([__file__])  # run tests only in this file
+    # test_zoo_api_sequential(0)
     # test_zoo_api_sequential_with_death()

@@ -1,10 +1,11 @@
-import subprocess
 import os
+import subprocess
 import sys
-import pytest
-from aintelope.config.config_utils import register_resolvers
-from aintelope.__main__ import aintelope_main
 
+import pytest
+
+from aintelope.__main__ import aintelope_main
+from aintelope.config.config_utils import register_resolvers
 from tests.test_config import constants
 
 
