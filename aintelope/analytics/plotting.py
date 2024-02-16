@@ -5,7 +5,6 @@ import matplotlib.collections as mcoll
 import matplotlib.path as mpath
 import numpy as np
 import pandas as pd
-import seaborn as sns
 from matplotlib import cm
 from matplotlib import pyplot as plt
 
