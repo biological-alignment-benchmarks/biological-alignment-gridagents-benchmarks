@@ -30,19 +30,23 @@ def plot_performance(all_events, save_path: Optional[str]):
     """
     Plot performance between rewards and scores.
     Accepts a list of event records from which a boxplot is done.
+    TODO: further consideration should be had on *what* to average over.
     """
-    keys = ["Run_id", "Agent_id", "Reward", "Score"]
+    keys = ["Run_id", "Episode", "Agent_id", "Reward", "Score"]
     data = pd.DataFrame(columns=keys)
     for events in all_events:
-        pd.concat([data, events[keys]])
-    data.groupby(["Agent_id"])["Reward", "Score"].mean()
+        data = pd.concat([data, events[keys]])
+    plots = data.groupby(["Episode", "Agent_id"]).mean()
 
-    plot = plt.figure()
-    plt.plot(data)  # boxplot(data)
+    fig = plt.figure()
+    plt.plot(plots[["Reward", "Score"]].to_numpy())
+    plt.xlabel("Episode")
+    plt.ylabel("Mean Reward")
+    plt.legend("RS")
 
     if save_path:
-        save_plot(plot, save_path)
-    return plot
+        save_plot(fig, save_path)
+    return fig
 
 
 def plot_heatmap(agent, env):
