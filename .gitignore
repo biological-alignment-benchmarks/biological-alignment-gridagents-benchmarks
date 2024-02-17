@@ -163,3 +163,6 @@ tags
 *~
 *.bak
 *.old
+
+# Gridworlds logfiles
+/logs
