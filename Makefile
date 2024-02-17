@@ -45,7 +45,7 @@ typecheck-local: ## Local typechecking
 	mypy $(CODEBASE)
 
 # ---------- formatting ----------
-.PHONY: format format-check isort isort-check
+.PHONY: isort isort-check format format-check
 format: ## apply automatic code formatter to repository
 	black $(CODEBASE)
 

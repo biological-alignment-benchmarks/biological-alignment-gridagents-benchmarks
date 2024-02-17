@@ -44,8 +44,8 @@ For linting/code style use [`flake8`](https://flake8.pycqa.org/en/latest/).
 These tools can be invoked via `make`:
 
 ```bash
-make format
 make isort
+make format
 make flake8
 ```
 
