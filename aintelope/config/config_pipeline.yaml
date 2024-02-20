@@ -1,0 +1,15 @@
+# Repeat a block like this to chain more tests into the pipeline
+test1: # Just change the name of the test here
+  env: savanna-safetygrid-parallel-v1
+  env_entry_point: "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+  env_type: zoo
+  env_params:
+    env_experiment: "experiments.aintelope.food_unbounded"
+    num_iters: 100 # duration of a single episode. 
+    map_min: 0
+    map_max: 5
+    render_mode: null
+    render_map_max: 5
+    amount_agents: 1 
+    test_death: False      
+    seed: null

@@ -1,5 +1,4 @@
 from typing import Mapping, Type
-
 from aintelope.agents.abstract_agent import Agent
 from aintelope.agents.instinct_agent import InstinctAgent
 from aintelope.agents.q_agent import QAgent

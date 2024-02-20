@@ -7,6 +7,7 @@ import numpy.typing as npt
 from aintelope.agents.instincts.savanna_instincts import available_instincts_dict
 from aintelope.agents.q_agent import HistoryStep, QAgent
 from aintelope.training.dqn_training import Trainer
+
 from aintelope.typing import ObservationFloat, PettingZooEnv
 
 logger = logging.getLogger("aintelope.agents.instinct_agent")
@@ -29,14 +30,15 @@ class InstinctAgent(QAgent):
             trainer=trainer,
         )
 
-    def reset(self, state) -> None:
+    def reset(self, state, info) -> None:
         """Resets self and updates the state."""
-        super().reset(state)
+        super().reset(state, info)
         self.init_instincts()
 
     def get_action(
         self,
         observation: npt.NDArray[ObservationFloat] = None,
+        info: dict = {},
         step: int = 0,  # net: nn.Module, epsilon: float, device: str
     ) -> Optional[int]:
         """Given an observation, ask your net what to do. State is needed to be
@@ -50,30 +52,33 @@ class InstinctAgent(QAgent):
         Returns:
             action (Optional[int]): index of action
         """
-        return super().get_action(observation, step)
+        return super().get_action(observation, info, step)
 
     # TODO hack, figure out if state_to_namedtuple can be static somewhere
     def update(
         self,
         env: PettingZooEnv = None,
         observation: npt.NDArray[ObservationFloat] = None,
+        info: dict = {},
         score: float = 0.0,
         done: bool = False,
         save_path: Optional[str] = None,
-    ) -> None:
+    ) -> list:
         """
         Takes observations and updates trainer on perceived experiences.
         Needed here to catch instincts.
 
         Args:
+            env: Environment
             observation: ObservationArray
             score: Only baseline uses score as a reward
             done: boolean whether run is done
-
+            save_path: str
         Returns:
             Reward: float
         """
         next_state = observation
+        next_info = info
         # For future: add state (interoception) handling here when needed
 
         # interrupt to do instinctual learning
@@ -87,9 +92,10 @@ class InstinctAgent(QAgent):
             instinct_events = []
             if next_state is not None:  # temporary, until we solve final states
                 for instinct_name, instinct_object in self.instincts.items():
-                    instinct_reward, instinct_event = instinct_object.calc_reward(
-                        next_state
-                    )
+                    (
+                        instinct_reward,
+                        instinct_event,
+                    ) = instinct_object.calc_reward(self, next_state, next_info)
                     reward += instinct_reward
                     logger.debug(
                         f"Reward of {instinct_name}: {instinct_reward}; "
@@ -100,12 +106,12 @@ class InstinctAgent(QAgent):
         # interruption done
 
         if next_state is not None:
-            next_s_hist = env.state_to_namedtuple(next_state.tolist())
+            next_s_hist = next_state
         else:
             next_s_hist = None
         self.history.append(
             HistoryStep(
-                state=env.state_to_namedtuple(self.state.tolist()),
+                state=self.state,
                 action=self.last_action,
                 reward=reward,
                 done=done,
@@ -114,25 +120,11 @@ class InstinctAgent(QAgent):
             )
         )
 
-        if save_path is not None:
-            with open(save_path, "a+") as f:
-                csv_writer = csv.writer(f)
-                csv_writer.writerow(
-                    [
-                        self.state.tolist(),
-                        self.last_action,
-                        score,
-                        done,
-                        instinct_events,
-                        next_state,
-                    ]
-                )
-
-        self.trainer.update_memory(
-            self.id, self.state, self.last_action, score, done, next_state
-        )
+        event = [self.id, self.state, self.last_action, score, done, next_state]
+        self.trainer.update_memory(*event)
         self.state = next_state
-        return reward
+        self.info = info
+        return event
 
     def init_instincts(self) -> None:
         logger.debug(f"target_instincts: {self.target_instincts}")

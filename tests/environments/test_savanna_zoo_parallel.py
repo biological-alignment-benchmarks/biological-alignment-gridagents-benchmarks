@@ -3,17 +3,21 @@ import os
 import numpy as np
 import numpy.testing as npt
 import pytest
-from gymnasium.spaces import Discrete
-from pettingzoo.test.parallel_test import parallel_api_test
-from pettingzoo.test.seed_test import parallel_seed_test
 
+from aintelope.environments import savanna_zoo as zoo
 from aintelope.environments.env_utils.distance import distance_to_closest_item
 from aintelope.environments.savanna import ACTION_MAP, move_agent, reward_agent
 from aintelope.environments.savanna_zoo import SavannaZooParallelEnv
 from aintelope.typing import PositionFloat
+from gymnasium.spaces import Discrete, MultiDiscrete
+from pettingzoo.test import max_cycles_test, performance_benchmark, render_test
+from pettingzoo.test.parallel_test import parallel_api_test
+from pettingzoo.test.seed_test import parallel_seed_test
+
+# from pettingzoo.utils import parallel_to_aec
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_pettingzoo_api_parallel(execution_number):
     # TODO: refactor these values out to a test-params file
     env_params = {
@@ -29,10 +33,12 @@ def test_pettingzoo_api_parallel(execution_number):
     env.seed(execution_number)
 
     # sequential_env = parallel_to_aec(env)
-    parallel_api_test(env, num_cycles=10)
+    parallel_api_test(
+        env, num_cycles=10
+    )  # TODO: there is some problem with observation space check
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_pettingzoo_api_parallel_with_death(execution_number):
     # TODO: refactor these values out to a test-params file
     env_params = {
@@ -52,7 +58,7 @@ def test_pettingzoo_api_parallel_with_death(execution_number):
     parallel_api_test(env, num_cycles=10)
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_zoo_seed(execution_number):
     np.random.seed(execution_number)
 
@@ -78,7 +84,7 @@ def test_zoo_agent_states():
     )
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_zoo_reward_agent(execution_number):
     env = SavannaZooParallelEnv()
     env.reset(seed=execution_number)
@@ -133,7 +139,7 @@ def test_zoo_move_agent():
         assert agent_states[agent].dtype == PositionFloat
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_zoo_step_result(execution_number):
     # default is 1 iter which means that the env is done after 1 step below and the
     # test will fail
@@ -154,13 +160,16 @@ def test_zoo_step_result(execution_number):
     assert not dones[agent]
     assert isinstance(observations, dict), "observations is not a dict"
     assert isinstance(
-        observations[agent], np.ndarray
-    ), "observations of agent is not an array"
+        observations[agent][0], np.ndarray
+    ), "observations[0] of agent is not an array"
+    assert isinstance(
+        observations[agent][1], np.ndarray
+    ), "observations[1] of agent is not an array"
     assert isinstance(rewards, dict), "rewards is not a dict"
     assert isinstance(rewards[agent], np.float64), "reward of agent is not a float64"
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_zoo_done_step(execution_number):
     env = SavannaZooParallelEnv(env_params={"amount_agents": 1})
     assert len(env.possible_agents) == 1

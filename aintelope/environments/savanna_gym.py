@@ -2,7 +2,6 @@ import logging
 from typing import Dict, Optional
 
 import gymnasium as gym
-
 from aintelope.environments.savanna import SavannaEnv
 from aintelope.typing import Info, Observation, Reward
 

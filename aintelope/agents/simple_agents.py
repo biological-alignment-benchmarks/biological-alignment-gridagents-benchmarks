@@ -45,10 +45,10 @@ class OneStepPerfectPredictionAgent(QAgent):
             # GYM_INTERACTION
             action = self.action_space.sample()
         else:
-            # FIXME: "are you fucking kidding me?!" author: unknown
-            # Nathan: not sure what was wrong before, but I've tried to fix
-            agent_pos = get_agent_pos_from_state(self.state)
-            grass = self.env.grass_patches
+            agent_pos = get_agent_pos_from_state(
+                self.state[0], info={}, agent_name=self.id
+            )
+            grass = self.env.grass_patches  # TODO: 3D observation support
             min_grass_distance = distance_to_closest_item(agent_pos, grass)
             # agent_pos, grass = observation[:2], observation[2:].reshape(2, -1)
             bestreward = -INF

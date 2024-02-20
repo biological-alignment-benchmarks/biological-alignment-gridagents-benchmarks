@@ -18,7 +18,11 @@ def distance_to_closest_item(
     if len(items.shape) == 1:
         items = np.expand_dims(items, 0)
 
+    if items.size == 0:  # no items at all
+        return np.inf  # TODO
+
     closest_item = items[
+        # TODO: why isnt euclidean distance used?
         np.argmin(np.linalg.norm(np.subtract(items, agent_pos), axis=1))
     ]
     return vec_distance(closest_item, agent_pos)

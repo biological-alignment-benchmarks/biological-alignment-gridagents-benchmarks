@@ -1,28 +1,48 @@
 import logging
 from collections import OrderedDict, namedtuple
-from typing import Dict, NamedTuple, Optional, Tuple, Union
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
-from ai_safety_gridworlds.environments.aintelope.aintelope_smell import (
+
+import gymnasium.spaces  # cannot import gymnasium.spaces.Tuple directly since it is already used by typing
+from ai_safety_gridworlds.environments.aintelope.aintelope_savanna import (  # TODO: import agent char map from env object instead?; AGENT_CHR3,
+    AGENT_CHR1,
+    AGENT_CHR2,
     DRINK_CHR,
     FOOD_CHR,
     GAME_ART,
 )
+
 from ai_safety_gridworlds.helpers.gridworld_zoo_aec_env import GridworldZooAecEnv
 from ai_safety_gridworlds.helpers.gridworld_zoo_parallel_env import (
     INFO_AGENT_OBSERVATION_COORDINATES,
     INFO_AGENT_OBSERVATION_LAYERS_CUBE,
+    INFO_AGENT_OBSERVATION_LAYERS_DICT,
+    INFO_AGENT_OBSERVATION_LAYERS_ORDER,
+    INFO_AGENT_OBSERVATIONS,
     INFO_OBSERVATION_COORDINATES,
     INFO_OBSERVATION_LAYERS_CUBE,
+    INFO_OBSERVATION_LAYERS_DICT,
+    INFO_OBSERVATION_LAYERS_ORDER,
     Actions,
     GridworldZooParallelEnv,
 )
-from gymnasium.spaces import Box
 
+from aintelope.environments import register_env_class
 from aintelope.environments.env_utils.distance import distance_to_closest_item
 from aintelope.typing import Reward  # TODO: use np.ndarray or mo_reward
-from aintelope.typing import AgentId, Info, Observation, ObservationFloat
+from aintelope.typing import (  # PositionFloat,; Action,; AgentStates,
+    AgentId,
+    Info,
+    Observation,
+    ObservationFloat,
+)
+from gymnasium.spaces import Box, Discrete
+from pettingzoo import AECEnv, ParallelEnv
+
+INFO_AGENT_INTEROCEPTION_ORDER = "info_agent_interoception_order"
+INFO_AGENT_INTEROCEPTION_VECTOR = "info_agent_interoception_vector"
 
 logger = logging.getLogger("aintelope.environments.savanna_safetygrid")
 
@@ -52,11 +72,11 @@ class GridworldZooBaseEnv:
         # "render_grass_color": (20, 200, 0),
         # "render_modes": ("human", "ascii", "offline"),
         # "render_window_size": 512,
-        "amount_agents": 1,
+        # "amount_agents": 1,
         # "map_min": 0,
         # "map_max": 10,   # TODO
-        "amount_grass_patches": 2,
-        "amount_water_holes": 0,
+        # "amount_grass_patches": 2,
+        # "amount_water_holes": 0,
         "num_iters": 1,
         # TODO: Joel wanted to use relative direction, so need to use mode 1 or 2 in
         # this case  # 0 - fixed, 1 - relative, depending on last move, 2 - relative,
@@ -73,11 +93,11 @@ class GridworldZooBaseEnv:
         # Whether to remove tile types not present on initial map from observation
         # layers. - set to False when same agent brain is trained over multiple
         # environments
-        "remove_unused_tile_types_from_layers": True,
+        "remove_unused_tile_types_from_layers": False,
         # Alternate observation format to current vector of absolute coordinates.
         # Bitmap representation enables representing objects which might be outside of
         # agent's observation zone for time being.
-        "observe_bitmap_layers": False,
+        "observe_bitmap_layers": True,
         # Needed for tests. Zoo is unable to compare infos
         # unless they have simple structure.
         "override_infos": False,
@@ -96,16 +116,18 @@ class GridworldZooBaseEnv:
         logger.info(f"initializing savanna env with params: {self.metadata}")
 
         self.super_initargs = {
-            "env_name": "aintelope.aintelope_smell",
+            "env_name": self.metadata.get(
+                "env_experiment", "aintelope.aintelope_savanna"
+            ),
             # This seed is used mainly for environment map randomisation.
             # Later the test calls .seed() method on the wrapper and this will
             # determine the random action sampling and other random events
             # during the game play.
             "seed": self.metadata["seed"],
             "max_iterations": self.metadata["num_iters"],
-            "amount_food_patches": self.metadata["amount_grass_patches"],
-            "amount_drink_holes": self.metadata["amount_water_holes"],
-            "amount_agents": self.metadata["amount_agents"],
+            # "amount_food_patches": self.metadata["amount_grass_patches"],
+            # "amount_drink_holes": self.metadata["amount_water_holes"],
+            # "amount_agents": self.metadata["amount_agents"],
             # TODO: is render_agent_radius meant as diameter actually?
             "observation_radius": self.metadata["render_agent_radius"],
             # 0 - fixed, 1 - relative, depending on last move, 2 - relative,
@@ -124,40 +146,97 @@ class GridworldZooBaseEnv:
             "remove_unused_tile_types_from_layers": self.metadata[
                 "remove_unused_tile_types_from_layers"
             ],
-            # Whether to remove tile types not present on initial map from
-            # observation layers. - set to False when same agent brain is trained over
-            # multiple environments
             "test_death": self.metadata["test_death"],
             "test_death_probability": self.metadata["test_death_probability"],
         }
 
+        if "amount_agents" in self.metadata:
+            self.super_initargs["amount_agents"] = self.metadata["amount_agents"]
+
         self._observe_bitmap_layers = self.metadata["observe_bitmap_layers"]
         self._override_infos = self.metadata["override_infos"]
 
-    def init_observation_spaces(self):
+    def init_observation_spaces(self, parent_observation_spaces, infos):
         # for @zoo-api
-        self.transformed_observation_spaces = {
-            agent: Box(
-                low=0,
-                high=len(
-                    GAME_ART[0][0]
-                ),  # TODO: consider height as well and read it from env object
-                shape=(
-                    2
-                    * (
-                        self.metadata["amount_agents"]
-                        + self.metadata["amount_grass_patches"]
-                        + self.metadata["amount_water_holes"]
-                    ),
-                ),
-            )
-            for agent in self.possible_agents
-        }
+        if self._observe_bitmap_layers:
+            self.transformed_observation_spaces = {
+                agent: gymnasium.spaces.Tuple(
+                    [
+                        Box(
+                            low=0,  # this is a boolean bitmap
+                            high=1,  # this is a boolean bitmap
+                            shape=(
+                                len(
+                                    infos[agent][INFO_AGENT_OBSERVATION_LAYERS_ORDER]
+                                ),  # this already includes all_agents layer,
+                                parent_observation_spaces[agent].shape[1],
+                                parent_observation_spaces[agent].shape[2],
+                            ),
+                        ),
+                        Box(
+                            low=-np.inf, high=np.inf, shape=(2,)
+                        ),  # interoception vector
+                    ]
+                )
+                for agent in self.possible_agents
+            }
+        else:
+            self.transformed_observation_spaces = {
+                agent: gymnasium.spaces.Tuple(
+                    [
+                        Box(
+                            low=0,
+                            high=len(
+                                GAME_ART[0][0]
+                            ),  # TODO: consider height as well and read it from env object
+                            shape=(
+                                2
+                                * (
+                                    self.metadata["amount_agents"]
+                                    + self.metadata["amount_grass_patches"]
+                                    + self.metadata["amount_water_holes"]
+                                ),
+                            ),
+                        ),
+                        Box(
+                            low=-np.inf, high=np.inf, shape=(2,)
+                        ),  # dummy interoception vector
+                    ]
+                )
+                for agent in self.possible_agents
+            }
 
     # this method has no side effects
-    def transform_observation(self, agent: str, info) -> npt.NDArray[ObservationFloat]:
+    def transform_observation(
+        self, agent: str, info: dict
+    ) -> npt.NDArray[ObservationFloat]:
         if self._observe_bitmap_layers:
-            return info[INFO_OBSERVATION_LAYERS_CUBE]
+            if agent is None:
+                return info[INFO_OBSERVATION_LAYERS_CUBE].astype(np.float32)
+            else:  # the info is already agent-specific, so no need to find agent subkey here
+                # agent_interoception_vector = [
+                #    info["metrics_dict"]["FoodSatiation_" + self.agent_name_mapping[agent]],
+                #    info["metrics_dict"]["DrinkSatiation_" + self.agent_name_mapping[agent]],
+                # ]
+                observation = info[INFO_AGENT_OBSERVATION_LAYERS_CUBE]
+
+                all_agents_layer = np.zeros(
+                    [observation.shape[1], observation.shape[2]], bool
+                )
+                for agent_name, agent_chr in self.agent_name_mapping.items():
+                    all_agents_layer |= info[INFO_AGENT_OBSERVATION_LAYERS_DICT][
+                        agent_chr
+                    ]
+
+                observation = np.vstack(
+                    [observation, np.expand_dims(all_agents_layer, axis=0)]
+                )  # feature vector is the first dimension
+
+                return (
+                    observation.astype(np.float32),
+                    # np.array(agent_interoception_vector).astype(np.float32)
+                    info[INFO_AGENT_INTEROCEPTION_VECTOR].astype(np.float32),
+                )
 
         else:
             """
@@ -189,7 +268,65 @@ class GridworldZooBaseEnv:
                 agent_observations.shape == self.observation_space(agent).shape
             ), "observation / observation space shape mismatch"
 
-            return agent_observations
+            dummy_interoception_vector = np.zeros([2], np.float32)
+            return (agent_observations, dummy_interoception_vector)
+
+    def format_info(self, agent: str, info: dict):
+        # keep only necessary fields of infos
+
+        agent_interoception_vector = np.array(
+            [
+                info["metrics_dict"].get(
+                    "FoodSatiation_" + self.agent_name_mapping[agent], 0
+                ),
+                info["metrics_dict"].get(
+                    "DrinkSatiation_" + self.agent_name_mapping[agent], 0
+                ),
+            ]
+        )
+
+        return {
+            INFO_AGENT_OBSERVATION_COORDINATES: info[
+                INFO_AGENT_OBSERVATION_COORDINATES
+            ],
+            INFO_AGENT_OBSERVATION_LAYERS_ORDER: info[
+                INFO_AGENT_OBSERVATION_LAYERS_ORDER
+            ]
+            + ["all_agents"],
+            INFO_AGENT_OBSERVATION_LAYERS_CUBE: info[
+                INFO_AGENT_OBSERVATION_LAYERS_CUBE
+            ],
+            INFO_AGENT_OBSERVATION_LAYERS_DICT: info[
+                INFO_AGENT_OBSERVATION_LAYERS_DICT
+            ],
+            INFO_AGENT_INTEROCEPTION_ORDER: ["food_satiation", "drink_satiation"],
+            INFO_AGENT_INTEROCEPTION_VECTOR: agent_interoception_vector,
+        }
+
+    def format_infos(self, infos: dict):
+        # keep only necessary fields of infos
+        return {
+            agent: self.format_info(agent, agent_info)
+            for agent, agent_info in infos.items()
+        }
+
+    def filter_info(self, agent: str, info: dict):
+        # keep only necessary keys of infos
+
+        allowed_keys = [
+            INFO_AGENT_OBSERVATION_COORDINATES,
+            INFO_AGENT_OBSERVATION_LAYERS_ORDER,
+            INFO_AGENT_INTEROCEPTION_ORDER,
+        ]
+        result = {key: value for key, value in info.items() if key in allowed_keys}
+        return result
+
+    def filter_infos(self, infos: dict):
+        # keep only necessary fields of infos
+        return {
+            agent: self.filter_info(agent, agent_info)
+            for agent, agent_info in infos.items()
+        }
 
     @property
     def grass_patches(self):
@@ -232,10 +369,28 @@ class GridworldZooBaseEnv:
         return observations2
 
     def calc_min_grass_distance(self, agent, info):
-        agent_chr = self.agent_name_mapping[agent]
-        agent_location = np.array(info[INFO_OBSERVATION_COORDINATES][agent_chr][0])
-        grass_patches = np.array(info[INFO_OBSERVATION_COORDINATES][FOOD_CHR])
-        min_grass_distance = distance_to_closest_item(agent_location, grass_patches)
+        if not self._observe_bitmap_layers:
+            agent_chr = self.agent_name_mapping[agent]
+            agent_location = np.array(info[INFO_OBSERVATION_COORDINATES][agent_chr][0])
+            grass_patches = np.array(info[INFO_OBSERVATION_COORDINATES][FOOD_CHR])
+            min_grass_distance = distance_to_closest_item(agent_location, grass_patches)
+        else:
+            # TODO: I think this grass distance logic is obsolete here?
+            agent_chr = self.agent_name_mapping[agent]
+            agent_location = np.array(
+                info[INFO_AGENT_OBSERVATION_COORDINATES][agent_chr][0]
+            )
+            if len(info[INFO_AGENT_OBSERVATION_COORDINATES][FOOD_CHR]) > 0:
+                grass_patches = np.array(
+                    info[INFO_AGENT_OBSERVATION_COORDINATES][FOOD_CHR]
+                )
+                min_grass_distance = distance_to_closest_item(
+                    agent_location, grass_patches
+                )
+            else:
+                min_grass_distance = (
+                    np.inf
+                )  # grass not visible to the agent at the moment
         return min_grass_distance
 
     def reward_agent(self, min_grass_distance):
@@ -290,6 +445,30 @@ class GridworldZooBaseEnv:
             return self.observations2
         else:
             return self.observations2[agent]
+
+    # This API is intended primarily as input for the instincts, documenting the order of layers in observation cube
+    def relative_observation_layers_order(
+        self, agent=None
+    ) -> Union[Dict[AgentId, Observation], Observation]:
+        if agent is None:
+            return {
+                agent: self._last_infos[agent][INFO_AGENT_OBSERVATION_LAYERS_ORDER]
+                for agent in self._last_infos.keys()
+            }
+        else:
+            return self._last_infos[agent][INFO_AGENT_OBSERVATION_LAYERS_ORDER]
+
+    # This API is intended primarily as input for the instincts, documenting the order of layers in observation cube
+    def absolute_observation_layers_order(
+        self, agent=None
+    ) -> Union[Dict[AgentId, Observation], Observation]:
+        if agent is None:
+            return {
+                agent: self._last_infos[agent][INFO_OBSERVATION_LAYERS_ORDER]
+                for agent in self._last_infos.keys()
+            }
+        else:
+            return self._last_infos[agent][INFO_OBSERVATION_LAYERS_ORDER]
 
     """
     This API is intended primarily as input for the neural network. Relative
@@ -368,7 +547,16 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
             env_params = {}
         GridworldZooBaseEnv.__init__(self, env_params)
         GridworldZooParallelEnv.__init__(self, **self.super_initargs)
-        self.init_observation_spaces()
+        parent_observation_spaces = GridworldZooParallelEnv.observation_spaces.fget(
+            self
+        )
+
+        _, infos = GridworldZooParallelEnv.reset(
+            self
+        )  # need to reset in order to access infos
+        infos = self.format_infos(infos)
+        self.init_observation_spaces(parent_observation_spaces, infos)
+
         self._last_infos = {}
         self.observations2 = {}
 
@@ -392,6 +580,7 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
         observations, infos = GridworldZooParallelEnv.reset(
             self, seed=seed, options=options, *args, **kwargs
         )
+        infos = self.format_infos(infos)
         self._last_infos = infos
         # transform observations
         for agent in infos.keys():
@@ -400,7 +589,7 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}
 
-        return self.observations2, infos
+        return self.observations2, self.filter_infos(infos)
 
     def step(self, actions: Dict[str, Action]) -> Step:
         """step(action) takes in an action for each agent and should return the
@@ -430,6 +619,7 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
             self,
             OrderedDict({agent: {"step": action} for agent, action in actions.items()}),
         )
+        infos = self.format_infos(infos)
         self._last_infos = infos
 
         rewards2 = {}
@@ -449,9 +639,20 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
             infos = {agent: {} for agent in infos.keys()}
 
         logger.debug(
-            "debug return", self.observations2, rewards, terminateds, truncateds, infos
+            "debug return",
+            self.observations2,
+            rewards,
+            terminateds,
+            truncateds,
+            self.filter_infos(infos),
         )
-        return self.observations2, rewards2, terminateds, truncateds, infos
+        return (
+            self.observations2,
+            rewards2,
+            terminateds,
+            truncateds,
+            self.filter_infos(infos),
+        )
 
 
 class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
@@ -464,7 +665,15 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
 
         GridworldZooBaseEnv.__init__(self, env_params)
         GridworldZooAecEnv.__init__(self, **self.super_initargs)
-        self.init_observation_spaces()
+        parent_observation_spaces = GridworldZooAecEnv.observation_spaces.fget(self)
+
+        GridworldZooAecEnv.reset(self)  # need to reset in order to access infos
+        infos = GridworldZooAecEnv.infos.fget(
+            self
+        )  # property needs .fget() to become callable
+        infos = self.format_infos(infos)
+        self.init_observation_spaces(parent_observation_spaces, infos)
+
         self._last_infos = {}
         # Rewards should be only updated after step, not on each observation before
         # step. Rewards should be initialised to None before any reset() is called so
@@ -498,11 +707,17 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         infos = GridworldZooAecEnv.infos.fget(
             self
         )  # property needs .fget() to become callable
+        infos = self.format_infos(infos)
 
         if self._override_infos:
             return {agent: {} for agent in infos.keys()}
         else:
-            return infos
+            return self.filter_infos(infos)
+
+    def observe_info(self, agent):
+        info = GridworldZooAecEnv.observe_info(self, agent)
+        info = self.format_info(agent, info)
+        return self.filter_info(agent, info)
 
     # def observe_from_location(self, agents_coordinates: Dict):
     #    """This method is read-only. It does not change the actual state of the
@@ -530,7 +745,8 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         # observe observations, transform observations
         infos = {}
         for agent in self.possible_agents:
-            info = self.observe_info(agent)
+            info = GridworldZooAecEnv.observe_info(self, agent)
+            info = self.format_info(agent, info)
             infos[agent] = info
             self.observations2[agent] = self.transform_observation(agent, info)
 
@@ -544,7 +760,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}
 
-        return self.observations2, infos
+        return self.observations2, self.filter_infos(infos)
 
     def last(self, observe=True):
         """Returns observation, cumulative reward, terminated, truncated, info for the
@@ -558,8 +774,8 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         observation, reward, terminated, truncated, info = GridworldZooAecEnv.last(
             self, observe=observe
         )
-
         agent = self.agent_selection
+        info = self.format_info(agent, info)
 
         if observe:
             self._last_infos[
@@ -576,7 +792,13 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         if self._override_infos:
             info = {}
 
-        return observation2, reward2, terminated, truncated, info
+        return (
+            observation2,
+            reward2,
+            terminated,
+            truncated,
+            self.filter_info(agent, info),
+        )
 
     def step(self, action: Action) -> None:
         logger.debug("debug action", action)
@@ -602,7 +824,8 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             del self._last_rewards2[agent]
             return
 
-        info = self.observe_info(agent)
+        info = GridworldZooAecEnv.observe_info(self, agent)
+        info = self.format_info(agent, info)
         min_grass_distance = self.calc_min_grass_distance(agent, info)
         reward2 = self.reward_agent(min_grass_distance)
         self._last_rewards2[agent] = reward2
@@ -644,7 +867,8 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             return
 
         # observe observations, transform observations and rewards
-        info = self.observe_info(agent)
+        info = GridworldZooAecEnv.observe_info(self, agent)
+        info = self.format_info(agent, info)
         # self.observe_from_location({agent: [1, 1]})    # for debugging
         self._last_infos[agent] = info
         observation2 = self.transform_observation(agent, info)
@@ -664,8 +888,21 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         if self._override_infos:
             info = {}
 
-        logger.debug("debug return", observation2, reward2, terminated, truncated, info)
-        return observation2, reward2, terminated, truncated, info
+        logger.debug(
+            "debug return",
+            observation2,
+            reward2,
+            terminated,
+            truncated,
+            self.filter_info(agent, info),
+        )
+        return (
+            observation2,
+            reward2,
+            terminated,
+            truncated,
+            self.filter_info(agent, info),
+        )
 
     def step_multiple_agents(self, actions: Dict[str, Action]) -> Step:
         """step(action) takes in an action for each agent and should return the
@@ -714,7 +951,8 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
                     self.observe_immediately_after_agent_action
                 ):  # observe BEFORE next agent takes its step?
                     # observe observations, transform observations and rewards
-                    info = self.observe_info(agent)
+                    info = GridworldZooAecEnv.observe_info(self, agent)
+                    info = self.format_info(agent, info)
                     # self.observe_from_location({agent: [1, 1]})    # for debugging
                     infos[agent] = info
                     self._last_infos[agent] = info
@@ -731,7 +969,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
                     self._cumulative_rewards2[agent] += reward2
 
                 else:
-                    info = self.observe_info(agent)
+                    info = GridworldZooAecEnv.observe_info(self, agent)
                     min_grass_distance = self.calc_min_grass_distance(agent, info)
                     reward2 = self.reward_agent(min_grass_distance)
                     rewards2[agent] = reward2
@@ -750,8 +988,9 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             # observe observations, transform observations and rewards
             for agent in stepped_agents:
                 if agent in self.agents:  # was not "dead step"
-                    info = self.observe_info(agent)
+                    info = GridworldZooAecEnv.observe_info(self, agent)
                     # self.observe_from_location({agent: [1, 1]})    # for debugging
+                    info = self.format_info(agent, info)
                     infos[agent] = info
                     self._last_infos[agent] = info
                     self.observations2[agent] = self.transform_observation(agent, info)
@@ -764,10 +1003,23 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         terminateds = self.terminations
         truncateds = self.truncations
 
+        infos = self.format_infos(infos)
+
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}
 
         logger.debug(
-            "debug return", self.observations2, rewards2, terminateds, truncateds, infos
+            "debug return",
+            self.observations2,
+            rewards2,
+            terminateds,
+            truncateds,
+            self.filter_infos(infos),
         )
-        return self.observations2, rewards2, terminateds, truncateds, infos
+        return (
+            self.observations2,
+            rewards2,
+            terminateds,
+            truncateds,
+            self.filter_infos(infos),
+        )

@@ -1,10 +1,20 @@
+import functools
 import logging
 from typing import Dict, Optional
 
+from aintelope.environments import register_env_class
+from aintelope.environments.savanna import (
+    Action,
+    HumanRenderState,
+    PositionFloat,
+    RenderSettings,
+    RenderState,
+    SavannaEnv,
+    Step,
+    move_agent,
+    reward_agent,
+)
 from pettingzoo import AECEnv, ParallelEnv
-
-from aintelope.environments.savanna import SavannaEnv, Step
-from aintelope.typing import Action
 
 logger = logging.getLogger("aintelope.environments.savanna_zoo")
 
@@ -63,6 +73,9 @@ class SavannaZooSequentialEnv(SavannaEnv, AECEnv):
     @property
     def agent_selection(self):
         return self._next_agent
+
+    def observe_info(self, agent):
+        return self.infos[agent]
 
     def reset(self, *args, **kwargs):
         self._next_agent = self.possible_agents[0]

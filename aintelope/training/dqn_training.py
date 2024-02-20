@@ -1,6 +1,7 @@
+import datetime
 import logging
 from collections import namedtuple
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -18,7 +19,7 @@ Transition = namedtuple(
 )
 
 
-def load_checkpoint(path, obs_size, action_space_size):
+def load_checkpoint(path, obs_size, action_space_size, unit_test_mode):
     """
     https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
     Load a model from a checkpoint. Commented parts optional for later.
@@ -32,16 +33,18 @@ def load_checkpoint(path, obs_size, action_space_size):
         model: torch.nn.Module
     """
 
-    model = DQN(obs_size, action_space_size)
+    model = DQN(obs_size, action_space_size, unit_test_mode=unit_test_mode)
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
-    checkpoint = torch.load(path)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    # epoch = checkpoint['epoch']
-    # loss = checkpoint['loss']
+    if not unit_test_mode:
+        checkpoint = torch.load(path)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        # epoch = checkpoint['epoch']
+        # loss = checkpoint['loss']
 
-    model.eval()
+        model.eval()
+
     return model
 
 
@@ -64,14 +67,22 @@ class Trainer:
         self.hparams = params.hparams
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def add_agent(self, agent_id, observation_shape, action_space):
+    def add_agent(
+        self,
+        agent_id,
+        observation_shape,
+        action_space,
+        unit_test_mode: bool,
+        checkpoint: Optional[str] = None,
+    ):
         """
         Register an agent.
 
         Args:
             agent_id (str): same as elsewhere (f.ex. "agent_0")
-            observation_shape (tuple): numpy shape of the observations
+            observation_shape (tuple of tuples): numpy shapes of the observations (vision, interoception)
             action_space (Discrete): action_space from environment
+            checkpoint: Path (string) to checkpoint, None if not available
 
         Returns:
             None
@@ -79,11 +90,26 @@ class Trainer:
         self.observation_shapes[agent_id] = observation_shape
         self.action_spaces[agent_id] = action_space(agent_id)
         self.replay_memories[agent_id] = ReplayMemory(self.hparams.replay_size)
-        self.policy_nets[agent_id] = DQN(
-            self.observation_shapes[agent_id], self.action_spaces[agent_id].n
-        ).to(self.device)
+
+        if not checkpoint:
+            self.policy_nets[agent_id] = DQN(
+                self.observation_shapes[agent_id],
+                self.action_spaces[agent_id].n,
+                unit_test_mode=unit_test_mode,
+            ).to(self.device)
+        else:
+            print("Loading from checkpoint...")
+            self.policy_nets[agent_id] = load_checkpoint(
+                checkpoint,
+                self.observation_shapes[agent_id],
+                self.action_spaces[agent_id].n,
+                unit_test_mode=unit_test_mode,
+            ).to(self.device)
+
         self.target_nets[agent_id] = DQN(
-            self.observation_shapes[agent_id], self.action_spaces[agent_id].n
+            self.observation_shapes[agent_id],
+            self.action_spaces[agent_id].n,
+            unit_test_mode=unit_test_mode,
         ).to(self.device)
         self.target_nets[agent_id].load_state_dict(
             self.policy_nets[agent_id].state_dict()
@@ -98,7 +124,10 @@ class Trainer:
     def get_action(
         self,
         agent_id: str = "",
-        observation: npt.NDArray[ObservationFloat] = None,
+        observation: Tuple[
+            npt.NDArray[ObservationFloat], npt.NDArray[ObservationFloat]
+        ] = None,
+        info: dict = {},
         step: int = 0,
     ) -> Optional[int]:
         """
@@ -124,16 +153,29 @@ class Trainer:
             action = self.action_spaces[agent_id].sample()
         else:
             logger.debug("debug observation", type(observation))
-            observation = torch.tensor(np.expand_dims(observation, 0))
+
+            observation = (
+                torch.tensor(
+                    np.expand_dims(
+                        observation[0], 0
+                    ),  # vision     # call .flatten() in case you want to force 1D network even on 3D vision
+                ),
+                torch.tensor(np.expand_dims(observation[1], 0)),  # interoception
+            )
             logger.debug(
-                "debug observation tensor", type(observation), observation.shape
+                "debug observation tensor",
+                (type(observation[0]), type(observation[1])),
+                (observation[0].shape, observation[1].shape),
             )
 
             if str(self.device) not in ["cpu"]:
                 print(self.device not in ["cpu"])
-                observation = observation.cuda(self.device)
+                observation = (
+                    observation[0].cuda(self.device),
+                    observation[1].cuda(self.device),
+                )
 
-            q_values = self.policy_nets[agent_id].net(observation)
+            q_values = self.policy_nets[agent_id](observation)
             _, action = torch.max(q_values, dim=1)
             action = int(action.item())
 
@@ -142,11 +184,11 @@ class Trainer:
     def update_memory(
         self,
         agent_id: str,
-        state: npt.NDArray[ObservationFloat],
+        state: Tuple[npt.NDArray[ObservationFloat], npt.NDArray[ObservationFloat]],
         action: int,
         reward: float,
         done: bool,
-        next_state: npt.NDArray[ObservationFloat],
+        next_state: Tuple[npt.NDArray[ObservationFloat], npt.NDArray[ObservationFloat]],
     ):
         """
         Add transition into agent specific ReplayMemory.
@@ -165,16 +207,30 @@ class Trainer:
         # add experience to torch device if bugged
         if done:
             return
-        state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(
-            0
+
+        state = (
+            torch.tensor(state[0], dtype=torch.float32, device=self.device).unsqueeze(
+                0
+            ),
+            torch.tensor(state[1], dtype=torch.float32, device=self.device).unsqueeze(
+                0
+            ),
         )
+
         action = torch.tensor(action, device=self.device).unsqueeze(0).view(1, 1)
         reward = torch.tensor(
             reward, dtype=torch.float32, device=self.device
         ).unsqueeze(0)
-        next_state = torch.tensor(
-            next_state, dtype=torch.float32, device=self.device
-        ).unsqueeze(0)
+
+        next_state = (
+            torch.tensor(
+                next_state[0], dtype=torch.float32, device=self.device
+            ).unsqueeze(0),
+            torch.tensor(
+                next_state[1], dtype=torch.float32, device=self.device
+            ).unsqueeze(0),
+        )
+
         self.replay_memories[agent_id].push(state, action, reward, done, next_state)
 
     def optimize_models(self):
@@ -200,10 +256,14 @@ class Trainer:
                 device=self.device,
                 dtype=torch.bool,
             )
-            non_final_next_states = torch.cat(
-                [s for s in batch.next_state if s is not None]
+            non_final_next_states = (
+                torch.cat([s[0] for s in batch.next_state if s is not None]),
+                torch.cat([s[1] for s in batch.next_state if s is not None]),
             )
-            state_batch = torch.cat(batch.state)
+            state_batch = (
+                torch.cat([s[0] for s in batch.state]),
+                torch.cat([s[1] for s in batch.state]),
+            )
             action_batch = torch.cat(batch.action)
             reward_batch = torch.cat(batch.reward)
 
@@ -228,7 +288,7 @@ class Trainer:
             self.losses[agent_id] = loss
 
             self.optimizers[agent_id].zero_grad()
-            loss.backward()
+            loss.backward()  # TODO: disable this during unit_test_mode for speeding up the tests?
             torch.nn.utils.clip_grad_value_(policy_net.parameters(), 100)
             self.optimizers[agent_id].step()
 
@@ -267,5 +327,8 @@ class Trainer:
                     "optimizer_state_dict": optimizer.state_dict(),
                     "loss": loss,
                 },
-                path + agent_id + "_" + str(episode),
+                path
+                + agent_id
+                + "-"
+                + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f"),
             )

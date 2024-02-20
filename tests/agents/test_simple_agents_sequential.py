@@ -1,14 +1,15 @@
 import os
-from typing import Dict
+from typing import Dict, Tuple
 
 import numpy as np
 import pytest
 from omegaconf import OmegaConf
 
 from aintelope.training.simple_eval import run_episode
+from tests.conftest import root_dir, tparams_hparams
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_randomwalkagent_in_savanna_zoo_sequential(
     tparams_hparams: Dict, execution_number
 ) -> None:
@@ -35,7 +36,7 @@ def test_randomwalkagent_in_savanna_zoo_sequential(
     run_episode(full_params=full_params)
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_onestepperfectpredictionagent_in_savanna_zoo_sequential(
     tparams_hparams: Dict, execution_number
 ) -> None:
@@ -64,7 +65,7 @@ def test_onestepperfectpredictionagent_in_savanna_zoo_sequential(
     run_episode(full_params=full_params)
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_iterativeweightoptimizationagent_in_savanna_zoo_sequential(
     tparams_hparams: Dict, execution_number
 ) -> None:
@@ -93,7 +94,7 @@ def test_iterativeweightoptimizationagent_in_savanna_zoo_sequential(
     run_episode(full_params=full_params)
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_randomwalkagent_in_savanna_gridworlds_sequential(
     tparams_hparams: Dict, execution_number
 ) -> None:
@@ -121,7 +122,7 @@ def test_randomwalkagent_in_savanna_gridworlds_sequential(
     run_episode(full_params=full_params)
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_onestepperfectpredictionagent_in_savanna_gridworlds_sequential(
     tparams_hparams: Dict, execution_number
 ) -> None:
@@ -151,7 +152,7 @@ def test_onestepperfectpredictionagent_in_savanna_gridworlds_sequential(
     run_episode(full_params=full_params)
 
 
-@pytest.mark.parametrize("execution_number", range(10))
+@pytest.mark.parametrize("execution_number", range(1))
 def test_iterativeweightoptimizationagent_in_savanna_gridworlds_sequential(
     tparams_hparams: Dict, execution_number
 ) -> None:

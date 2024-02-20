@@ -2,12 +2,14 @@ import logging
 from collections import Counter
 from typing import Dict
 
-from pettingzoo import AECEnv, ParallelEnv
+from omegaconf import DictConfig, OmegaConf
+
 
 from aintelope.agents import get_agent_class
 from aintelope.environments import get_env_class
 from aintelope.models.dqn import DQN
 from aintelope.training.dqn_training import Trainer
+from pettingzoo import AECEnv, ParallelEnv
 
 logger = logging.getLogger("aintelope.training.simple_eval")
 
@@ -43,7 +45,10 @@ def run_episode(full_params: Dict) -> None:
 
         # TODO: multi-agent compatibility
         # TODO: support for 3D-observation cube
-        obs_size = env.observation_space("agent_0").shape
+        obs_size = (
+            env.observation_space("agent_0")[0].shape,
+            env.observation_space("agent_0")[1].shape,
+        )
         logger.info("obs size", obs_size)
 
         # TODO: multi-agent compatibility
@@ -70,12 +75,21 @@ def run_episode(full_params: Dict) -> None:
     trainer = Trainer(full_params)
 
     model_spec = hparams["model"]
+    unit_test_mode = hparams[
+        "unit_test_mode"
+    ]  # is set during tests in order to speed up DQN computations
+
     # TODO: support for different observation shapes in different agents?
     # TODO: support for different action spaces in different agents?
     if isinstance(model_spec, list):
-        models = [MODEL_LOOKUP[net](obs_size, n_actions) for net in model_spec]
+        models = [
+            MODEL_LOOKUP[net](obs_size, n_actions, unit_test_mode=unit_test_mode)
+            for net in model_spec
+        ]
     else:
-        models = [MODEL_LOOKUP[model_spec](obs_size, n_actions)]
+        models = [
+            MODEL_LOOKUP[model_spec](obs_size, n_actions, unit_test_mode=unit_test_mode)
+        ]
 
     agent_spec = hparams["agent_id"]  # TODO: why is this value a list?
     if isinstance(agent_spec, list) and len(agent_spec) == 1:
@@ -114,11 +128,18 @@ def run_episode(full_params: Dict) -> None:
     for agent in agents:
         if isinstance(env, ParallelEnv):
             observation = observations[agent.id]
+            info = infos[agent.id]
         elif isinstance(env, AECEnv):
             observation = env.observe(agent.id)
+            info = env.observe_info(agent.id)
 
-        agent.reset(observation)
-        trainer.add_agent(agent.id, observation.shape, env.action_space)
+        agent.reset(observation, info)
+        trainer.add_agent(
+            agent.id,
+            (observation[0].shape, observation[1].shape),
+            env.action_space,
+            unit_test_mode=unit_test_mode,
+        )
 
     agents_dict = {agent.id: agent for agent in agents}
 
@@ -139,7 +160,8 @@ def run_episode(full_params: Dict) -> None:
                     if dones[agent.id]:
                         continue
                     observation = observations[agent.id]
-                    actions[agent.id] = agent.get_action(observation, step)
+                    info = infos[agent.id]
+                    actions[agent.id] = agent.get_action(observation, info, step)
 
                 logger.debug("debug actions", actions)
                 logger.debug("debug step")
@@ -165,7 +187,8 @@ def run_episode(full_params: Dict) -> None:
                     max_iter=env.num_agents
                 ):  # num_agents returns number of alive (non-done) agents
                     agent = agents_dict[agent_id]
-                    observation = env.observe(agent.id)  # TODO: parallel env support
+                    observation = env.observe(agent.id)
+                    info = env.observe_info(agent.id)
                     # agent doesn't get to play_step, only env can,
                     # for multi-agent env compatibility
                     # reward, score, done = agent.play_step(nets[i], epsilon=1.0)
@@ -176,10 +199,9 @@ def run_episode(full_params: Dict) -> None:
                         action = None
                     else:
                         # action = action_space(agent.id).sample()
-                        # TODO: there was step=0 but we have step index available in
-                        # this iteration. So is it okay if I use the step variable here?
                         action = agent.get_action(
                             observation,
+                            info,
                             step,
                         )
 
@@ -280,8 +302,6 @@ def run_episode(full_params: Dict) -> None:
                         action = None
                     else:
                         # action = action_space(agent.id).sample()
-                        # TODO: there was step=0 but we have step index available in
-                        # this iteration. So is it okay if I use the step variable here?
                         action = agent.get_action(
                             observation,
                             step,

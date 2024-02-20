@@ -1,17 +1,16 @@
-"""
-Code to enable Visual Studio debugging with non-legacy-debugger.
-If you want to avoid exceptions during code start altogether then an alternative is
-to use "legacy debugger":
-Visual Studio -> Tools -> Options -> Python
--> Debugging -> Enable "Use legacy debugger".
-"""
-
 import logging
-import os
 
-# Detect running under Windows.
-# The problem needs handling both while debugging or running outside of the debugger.
-if os.name == "nt":
+# Code to enable Visual Studio debugging with non-legacy-debugger.
+# If you want to avoid exceptions during code start altogether then an alternative is to use "legacy debugger":
+# Visual Studio -> Tools -> Options -> Python -> Debugging -> Enable "Use legacy debugger".
+import os
+import sys
+
+import numpy as np
+
+if (
+    os.name == "nt"
+):  # Detect running under Windows. The problem needs handling both while debugging or running outside of the debugger.
     original_get_terminal_size = os.get_terminal_size
 
     def get_terminal_size(fd=1):  # 1 = STDOUT_FILENO
@@ -22,7 +21,6 @@ if os.name == "nt":
 
     os.get_terminal_size = get_terminal_size
 
-import numpy as np
 from gemini import Scene, Sprite, sleep
 from gemini import txtcolours as tc
 
