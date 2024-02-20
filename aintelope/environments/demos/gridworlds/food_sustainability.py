@@ -58,7 +58,9 @@ class AIntelopeSavannaEnvironmentMaExperiment(AIntelopeSavannaEnvironmentMa):
         """
 
         FLAGS = override_flags(init_experiment_flags, FLAGS)
-        super(AIntelopeSavannaEnvironmentMaExperiment, self).__init__(FLAGS=FLAGS)
+        super(AIntelopeSavannaEnvironmentMaExperiment, self).__init__(
+            FLAGS=FLAGS, **kwargs
+        )
 
 
 def main(unused_argv):
