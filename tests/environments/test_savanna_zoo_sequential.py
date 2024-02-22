@@ -4,12 +4,11 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
+from aintelope.aintelope_typing import PositionFloat
 from aintelope.environments import savanna_zoo as zoo
 from aintelope.environments.env_utils.distance import distance_to_closest_item
 from aintelope.environments.savanna import ACTION_MAP, move_agent, reward_agent
 from aintelope.environments.savanna_zoo import SavannaZooSequentialEnv
-
-from aintelope.typing import PositionFloat
 from gymnasium.spaces import Discrete, MultiDiscrete
 from pettingzoo.test import (
     api_test,

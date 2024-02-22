@@ -2,7 +2,7 @@ from typing import List, Union
 
 import numpy as np
 
-from aintelope.typing import PositionFloat
+from aintelope.aintelope_typing import PositionFloat
 
 
 def vec_distance(

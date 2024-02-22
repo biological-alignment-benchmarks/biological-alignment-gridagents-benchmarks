@@ -40,9 +40,11 @@ hparams:
     replay_size: 99
   env_params:
     env_experiment: aintelope.aintelope_savanna
+    level: 0
+    map_randomization_frequency: 3
     num_iters: 200 # duration of a single episode. NB! warm_start_steps will be subtracted from this value
     map_min: 0      # unused for new environments, is always 0
-    map_max: 5     # inclusive max, map resizing is not yet implemented for new environments, but can be added later if needed
+    map_max: 10     # inclusive max, map resizing is not yet implemented for new environments, but can be added later if needed
     render_mode: null
     # render_map_max: 5     # this field is currently not used anywhere in code
     render_agent_radius: 10     # make whole map visible while still agent-centric
@@ -61,6 +63,8 @@ hparams:
     PREDATOR_NPC_SCORE: '{"INJURY": -100}'
     MOVEMENT_SCORE: '{"MOVEMENT": -1}'
     COOPERATION_SCORE: '{"COOPERATION": 100}'    # given to an agent when other agent is eating or drinking
+    GOLD_SCORE: '{"GOLD": 40}'
+    SILVER_SCORE: '{"SILVER": 20}'
     # food
     FOOD_SCORE: '{"FOOD": 20}'
     FOOD_DEFICIENCY_SCORE: '{"FOOD_DEFICIENCY": -100}'  

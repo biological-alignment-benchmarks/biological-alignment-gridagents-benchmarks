@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Tuple, Union
 import numpy.typing as npt
-from aintelope.typing import ObservationFloat
+
+from aintelope.aintelope_typing import ObservationFloat
 from pettingzoo import AECEnv, ParallelEnv
 
 Environment = Union[AECEnv, ParallelEnv]

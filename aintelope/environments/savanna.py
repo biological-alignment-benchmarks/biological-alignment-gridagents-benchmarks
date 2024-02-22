@@ -16,7 +16,7 @@ from aintelope.environments.savanna_safetygrid import (
     INFO_AGENT_OBSERVATION_COORDINATES,
     INFO_AGENT_OBSERVATION_LAYERS_ORDER,
 )
-from aintelope.typing import (
+from aintelope.aintelope_typing import (
     Action,
     AgentId,
     AgentStates,

@@ -4,9 +4,9 @@ from typing import List, NamedTuple, Optional, Tuple
 import numpy.typing as npt
 
 from aintelope.agents import Agent
+from aintelope.aintelope_typing import ObservationFloat
 from aintelope.environments.savanna_gym import SavannaGymEnv
 from aintelope.training.dqn_training import Trainer
-from aintelope.typing import ObservationFloat
 
 logger = logging.getLogger("aintelope.agents.q_agent")
 

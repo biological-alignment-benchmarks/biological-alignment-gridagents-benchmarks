@@ -6,9 +6,8 @@ import numpy.typing as npt
 
 from aintelope.agents.instincts.savanna_instincts import available_instincts_dict
 from aintelope.agents.q_agent import HistoryStep, QAgent
+from aintelope.aintelope_typing import ObservationFloat, PettingZooEnv
 from aintelope.training.dqn_training import Trainer
-
-from aintelope.typing import ObservationFloat, PettingZooEnv
 
 logger = logging.getLogger("aintelope.agents.instinct_agent")
 

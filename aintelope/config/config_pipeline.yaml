@@ -164,10 +164,10 @@ test9:      # 3x3 map       # agent is up left, food is bottom right
     amount_grass_patches: 1
     FOOD_SCORE: '{"FOOD": 1}'
     
-test10:      # 1x1 map with only agent, no food. Only LEFT and NOP actions are available in this environment
+test10:      # 1x1 map with only agent, no food. Only LEFT and NOP actions are available in this environment. LEFT action provides a reward.
   env_params:
     level: 2    
-    render_agent_radius: 0
+    render_agent_radius: 1
     map_randomization_frequency: 0  # off
     action_direction_mode: 0    # fixed
     amount_agents: 1 
