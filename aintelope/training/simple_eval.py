@@ -139,6 +139,7 @@ def run_episode(full_params: Dict) -> None:
             (observation[0].shape, observation[1].shape),
             env.action_space,
             unit_test_mode=unit_test_mode,
+            hidden_sizes=[8, 8],
         )
 
     agents_dict = {agent.id: agent for agent in agents}

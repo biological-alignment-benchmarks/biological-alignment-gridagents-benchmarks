@@ -76,6 +76,7 @@ def run_experiment(cfg: DictConfig) -> None:
             (observation[0].shape, observation[1].shape),
             env.action_space,
             unit_test_mode=unit_test_mode,
+            hidden_sizes=cfg.hparams.model_params.hidden_sizes,
             checkpoint=checkpoint,
         )
         dones[agent_id] = False

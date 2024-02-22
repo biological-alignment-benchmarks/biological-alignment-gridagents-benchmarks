@@ -19,7 +19,7 @@ Transition = namedtuple(
 )
 
 
-def load_checkpoint(path, obs_size, action_space_size, unit_test_mode):
+def load_checkpoint(path, obs_size, action_space_size, unit_test_mode, hidden_sizes):
     """
     https://pytorch.org/tutorials/recipes/recipes/saving_and_loading_a_general_checkpoint.html
     Load a model from a checkpoint. Commented parts optional for later.
@@ -33,7 +33,12 @@ def load_checkpoint(path, obs_size, action_space_size, unit_test_mode):
         model: torch.nn.Module
     """
 
-    model = DQN(obs_size, action_space_size, unit_test_mode=unit_test_mode)
+    model = DQN(
+        obs_size,
+        action_space_size,
+        unit_test_mode=unit_test_mode,
+        hidden_sizes=hidden_sizes,
+    )
     # optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
     if not unit_test_mode:
@@ -73,6 +78,7 @@ class Trainer:
         observation_shape,
         action_space,
         unit_test_mode: bool,
+        hidden_sizes: list,
         checkpoint: Optional[str] = None,
     ):
         """
@@ -96,6 +102,7 @@ class Trainer:
                 self.observation_shapes[agent_id],
                 self.action_spaces[agent_id].n,
                 unit_test_mode=unit_test_mode,
+                hidden_sizes=hidden_sizes,
             ).to(self.device)
         else:
             print("Loading from checkpoint...")
@@ -104,12 +111,14 @@ class Trainer:
                 self.observation_shapes[agent_id],
                 self.action_spaces[agent_id].n,
                 unit_test_mode=unit_test_mode,
+                hidden_sizes=hidden_sizes,
             ).to(self.device)
 
         self.target_nets[agent_id] = DQN(
             self.observation_shapes[agent_id],
             self.action_spaces[agent_id].n,
             unit_test_mode=unit_test_mode,
+            hidden_sizes=hidden_sizes,
         ).to(self.device)
         self.target_nets[agent_id].load_state_dict(
             self.policy_nets[agent_id].state_dict()
@@ -288,7 +297,7 @@ class Trainer:
             self.losses[agent_id] = loss
 
             self.optimizers[agent_id].zero_grad()
-            loss.backward()  # TODO: disable this during unit_test_mode for speeding up the tests?
+            loss.backward()
             torch.nn.utils.clip_grad_value_(policy_net.parameters(), 100)
             self.optimizers[agent_id].step()
 
