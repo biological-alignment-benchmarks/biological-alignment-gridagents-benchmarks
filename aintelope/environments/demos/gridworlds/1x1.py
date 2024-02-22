@@ -26,7 +26,7 @@ def init_experiment_flags():
 
     FLAGS.level = 2
 
-    FLAGS.observation_radius = [0] * 4
+    FLAGS.observation_radius = [1] * 4
     FLAGS.map_randomization_frequency = 0  # off
 
     FLAGS.action_direction_mode = 0  # 0 - fixed, 1 - relative, depending on last move, 2 - relative, controlled by separate turning actions
