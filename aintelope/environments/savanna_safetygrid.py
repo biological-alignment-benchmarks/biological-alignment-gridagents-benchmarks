@@ -971,7 +971,8 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             for agent2 in self.agents:
                 self._cumulative_rewards2[agent2] += self._last_rewards2[agent2]
         else:
-            self._last_rewards2[agent] = info[INFO_REWARD_DICT]
+            reward2 = info[INFO_REWARD_DICT]
+            self._last_rewards2[agent] = reward2
 
             # NB! cumulative reward should be calculated for all agents
             for agent2 in self.agents:
