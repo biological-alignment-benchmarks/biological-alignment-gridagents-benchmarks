@@ -25,6 +25,8 @@ from ai_safety_gridworlds.helpers.gridworld_zoo_parallel_env import (
     INFO_OBSERVATION_LAYERS_CUBE,
     INFO_OBSERVATION_LAYERS_DICT,
     INFO_OBSERVATION_LAYERS_ORDER,
+    INFO_REWARD_DICT,  # TODO: rename to INFO_SCORE_DICT
+    INFO_CUMULATIVE_REWARD_DICT,  # TODO: rename to INFO_CUMULATIVE_SCORE_DICT
     Actions,
     GridworldZooParallelEnv,
 )
@@ -105,6 +107,7 @@ class GridworldZooBaseEnv:
         "override_infos": False,
         "test_death": False,
         "test_death_probability": 0.33,
+        "use_old_aintelope_rewards": False,
     }
 
     def __init__(self, env_params: Optional[Dict] = None):
@@ -198,6 +201,7 @@ class GridworldZooBaseEnv:
 
         self._observe_bitmap_layers = self.metadata["observe_bitmap_layers"]
         self._override_infos = self.metadata["override_infos"]
+        self._use_old_aintelope_rewards = self.metadata["use_old_aintelope_rewards"]
 
     def init_observation_spaces(self, parent_observation_spaces, infos):
         # for @zoo-api
@@ -248,6 +252,8 @@ class GridworldZooBaseEnv:
                 )
                 for agent in self.possible_agents
             }
+
+        qqq = True  # for debugging
 
     # this method has no side effects
     def transform_observation(
@@ -344,6 +350,12 @@ class GridworldZooBaseEnv:
             ],
             INFO_AGENT_INTEROCEPTION_ORDER: ["food_satiation", "drink_satiation"],
             INFO_AGENT_INTEROCEPTION_VECTOR: agent_interoception_vector,
+            INFO_REWARD_DICT: info[
+                INFO_REWARD_DICT
+            ],
+            INFO_CUMULATIVE_REWARD_DICT: info[
+                INFO_CUMULATIVE_REWARD_DICT
+            ],
         }
 
     def format_infos(self, infos: dict):
@@ -654,7 +666,7 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
 
         (
             observations,
-            rewards,
+            rewards,    # TODO: rename to scores
             terminateds,
             truncateds,
             infos,
@@ -665,18 +677,23 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
         infos = self.format_infos(infos)
         self._last_infos = infos
 
-        rewards2 = {}
+        if self._use_old_aintelope_rewards:   # old AIntelope reward logic
+            rewards2 = {}
 
-        # transform observations and rewards
-        for agent in list(self.observations2.keys()):
-            if agent in observations:
-                self.observations2[agent] = self.transform_observation(
-                    agent, infos[agent]
-                )
-                min_grass_distance = self.calc_min_grass_distance(agent, infos[agent])
-                rewards2[agent] = self.reward_agent(min_grass_distance)
-            else:  # dead agent, needs to be removed from observations2
-                del self.observations2[agent]
+            # transform observations and rewards
+            for agent in list(self.observations2.keys()):
+                if agent in observations:
+                    self.observations2[agent] = self.transform_observation(
+                        agent, infos[agent]
+                    )
+                    min_grass_distance = self.calc_min_grass_distance(agent, infos[agent])
+                    rewards2[agent] = self.reward_agent(min_grass_distance)
+                else:  # dead agent, needs to be removed from observations2
+                    del self.observations2[agent]
+        else:
+            rewards2 = {}
+            for agent in list(self.observations2.keys()):
+                rewards2[agent] = infos[agent][INFO_REWARD_DICT]
 
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}
@@ -722,7 +739,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         # step. Rewards should be initialised to None before any reset() is called so
         # that .rewards property returns dictionary with existing agents.
         self._last_rewards2 = {agent: None for agent in self.possible_agents}
-        self._cumulative_rewards2 = {agent: 0.0 for agent in self.possible_agents}
+        self._cumulative_rewards2 = {agent: (0.0 if self._use_old_aintelope_rewards else {}) for agent in self.possible_agents}
         self.observations2 = {}
 
     @property
@@ -798,7 +815,10 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         # so that .rewards property returns dictionary with existing agents.
         # NB! not calculating actual rewards yet, rewards should be only updated after
         # step, not on each observation before step.
-        self._last_rewards2 = {agent: np.float64(0) for agent in self.possible_agents}
+        if self._use_old_aintelope_rewards:
+            self._last_rewards2 = {agent: np.float64(0) for agent in self.possible_agents}
+        else:
+            self._last_rewards2 = {agent: {} for agent in self.possible_agents}
 
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}
@@ -850,14 +870,20 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
 
         # this needs to be so according to Zoo unit test. See
         # https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/test/api_test.py
-        self._cumulative_rewards2[agent] = 0.0
+        if self._use_old_aintelope_rewards:
+            self._cumulative_rewards2[agent] = 0.0
+        else:
+            self._cumulative_rewards2[agent] = {}
 
         # need to set current step rewards to zero for other agents
         # the agent should be visible in .rewards after it dies (until its "dead step"),
         # but during next agent's step it should get zero reward
         for agent in self.agents:
             if self.terminations[agent] or self.truncations[agent]:
-                self._last_rewards2[agent] = 0.0
+                if self._use_old_aintelope_rewards:
+                    self._last_rewards2[agent] = 0.0
+                else:
+                    self._last_rewards2[agent] = {}
 
         GridworldZooAecEnv.step(self, {"step": action})
 
@@ -869,13 +895,22 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
 
         info = GridworldZooAecEnv.observe_info(self, agent)
         info = self.format_info(agent, info)
-        min_grass_distance = self.calc_min_grass_distance(agent, info)
-        reward2 = self.reward_agent(min_grass_distance)
-        self._last_rewards2[agent] = reward2
 
-        # NB! cumulative reward should be calculated for all agents
-        for agent in self.agents:
-            self._cumulative_rewards2[agent] += self._last_rewards2[agent]
+        if self._use_old_aintelope_rewards:
+            min_grass_distance = self.calc_min_grass_distance(agent, info)
+            reward2 = self.reward_agent(min_grass_distance)
+            self._last_rewards2[agent] = reward2
+
+            # NB! cumulative reward should be calculated for all agents
+            for agent2 in self.agents:
+                self._cumulative_rewards2[agent2] += self._last_rewards2[agent2]
+        else:
+            self._last_rewards2[agent] = info[INFO_REWARD_DICT][agent]
+
+            # NB! cumulative reward should be calculated for all agents
+            for agent2 in self.agents:
+                self._cumulative_rewards2[agent2] += info[INFO_REWARD_DICT][agent2]
+
 
     def step_single_agent(self, action: Action):
         """step(action) takes in an action for each agent and should return the
@@ -891,7 +926,10 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
 
         # this needs to be so according to Zoo unit test. See
         # https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/test/api_test.py
-        self._cumulative_rewards2[agent] = 0.0
+        if self._use_old_aintelope_rewards:
+            self._cumulative_rewards2[agent] = 0.0
+        else:
+            self._cumulative_rewards2[agent] = {}
 
         # need to set current step rewards to zero for other agents
         for agent in self.agents:
@@ -899,7 +937,10 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             # (until its "dead step"), but during next agent's step
             # it should get zero reward
             if self.terminations[agent] or self.truncations[agent]:
-                self._last_rewards2[agent] = 0.0
+                if self._use_old_aintelope_rewards:
+                    self._last_rewards2[agent] = 0.0
+                else:
+                    self._last_rewards2[agent] = {}
 
         GridworldZooAecEnv.step(self, {"step": action})
 
@@ -917,13 +958,20 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         observation2 = self.transform_observation(agent, info)
         self.observations2[agent] = observation2
 
-        min_grass_distance = self.calc_min_grass_distance(agent, info)
-        reward2 = self.reward_agent(min_grass_distance)
-        self._last_rewards2[agent] = reward2
+        if self._use_old_aintelope_rewards:
+            min_grass_distance = self.calc_min_grass_distance(agent, info)
+            reward2 = self.reward_agent(min_grass_distance)
+            self._last_rewards2[agent] = reward2
 
-        # NB! cumulative reward should be calculated for all agents
-        for agent in self.agents:
-            self._cumulative_rewards2[agent] += self._last_rewards2[agent]
+            # NB! cumulative reward should be calculated for all agents
+            for agent2 in self.agents:
+                self._cumulative_rewards2[agent2] += self._last_rewards2[agent2]
+        else:
+            self._last_rewards2[agent] = info[INFO_REWARD_DICT][agent]
+
+            # NB! cumulative reward should be calculated for all agents
+            for agent2 in self.agents:
+                self._cumulative_rewards2[agent2] += info[INFO_REWARD_DICT][agent2]
 
         terminated = self.terminations[agent]
         truncated = self.truncations[agent]
@@ -972,7 +1020,10 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         for agent in actions.keys():
             # this needs to be so according to Zoo unit test. See
             # https://github.com/Farama-Foundation/PettingZoo/blob/master/pettingzoo/test/api_test.py
-            self._cumulative_rewards2[agent] = 0.0
+            if self._use_old_aintelope_rewards:
+                self._cumulative_rewards2[agent] = 0.0
+            else:
+                self._cumulative_rewards2[agent] = {}
 
         # loop over all agents in ENV NOT IN ACTIONS DICT
         for index in range(
@@ -1001,27 +1052,36 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
                     self._last_infos[agent] = info
                     self.observations2[agent] = self.transform_observation(agent, info)
 
-                    min_grass_distance = self.calc_min_grass_distance(agent, info)
-                    reward2 = self.reward_agent(min_grass_distance)
-                    rewards2[agent] = reward2
-                    self._last_rewards2[agent] = reward2
+                    if self._use_old_aintelope_rewards:
+                        min_grass_distance = self.calc_min_grass_distance(agent, info)
+                        reward2 = self.reward_agent(min_grass_distance)
+                        rewards2[agent] = reward2
+                        self._last_rewards2[agent] = reward2
 
-                    # NB! if the action of current agent somehow affects the rewards
-                    # of other agents then the cumulative reward of the other agents
-                    # needs to be updated here as well.
-                    self._cumulative_rewards2[agent] += reward2
-
+                        # NB! if the action of current agent somehow affects the rewards
+                        # of other agents then the cumulative reward of the other agents
+                        # needs to be updated here as well.
+                        self._cumulative_rewards2[agent] += reward2
+                    else:
+                        self._last_rewards2[agent] = info[INFO_REWARD_DICT][agent]
+                        self._cumulative_rewards2[agent] += info[INFO_REWARD_DICT][agent]
                 else:
                     info = GridworldZooAecEnv.observe_info(self, agent)
-                    min_grass_distance = self.calc_min_grass_distance(agent, info)
-                    reward2 = self.reward_agent(min_grass_distance)
-                    rewards2[agent] = reward2
-                    self._last_rewards2[agent] = reward2
 
-                    # NB! if the action of current agent somehow affects the rewards
-                    # of other agents then the cumulative reward of the other agents
-                    # needs to be updated here as well.
-                    self._cumulative_rewards2[agent] += reward2
+                    if self._use_old_aintelope_rewards:                        
+                        min_grass_distance = self.calc_min_grass_distance(agent, info)
+                        reward2 = self.reward_agent(min_grass_distance)
+                        rewards2[agent] = reward2
+                        self._last_rewards2[agent] = reward2
+
+                        # NB! if the action of current agent somehow affects the rewards
+                        # of other agents then the cumulative reward of the other agents
+                        # needs to be updated here as well.
+                        self._cumulative_rewards2[agent] += reward2
+                    else:
+                        self._last_rewards2[agent] = info[INFO_REWARD_DICT][agent]
+                        self._cumulative_rewards2[agent] += info[INFO_REWARD_DICT][agent]
+                        
 
         # / for index in range(0, self.num_agents)
 
@@ -1042,6 +1102,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
                     # reward2 = self.reward_agent(min_grass_distance)
                     # rewards2[agent] = reward2
                     # self._last_rewards2[agent] = reward2
+                        
 
         terminateds = self.terminations
         truncateds = self.truncations
