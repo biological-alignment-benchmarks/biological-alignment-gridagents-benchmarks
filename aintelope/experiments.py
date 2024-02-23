@@ -33,7 +33,7 @@ def run_experiment(cfg: DictConfig, score_dimensions: list) -> None:
     trainer = Trainer(cfg)
 
     dir_out = f"{cfg.log_dir}"
-    dir_cp = dir_out + "checkpoints/"
+    dir_cp = os.path.join(dir_out, "checkpoints")
 
     unit_test_mode = (
         cfg.hparams.unit_test_mode
@@ -67,7 +67,7 @@ def run_experiment(cfg: DictConfig, score_dimensions: list) -> None:
         agents[-1].reset(observation, info)
         # Get latest checkpoint if existing
         checkpoint = None
-        checkpoints = glob.glob(dir_cp + agent_id + "*")
+        checkpoints = glob.glob(os.path.join(dir_cp, agent_id + "*"))
         if len(checkpoints) > 0:
             checkpoint = max(checkpoints, key=os.path.getctime)
         # Add agent, with potential checkpoint
@@ -100,6 +100,7 @@ def run_experiment(cfg: DictConfig, score_dimensions: list) -> None:
         + score_dimensions
     )
 
+    assert cfg.hparams.num_episodes > 0
     for i_episode in range(cfg.hparams.num_episodes):
         # Reset
         if isinstance(env, ParallelEnv):
@@ -253,12 +254,22 @@ def run_experiment(cfg: DictConfig, score_dimensions: list) -> None:
         # Save models
         # https://pytorch.org/tutorials/recipes/recipes/
         # saving_and_loading_a_general_checkpoint.html
+        last_episode_was_saved = False
         if i_episode % cfg.hparams.save_frequency == 0:
             os.makedirs(dir_cp, exist_ok=True)
             trainer.save_models(i_episode, dir_cp)
+            last_episode_was_saved = True
+
+    if (
+        not last_episode_was_saved
+    ):  # happens when num_episodes is not divisible by save frequency
+        os.makedirs(dir_cp, exist_ok=True)
+        trainer.save_models(i_episode, dir_cp)
 
     record_path = Path(f"{cfg.experiment_dir}" + f"{cfg.events_dir}")
-    rec.record_events(record_path, events)
+    rec.record_events(
+        record_path, events
+    )  # TODO: flush the events log every once a while and later append new rows
 
 
 # @hydra.main(version_base=None, config_path="config", config_name="config_experiment")

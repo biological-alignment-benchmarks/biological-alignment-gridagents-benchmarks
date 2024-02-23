@@ -337,8 +337,10 @@ class Trainer:
                     "optimizer_state_dict": optimizer.state_dict(),
                     "loss": loss,
                 },
-                path
-                + agent_id
-                + "-"
-                + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f"),
+                os.path.join(
+                    path,
+                    agent_id
+                    + "-"
+                    + datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S_%f"),
+                ),
             )
