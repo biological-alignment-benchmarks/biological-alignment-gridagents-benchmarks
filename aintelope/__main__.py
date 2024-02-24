@@ -30,17 +30,16 @@ def aintelope_main(cfg: DictConfig) -> None:
         logger.info("Running training with the following configuration")
         logger.info(OmegaConf.to_yaml(experiment_cfg))
         run_experiment(experiment_cfg, score_dimensions)
-
-    analytics(experiment_cfg, score_dimensions)
+        analytics(experiment_cfg, score_dimensions)
 
 
 def analytics(cfg, score_dimensions):
     # normalise slashes in paths. This is not mandatory, but will be cleaner to debug
-    log_dir = os.path.normpath(cfg.log_dir)
-    events_dir = os.path.normpath(cfg.events_dir)
+    experiment_dir = os.path.normpath(cfg.experiment_dir)
+    events_fname = os.path.normpath(cfg.events_fname)
 
-    savepath = os.path.join(log_dir, "plot.png")
-    events = recording.read_events(log_dir, events_dir)
+    savepath = os.path.join(experiment_dir, "plot.png")
+    events = recording.read_events(experiment_dir, events_fname)
     plotting.plot_performance(events, score_dimensions, savepath)
 
 

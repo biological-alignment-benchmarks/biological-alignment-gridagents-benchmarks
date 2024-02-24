@@ -270,7 +270,7 @@ def run_experiment(cfg: DictConfig, score_dimensions: list) -> None:
 
     # normalise slashes in paths. This is not mandatory, but will be cleaner to debug
     experiment_dir = os.path.normpath(cfg.experiment_dir)
-    events_dir = os.path.normpath(cfg.events_dir)
+    events_fname = os.path.normpath(cfg.events_fname)
 
     record_path = Path(os.path.join(experiment_dir, events_dir))
     os.makedirs(experiment_dir, exist_ok=True)
