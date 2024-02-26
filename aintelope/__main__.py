@@ -36,7 +36,7 @@ def aintelope_main(cfg: DictConfig) -> None:
 def analytics(cfg, score_dimensions):
     # normalise slashes in paths. This is not mandatory, but will be cleaner to debug
     experiment_dir = os.path.normpath(cfg.experiment_dir)
-    events_fname = os.path.normpath(cfg.events_fname)
+    events_fname = cfg.events_fname
 
     savepath = os.path.join(experiment_dir, "plot.png")
     events = recording.read_events(experiment_dir, events_fname)
