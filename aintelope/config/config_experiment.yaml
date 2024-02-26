@@ -25,7 +25,7 @@ hparams:
   agent_id: q_agent
   num_episodes: 5   # TEMP for tests only atm
   traintest_mode: train
-  train_episodes: 80
+  train_episodes: 100
   test_episodes: 3
   warm_start_steps: 100
   save_frequency: 1000 # how often save a model TEMP offline
@@ -33,11 +33,11 @@ hparams:
     target_instincts: []
   model_params:
     hidden_sizes: [4,4]
-    batch_size: 16
-    lr: 0.0015
+    batch_size: 32 # 16 ws better than 32? a bit.
+    lr: 0.005 # 0.015 was better than 0.005
     gamma: 0.99
     tau: 0.05
-    eps_last_frame: 200
+    eps_last_frame: 100
     eps_start: 1.0
     eps_end: 0.01
     replay_size: 50 #99
@@ -50,7 +50,7 @@ hparams:
     #
     # to make whole map visible while still agent-centric, set the value to 
     # "max(map_width, map_height) - 3" in case of using Gridworld environments
-    render_agent_radius: 10     
+    render_agent_radius: 3     
     #
     # 0 - off (do not use this setting), 1 - once per experiment run, 2 - once per trial
     # (a trial is a sequence of training episodes separated by env.reset call,
