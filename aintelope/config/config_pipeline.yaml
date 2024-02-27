@@ -34,7 +34,7 @@ test3:   # predators
     # num_iters: 100 # TODO: if you override this here then you need to override also eps_last_frame! duration of a single episode. NB! warm_start_steps will be subtracted from this value
     amount_agents: 1 
     amount_grass_patches: 2
-    amount_predators: 1	# TODO: increase this later
+    amount_predators: 1     # TODO: increase this later
     #
     scores:
         PREDATOR_NPC_SCORE: '{"INJURY": -100}'
