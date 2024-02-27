@@ -26,13 +26,8 @@ def plot_history(events):
     return plot
 
 
-def plot_performance(all_events, score_dimensions, save_path: Optional[str]):
-    """
-    Plot performance between rewards and scores.
-    Accepts a list of event records from which a boxplot is done.
-    TODO: further consideration should be had on *what* to average over.
-    """
-    keys = ["Run_id", "Episode", "Agent_id", "Reward"] + score_dimensions
+def plot_groupby(all_events, group_keys, score_dimensions):
+    keys = group_keys + ["Reward"] + score_dimensions
     data = pd.DataFrame(columns=keys)
     for events in all_events:
         if len(data) == 0:
@@ -46,18 +41,41 @@ def plot_performance(all_events, score_dimensions, save_path: Optional[str]):
     data[score_dimensions] = data[score_dimensions].astype(float)
     data["Score"] = data[score_dimensions].sum(axis=1)
 
-    plots = data.groupby(["Run_id", "Episode", "Agent_id"]).mean()
+    plot_data = data.groupby(group_keys).mean()
 
-    fig = plt.figure()
+    return plot_data
 
-    plt.plot(plots["Reward"].to_numpy(), label="Reward")
-    plt.plot(plots["Score"].to_numpy(), label="Score")
-    for score_dimension in score_dimensions:
-        plt.plot(plots[score_dimension].to_numpy(), label=score_dimension)
 
-    plt.xlabel("Episode")
-    plt.ylabel("Mean Reward")
-    plt.legend()
+def plot_performance(all_events, score_dimensions, save_path: Optional[str]):
+    """
+    Plot performance between rewards and scores.
+    Accepts a list of event records from which a boxplot is done.
+    TODO: further consideration should be had on *what* to average over.
+    """
+    plot_data1 = (
+        "Episode",
+        plot_groupby(all_events, ["Run_id", "Episode", "Agent_id"], score_dimensions),
+    )
+    plot_data2 = (
+        "Step",
+        plot_groupby(all_events, ["Run_id", "Step", "Agent_id"], score_dimensions),
+    )
+    plot_datas = [plot_data1, plot_data2]
+
+    # fig = plt.figure()
+    fig, subplots = plt.subplots(2)
+
+    for index, subplot in enumerate(subplots):
+        (plot_label, plot_data) = plot_datas[index]
+
+        subplot.plot(plot_data["Reward"].to_numpy(), label="Reward")
+        subplot.plot(plot_data["Score"].to_numpy(), label="Score")
+        for score_dimension in score_dimensions:
+            subplot.plot(plot_data[score_dimension].to_numpy(), label=score_dimension)
+
+        subplot.set_title("By " + plot_label)
+        subplot.set(xlabel=plot_label, ylabel="Mean Reward")
+        subplot.legend()
 
     if save_path:
         save_plot(fig, save_path)
