@@ -272,8 +272,8 @@ def run_experiment(cfg: DictConfig) -> None:
             if all(dones.values()):
                 break
 
-            # TESTING: resetting when reward found. NOT compatible with most envs
-            if sum(score.values()) > 0:
+            # Resetting when reward found. NOT compatible with most envs
+            if cfg.hparams.end_at_reward and sum(score.values()) > 0:
                 break
 
         # Save models

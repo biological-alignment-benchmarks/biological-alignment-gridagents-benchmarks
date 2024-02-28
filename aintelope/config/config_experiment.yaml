@@ -25,6 +25,7 @@ hparams:
   agent_id: q_agent
   num_episodes: 5   # TEMP for tests only atm
   traintest_mode: train
+  end_at_reward: False # End episode if reward found
   train_episodes: 200
   test_episodes: 3
   save_frequency: 1000 # how often save a model, TEMP offline

@@ -20,7 +20,7 @@ def aintelope_main(cfg: DictConfig) -> None:
     pipeline_config = OmegaConf.load(
         "aintelope/config/config_tests.yaml"
     )  # was pipeline
-    
+
     for env_conf in pipeline_config:
         experiment_cfg = copy.deepcopy(
             cfg
