@@ -689,27 +689,24 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
         infos = self.format_infos(infos)
         self._last_infos = infos
 
-        if self._use_old_aintelope_rewards:  # old AIntelope reward logic
-            rewards2 = {}
-
-            # transform observations and rewards
-            for agent in list(self.observations2.keys()):
-                if agent in observations:
-                    self.observations2[agent] = self.transform_observation(
-                        agent, infos[agent]
-                    )
-                    min_grass_distance = self.calc_min_grass_distance(
-                        agent, infos[agent]
-                    )
-                    rewards2[agent] = self.reward_agent(min_grass_distance)
-                else:  # dead agent, needs to be removed from observations2
-                    del self.observations2[agent]
-        else:
-            rewards2 = {}
-            for agent in list(
-                infos.keys()
-            ):  # previously terminated or truncated agents are not in infos or observations
+        rewards2 = {}
+        # transform observations and rewards
+        for agent in list(infos.keys()):
+            if self._use_old_aintelope_rewards:  # old AIntelope reward logic
+                min_grass_distance = self.calc_min_grass_distance(agent, infos[agent])
+                rewards2[agent] = self.reward_agent(min_grass_distance)
+            else:
                 rewards2[agent] = infos[agent][INFO_REWARD_DICT]
+
+        for agent in list(
+            self.observations2.keys()
+        ):  # previously terminated or truncated agents are not in infos or observations
+            if agent in observations:
+                self.observations2[agent] = self.transform_observation(
+                    agent, infos[agent]
+                )
+            else:  # dead agent, needs to be removed from observations2
+                del self.observations2[agent]
 
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}

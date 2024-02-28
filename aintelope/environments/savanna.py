@@ -144,7 +144,9 @@ def get_grass_pos_from_state(agent_state, info) -> List[PositionFloat]:
             )
             grass_layer = agent_state[grass_layer_index]
             (row_indices, col_indices) = np.where(grass_layer)
-            coordinates = list(zip(row_indices, col_indices))
+            coordinates = list(
+                zip(col_indices, row_indices)
+            )  # NB! swap col_indices, row_indices to have xy dimension order
             return np.array(coordinates)
         else:
             coordinates = info[INFO_AGENT_OBSERVATION_COORDINATES][FOOD_CHR]
@@ -164,7 +166,9 @@ def get_agent_pos_from_state(agent_state, info, agent_name) -> List[PositionFloa
             )
             grass_layer = agent_state[grass_layer_index]
             (row_indices, col_indices) = np.where(grass_layer)
-            coordinates = list(zip(row_indices, col_indices))
+            coordinates = list(
+                zip(col_indices, row_indices)
+            )  # NB! swap col_indices, row_indices to have xy dimension order
             return list(coordinates[0])
         else:
             coordinates = info[INFO_AGENT_OBSERVATION_COORDINATES][agent_chr]

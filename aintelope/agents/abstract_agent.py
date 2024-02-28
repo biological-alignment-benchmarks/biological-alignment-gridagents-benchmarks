@@ -21,6 +21,7 @@ class Agent(ABC):
         ] = None,
         info: dict = {},
         step: int = 0,  # net: nn.Module, epsilon: float, device: str
+        episode: int = 0,
     ) -> Optional[int]:
         ...
 

@@ -34,14 +34,14 @@ hparams:
   agent_params:
     target_instincts: []
   model_params:
-    hidden_sizes: [4,4]
-    batch_size: 16 # 16 ws better than 32? a bit.
-    lr: 0.015 # 0.015 was better than 0.005
+    hidden_sizes: [16,16]
+    num_conv_layers: 1
+    batch_size: 16
+    lr: 0.001
     gamma: 0.99
     tau: 0.05
     eps_last_frame: 800
-    tau: 0.05 # was 0.05
-    eps_last_frame: 195
+    eps_last_episode: 8
     eps_start: 1.0
     eps_end: 0.1
     replay_size: 20 #99

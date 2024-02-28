@@ -41,6 +41,7 @@ class InstinctAgent(QAgent):
         ] = None,
         info: dict = {},
         step: int = 0,  # net: nn.Module, epsilon: float, device: str
+        episode: int = 0,
     ) -> Optional[int]:
         """Given an observation, ask your net what to do. State is needed to be
         given here as other agents have changed the state!

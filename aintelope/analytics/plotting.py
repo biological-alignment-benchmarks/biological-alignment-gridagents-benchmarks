@@ -52,6 +52,9 @@ def plot_performance(all_events, score_dimensions, save_path: Optional[str]):
     Accepts a list of event records from which a boxplot is done.
     TODO: further consideration should be had on *what* to average over.
     """
+    if all_events[0].columns[-1] == "Score":  # old AIntelope environment
+        score_dimensions = ["Score"]
+
     plot_data1 = (
         "Episode",
         plot_groupby(all_events, ["Run_id", "Episode", "Agent_id"], score_dimensions),

@@ -162,7 +162,9 @@ def run_episode(full_params: Dict) -> None:
                         continue
                     observation = observations[agent.id]
                     info = infos[agent.id]
-                    actions[agent.id] = agent.get_action(observation, info, step)
+                    actions[agent.id] = agent.get_action(
+                        observation, info, step, episode=0
+                    )
 
                 logger.debug("debug actions", actions)
                 logger.debug("debug step")
@@ -196,7 +198,7 @@ def run_episode(full_params: Dict) -> None:
                     # Per Zoo API, a dead agent must call .step(None) once more after
                     # becoming dead. Only after that call will this dead agent be
                     # removed from various dictionaries and from .agent_iter loop.
-                    if env.terminations[agent_id] or env.truncations[agent.id]:
+                    if env.terminations[agent.id] or env.truncations[agent.id]:
                         action = None
                     else:
                         # action = action_space(agent.id).sample()
@@ -204,6 +206,7 @@ def run_episode(full_params: Dict) -> None:
                             observation,
                             info,
                             step,
+                            episode=0,
                         )
 
                     logger.debug("debug action", action)
@@ -233,9 +236,10 @@ def run_episode(full_params: Dict) -> None:
                         logger.debug((observation, reward, terminated, truncated, info))
 
                         # NB! any agent could die at any other agent's step
-                        for agent_id in env.agents:
-                            dones[agent_id] = (
-                                env.terminations[agent_id] or env.truncations[agent.id]
+                        for agent_id2 in env.agents:
+                            dones[agent_id2] = (
+                                env.terminations[agent_id2]
+                                or env.truncations[agent_id2]
                             )
 
         else:
@@ -265,7 +269,10 @@ def run_episode(full_params: Dict) -> None:
                     if dones[agent.id]:
                         continue
                     observation = observations[agent.id]
-                    actions[agent.id] = agent.get_action(observation, step)
+                    info = infos[agent.id]
+                    actions[agent.id] = agent.get_action(
+                        observation, info, step, episode=0
+                    )
 
                 logger.debug("debug actions", actions)
                 logger.debug("debug step")
@@ -293,19 +300,23 @@ def run_episode(full_params: Dict) -> None:
                     max_iter=env.num_agents
                 ):  # num_agents returns number of alive (non-done) agents
                     agent = agents_dict[agent_id]
+                    observation = env.observe(agent.id)
+                    info = env.observe_info(agent.id)
                     # agent doesn't get to play_step, only env can,
                     # for multi-agent env compatibility
                     # reward, score, done = agent.play_step(nets[i], epsilon=1.0)
                     # Per Zoo API, a dead agent must call .step(None) once more
                     # after becoming dead. Only after that call will this dead agent be
                     # removed from various dictionaries and from .agent_iter loop.
-                    if env.terminations[agent_id] or env.truncations[agent.id]:
+                    if env.terminations[agent.id] or env.truncations[agent.id]:
                         action = None
                     else:
                         # action = action_space(agent.id).sample()
                         action = agent.get_action(
                             observation,
+                            info,
                             step,
+                            episode=0,
                         )
 
                     logger.debug("debug action", action)
@@ -336,15 +347,18 @@ def run_episode(full_params: Dict) -> None:
                         rewards[agent.id] = reward
 
                         # NB! any agent could die at any other agent's step
-                        for agent_id in env.agents:
-                            dones[agent_id] = (
-                                env.terminations[agent_id] or env.truncations[agent.id]
+                        for agent_id2 in env.agents:
+                            dones[agent_id2] = (
+                                env.terminations[agent_id2]
+                                or env.truncations[agent_id2]
                             )
         else:
             logger.warning("Simple_eval: non-zoo env, test not yet implemented!")
             pass
 
-        if isinstance(next(iter(rewards.values())), dict):
+        if len(rewards) == 0:
+            pass  # needed to avoid an error in the next blocks. Both below blocks may fail when len(rewards) == 0
+        elif isinstance(next(iter(rewards.values())), dict):
             if (
                 not episode_rewards_upgraded_to_dict_rewards
             ):  # each agent's reward is a dict, need to upgrade the episode_rewards counter  # TODO: detect this early, before the loops start
