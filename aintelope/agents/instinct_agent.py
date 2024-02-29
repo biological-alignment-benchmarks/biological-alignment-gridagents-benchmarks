@@ -42,6 +42,7 @@ class InstinctAgent(QAgent):
         info: dict = {},
         step: int = 0,  # net: nn.Module, epsilon: float, device: str
         episode: int = 0,
+        action_biases: list = None,
     ) -> Optional[int]:
         """Given an observation, ask your net what to do. State is needed to be
         given here as other agents have changed the state!
@@ -54,7 +55,8 @@ class InstinctAgent(QAgent):
         Returns:
             action (Optional[int]): index of action
         """
-        return super().get_action(observation, info, step)
+        action_biases = None
+        return super().get_action(observation, info, step, episode, action_biases)
 
     # TODO hack, figure out if state_to_namedtuple can be static somewhere
     def update(

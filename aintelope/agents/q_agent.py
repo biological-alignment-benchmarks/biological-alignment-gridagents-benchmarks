@@ -50,7 +50,8 @@ class QAgent(Agent):
         ] = None,
         info: dict = {},
         step: int = 0,  # net: nn.Module, epsilon: float, device: str
-        episode: int = 0,
+        episode: int = 0,        
+        action_biases: list = None,
     ) -> Optional[int]:
         """Given an observation, ask your net what to do. State is needed to be
         given here as other agents have changed the state!
@@ -68,7 +69,7 @@ class QAgent(Agent):
         else:
             # For future: observation can go to instincts here
             action = self.trainer.get_action(
-                self.id, observation, self.info, step, episode
+                self.id, observation, self.info, step, episode, action_biases
             )
 
         self.last_action = action

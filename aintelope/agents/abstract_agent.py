@@ -22,6 +22,7 @@ class Agent(ABC):
         info: dict = {},
         step: int = 0,  # net: nn.Module, epsilon: float, device: str
         episode: int = 0,
+        action_biases: list = None,
     ) -> Optional[int]:
         ...
 
