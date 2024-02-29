@@ -12,6 +12,11 @@ from ai_safety_gridworlds.environments.aintelope.aintelope_savanna import (  # T
     AGENT_CHR2,
     DRINK_CHR,
     FOOD_CHR,
+    DRINK_CHR,
+    GOLD_CHR,
+    SILVER_CHR,
+    DANGER_TILE_CHR,
+    PREDATOR_NPC_CHR,
     GAME_ART,
 )
 
@@ -45,6 +50,9 @@ from pettingzoo import AECEnv, ParallelEnv
 
 INFO_AGENT_INTEROCEPTION_ORDER = "info_agent_interoception_order"
 INFO_AGENT_INTEROCEPTION_VECTOR = "info_agent_interoception_vector"
+INTEROCEPTION_FOOD = "food_satiation"
+INTEROCEPTION_DRINK = "drink_satiation"
+ACTION_RELATIVE_COORDINATE_MAP = "action_relative_coordinate_map"   # TODO: move to Gridworld environment
 
 logger = logging.getLogger("aintelope.environments.savanna_safetygrid")
 
@@ -109,6 +117,7 @@ class GridworldZooBaseEnv:
         "test_death": False,
         "test_death_probability": 0.33,
         "use_old_aintelope_rewards": False,
+        "flatten_observations": False,  # this will not work with current code
     }
 
     def __init__(self, env_params: Optional[Dict] = None):
@@ -203,6 +212,7 @@ class GridworldZooBaseEnv:
             "test_death": "test_death",
             "test_death_probability": "test_death_probability",
             "amount_agents": "amount_agents",
+            "flatten_observations": "flatten_observations",
         }
 
         self.super_initargs = {
@@ -368,6 +378,14 @@ class GridworldZooBaseEnv:
             INFO_AGENT_INTEROCEPTION_VECTOR: agent_interoception_vector,
             INFO_REWARD_DICT: info[INFO_REWARD_DICT],
             INFO_CUMULATIVE_REWARD_DICT: info[INFO_CUMULATIVE_REWARD_DICT],
+            # TODO: in case of relative direction, this mapping will change depending on agent and depending on its direction
+            ACTION_RELATIVE_COORDINATE_MAP: {   # TODO: read these constants from the environment?
+                Actions.NOOP: [0, 0],
+                Actions.LEFT: [-1, 0],
+                Actions.RIGHT: [1, 0],
+                Actions.UP: [0, -1],
+                Actions.DOWN: [0, 1],
+            }
         }
 
     def format_infos(self, infos: dict):
@@ -384,6 +402,7 @@ class GridworldZooBaseEnv:
             INFO_AGENT_OBSERVATION_COORDINATES,
             INFO_AGENT_OBSERVATION_LAYERS_ORDER,
             INFO_AGENT_INTEROCEPTION_ORDER,
+            ACTION_RELATIVE_COORDINATE_MAP,
         ]
         result = {key: value for key, value in info.items() if key in allowed_keys}
         return result
