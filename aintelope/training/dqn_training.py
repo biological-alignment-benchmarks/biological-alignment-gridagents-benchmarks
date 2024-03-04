@@ -217,7 +217,7 @@ class Trainer:
 
             q_values = self.policy_nets[agent_id](observation)
             _, action = torch.max(q_values, dim=1)
-            action = int(action.item())
+            action = int(action.item()) + action_space.min_action
 
         return action
 
@@ -257,6 +257,7 @@ class Trainer:
             ),
         )
 
+        action -= self.action_spaces[agent_id].min_action   # offset the action index if min_action is not zero
         action = torch.tensor(action, device=self.device).unsqueeze(0).view(1, 1)
         reward = torch.tensor(
             reward, dtype=torch.float32, device=self.device
