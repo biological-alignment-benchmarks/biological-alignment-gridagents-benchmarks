@@ -146,6 +146,13 @@ class Trainer:
             amsgrad=True,
         )
 
+    def tiebreaking_argmax(self, arr):
+        """Avoids the agent from repeatedly taking move-left action when the instinct tells the agent to move away from current cell in any direction. Then the instinct will not provide any q value difference in its q values for the different directions, they would be equal. Naive np.argmax would just return the index of first moving action, which happens to be always move-left action."""
+        max_values_bitmap = np.isclose(arr, arr.max())
+        max_values_indexes = np.flatnonzero(max_values_bitmap)
+        result = np.random.choice(max_values_indexes)
+        return result
+
     @torch.no_grad()
     def get_action(
         self,
@@ -216,9 +223,12 @@ class Trainer:
                     observation[1].cuda(self.device),
                 )
 
-            q_values = self.policy_nets[agent_id](observation)
-            _, action = torch.max(q_values, dim=1)
-            action = int(action.item()) + action_space.min_action
+            q_values = self.policy_nets[agent_id](observation).cpu().numpy()
+            action = self.tiebreaking_argmax(q_values) + action_space.min_action    # when no axis is provided, argmax returns index into flattened array
+
+            #q_values = self.policy_nets[agent_id](observation)
+            #_, action = torch.max(q_values, dim=1)
+            #action = int(action.item()) + action_space.min_action
 
         return action
 
