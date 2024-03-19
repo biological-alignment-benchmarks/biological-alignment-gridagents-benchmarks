@@ -63,18 +63,18 @@ def aintelope_main() -> None:
 async def run_gridsearch_experiments() -> None:  
     
     use_multiprocessing = sys.gettrace() is None   # not debugging
-    # use_multiprocessing = True   # TODO: currently CUDA fails in subprocesses
+    # use_multiprocessing = False   # TODO: currently CUDA fails in subprocesses
 
-    gridsearch_config = os.environ.get("GRIDSEARCH_CONFIG")
+    gridsearch_config_file = os.environ.get("GRIDSEARCH_CONFIG")
     #if gridsearch_config is None:
     #    gridsearch_config = "aintelope/config/config_gridsearch.yaml"
-    config_gridsearch = OmegaConf.load(gridsearch_config)
+    config_gridsearch = OmegaConf.load(gridsearch_config_file)
 
     # extract list parameters and compute cross product over their values
-    dict_config = OmegaConf.to_container(config_gridsearch, resolve=False) # convert DictConfig to dict # NB! do not resolve references here since we do not want to handle references to lists as lists
+    dict_config = OmegaConf.to_container(config_gridsearch, resolve=False) # convert DictConfig to dict # NB! do NOT resolve references here since we do NOT want to handle references to lists as lists. Gridsearch should loop over each list only once.
     flattened_config = flatten(dict_config, reducer=make_reducer(delimiter='.'))    # convert to format {'a': 1, 'c.a': 2, 'c.b.x': 5, 'c.b.y': 10, 'd': [1, 2, 3]}
     list_entries = {key: value for key, value in flattened_config.items() if isinstance(value, list)}   # select only entries of list type
-    list_entries["hparams.gridsearch_trial_no"] = config_gridsearch.hparams.gridsearch_trial_no
+    list_entries["hparams.gridsearch_trial_no"] = config_gridsearch.hparams.gridsearch_trial_no   # this is a resolver that generates a list
 
     # create outer product of all list entries stored in the dictionary values
     # http://stephantul.github.io/python/2019/07/20/product-dict/
@@ -125,7 +125,7 @@ async def run_gridsearch_experiments() -> None:
                         if ex is not None:
                             print(f"\nExperiment seems to have choked. Exception: {ex}")
 
-                    completed_coroutine_count += 1
+                    completed_coroutine_count += len(dones)
                     multiprocessing_bar.update(completed_coroutine_count)
                     active_coroutines = pendings
 
@@ -139,7 +139,7 @@ async def run_gridsearch_experiments() -> None:
                     "use_gpu_index": None,
                 }
                 try:
-                    result = await run_gridsearch_experiment_multiprocess(**arguments)
+                    await run_gridsearch_experiment_multiprocess(**arguments)
                 except Exception as ex:
                     print(f"\nExperiment seems to have choked. Exception: {ex}. params: {plotting.prettyprint(gridsearch_combination_for_print)}")
                 
@@ -157,7 +157,7 @@ async def run_gridsearch_experiments() -> None:
                 ex = task.exception()  # https://rotational.io/blog/spooky-asyncio-errors-and-how-to-fix-them/
                 if ex is not None:
                     print(f"\nExperiment seems to have choked. Exception: {ex}")
-            completed_coroutine_count += 1
+            completed_coroutine_count += len(dones)
             multiprocessing_bar.update(completed_coroutine_count)
             active_coroutines = pendings
 
@@ -176,6 +176,19 @@ async def run_gridsearch_experiment_multiprocess(gridsearch_params: DictConfig, 
     # do not start subprocess if the result is already in cache
     cache_key = get_run_gridsearch_experiment_cache_helper_cache_key(gridsearch_params)
 
+    #enable this the commented out lines of code below if you want to remove a some sets from the cache and recompute it
+    #delete_param_sets = [
+    #    {'hparams': {'gridsearch_trial_no': 0, 'params_set_title': 'mixed', 'batch_size': 16, 'lr': 0.015, 'amsgrad': True, 'use_separate_models_for_each_experiment': True, 'model_params': {'hidden_sizes': [8, 16, 8], 'num_conv_layers': 2, 'conv_size': 2, 'gamma': 0.9, 'tau': 0.05, 'eps_start': 0.66, 'eps_end': 0.0, 'instinct_bias_epsilon_start': 0.5, 'instinct_bias_epsilon_end': 0.0, 'apply_instinct_eps_before_random_eps': True, 'replay_size': 99, 'eps_last_pipeline_cycle': 1, 'eps_last_episode': 30, 'eps_last_trial': -1, 'eps_last_frame': 400}, 'trial_length': -1, 'num_pipeline_cycles': 0, 'num_episodes': 30, 'test_episodes': 10, 'env_params': {'num_iters': 400, 'map_max': 7, 'map_width': 7, 'map_height': 7, 'render_agent_radius': 4}}},
+    #]
+
+    #gridsearch_params_dict = OmegaConf.to_container(gridsearch_params, resolve=True)
+    #delete = gridsearch_params_dict in delete_param_sets
+
+    #if delete:
+    #cache.delete(cache_key)
+
+
+    # if not do_not_create_subprocess and cache_key in cache:   # if multiprocessing is disabled then skip cache key checking here and proceed to the run_gridsearch_experiment function, which will decide whether to use cache or generate or regenerate
     if cache_key in cache:
         print("\nSkipping cached gridsearch_combination:")
         plotting.prettyprint(gridsearch_combination_for_print)
@@ -266,7 +279,7 @@ def run_gridsearch_experiment_cache_helper(gridsearch_params: DictConfig, gridse
 
 
 @hydra.main(version_base=None, config_path="config", config_name="config_experiment")
-def run_pipeline(cfg: DictConfig) -> None:  #, gridsearch_params: DictConfig, do_not_show_plot: bool = False) -> None:
+def run_pipeline(cfg: DictConfig) -> None: 
 
     gridsearch_params = gridsearch_params_global    # TODO: hydra main does not allow multiple arguments, probably there is a more typical way to do it
     do_not_show_plot = gridsearch_params is not None
@@ -281,7 +294,8 @@ def run_pipeline(cfg: DictConfig) -> None:  #, gridsearch_params: DictConfig, do
     pipeline_config = OmegaConf.load("aintelope/config/config_pipeline.yaml")
     # score_dimensions = get_pipeline_score_dimensions(cfg, pipeline_config)
 
-    test_summaries = []
+    test_summaries_to_return = []
+    test_summaries_to_jsonl = []
 
     # use additional semaphore here (in addition to gridsearch multiprocessing worker count) since the user may launch multiple gridsearch as well as non-gridsearch processes manually
     semaphore_name = (
@@ -317,27 +331,66 @@ def run_pipeline(cfg: DictConfig) -> None:  #, gridsearch_params: DictConfig, do
                                     )   # NB! gridsearch params is applied before pipeline params
                                 OmegaConf.update(
                                     experiment_cfg, "hparams", pipeline_config[env_conf_name], force_add=True
-            )
-            logger.info("Running training with the following configuration")
+                                )
+
+
+                                # check whether this experiment has already been run during an aborted pipeline run
+                                if cfg.hparams.aggregated_results_file:
+                                    aggregated_results_file = os.path.normpath(cfg.hparams.aggregated_results_file)
+                                    if os.path.exists(aggregated_results_file):
+                                        aggregated_results_file_lock = FileLock(aggregated_results_file + ".lock")
+                                        with aggregated_results_file_lock:                                    
+                                            with open(aggregated_results_file, mode='r', encoding='utf-8') as fh:
+                                                data = fh.read()
+
+                                        gridsearch_params_dict = OmegaConf.to_container(gridsearch_params, resolve=True)
+
+                                        test_summaries2 = []
+                                        lines = data.split("\n")
+                                        for line in lines:
+                                            line = line.strip()
+                                            if len(line) == 0:
+                                                continue
+                                            test_summary = json.loads(line)                                    
+                                            if test_summary["experiment_name"] == env_conf_name and test_summary["gridsearch_params"] == gridsearch_params_dict:   # Python's dictionary comparison is order independent and works with nested dictionaries as well
+                                                test_summaries2.append(test_summary)
+                                            else:
+                                                qqq = True    # for debugging
+
+                                        if len(test_summaries2) > 0:
+                                            assert len(test_summaries2) == 1
+                                            test_summaries_to_return.append(test_summaries2[0])   # NB! do not add to test_summaries_to_jsonl, else it will be duplicated in the jsonl file
+                                            pipeline_bar.update(env_conf_i + 1)
+                                            print(f"\nSkipping experiment that is already in jsonl file: {env_conf_name}")
+                                            continue
+
+                                    #/ if os.path.exists(aggregated_results_file):
+                                #/ if cfg.hparams.aggregated_results_file:
+
+
+                                logger.info("Running training with the following configuration")
                                 logger.info(os.linesep + str(OmegaConf.to_yaml(experiment_cfg, resolve=True)))
 
-            # Training
-            params_set_title = experiment_cfg.hparams.params_set_title
-            logger.info(f"params_set: {params_set_title}, experiment: {env_conf_name}")
+                                # Training
+                                params_set_title = experiment_cfg.hparams.params_set_title
+                                logger.info(f"params_set: {params_set_title}, experiment: {env_conf_name}")
 
-            score_dimensions = get_score_dimensions(experiment_cfg)
+                                score_dimensions = get_score_dimensions(experiment_cfg)
+
                                 if cfg.hparams.num_pipeline_cycles == 0:  # in case of 0 pipeline cycle, run testing inside the same cycle immediately after each environment's training ends.
                                     run_experiment(experiment_cfg, experiment_name=env_conf_name, score_dimensions=score_dimensions, is_last_pipeline_cycle=False, i_pipeline_cycle=i_pipeline_cycle)
-            run_experiment(experiment_cfg, experiment_name=env_conf_name, score_dimensions=score_dimensions, is_last_pipeline_cycle=is_last_pipeline_cycle, i_pipeline_cycle=i_pipeline_cycle)
+                        
+                                run_experiment(experiment_cfg, experiment_name=env_conf_name, score_dimensions=score_dimensions, is_last_pipeline_cycle=is_last_pipeline_cycle, i_pipeline_cycle=i_pipeline_cycle)
 
-            # torch.cuda.empty_cache()
-            # gc.collect()
+                                # torch.cuda.empty_cache()
+                                # gc.collect()
 
                                 if is_last_pipeline_cycle:
                                     # Not using timestamp_pid_uuid here since it would make the title too long. In case of manual execution with plots, the pid-uuid is probably not needed anyway.
                                     title = timestamp + " : " + params_set_title + " : " + env_conf_name
                                     test_summary = analytics(experiment_cfg, score_dimensions, title=title, experiment_name=env_conf_name, group_by_pipeline_cycle=cfg.hparams.num_pipeline_cycles >= 1, gridsearch_params=gridsearch_params, do_not_show_plot=do_not_show_plot)
-                                    test_summaries.append(test_summary)
+                                    test_summaries_to_return.append(test_summary)
+                                    test_summaries_to_jsonl.append(test_summary)
 
                                 pipeline_bar.update(env_conf_i + 1)
 
@@ -360,7 +413,7 @@ def run_pipeline(cfg: DictConfig) -> None:  #, gridsearch_params: DictConfig, do
         aggregated_results_file_lock = FileLock(aggregated_results_file + ".lock")
         with aggregated_results_file_lock:   
             with open(aggregated_results_file, mode='a', encoding='utf-8') as fh:
-                for test_summary in test_summaries:
+                for test_summary in test_summaries_to_jsonl:
                     # Do not write directly to file. If JSON serialization error occurs during json.dump() then a broken line would be written into the file (I have verified this). Therefore using json.dumps() is safer.
                     json_text = json.dumps(test_summary)
                     fh.write(json_text + "\n")  # \n : Prepare the file for appending new lines upon subsequent append. The last character in the JSONL file is allowed to be a line separator, and it will be treated the same as if there was no line separator present. 
@@ -384,7 +437,7 @@ def run_pipeline(cfg: DictConfig) -> None:  #, gridsearch_params: DictConfig, do
         else:
             input("\nPipeline done. Press [enter] to continue.")
 
-    return test_summaries
+    return test_summaries_to_return
 
 
 def analytics(cfg, score_dimensions, title, experiment_name, group_by_pipeline_cycle, gridsearch_params=DictConfig, do_not_show_plot=False):
@@ -410,16 +463,21 @@ def analytics(cfg, score_dimensions, title, experiment_name, group_by_pipeline_c
         "params_set_title": cfg.hparams.params_set_title,
         "gridsearch_params": OmegaConf.to_container(gridsearch_params, resolve=True) if gridsearch_params is not None else None, # Object of type DictConfig is not JSON serializable, neither can yaml.dump in plotting.prettyprint digest it, so need to convert it to ordinary dictionary
 
+        "num_train_pipeline_cycles": num_train_pipeline_cycles,
         "score_dimensions": score_dimensions_out,
+        "group_by_pipeline_cycle": group_by_pipeline_cycle,
 
         "test_totals": test_totals, 
         "test_averages": test_averages, 
         "test_variances": test_variances,
 
+        # per score dimension results
         "test_sfella_totals": test_sfella_totals,
         "test_sfella_averages": test_sfella_averages,
         "test_sfella_variances": test_sfella_variances,
 
+        # over score dimensions results
+        # TODO: rename to test_*
         "sfella_score_total": sfella_score_total, 
         "sfella_score_average": sfella_score_average, 
         "sfella_score_variance": sfella_score_variance,
@@ -453,10 +511,11 @@ if __name__ == "__main__":
         select_gpu()
 
     gridsearch_params_json = os.environ.get("GRIDSEARCH_PARAMS")
-    gridsearch_config = os.environ.get("GRIDSEARCH_CONFIG")
+    gridsearch_config_file = os.environ.get("GRIDSEARCH_CONFIG")
     if gridsearch_params_json is not None:        
         run_gridsearch_experiment_subprocess(gridsearch_params_json)
-    elif gridsearch_config is not None:
+    elif gridsearch_config_file is not None:
         asyncio.run(run_gridsearch_experiments())     # TODO: use separate python file for starting gridsearch
     else:
-    aintelope_main()
+        aintelope_main()
+        
