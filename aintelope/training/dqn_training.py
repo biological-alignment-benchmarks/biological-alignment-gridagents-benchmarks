@@ -165,8 +165,7 @@ class Trainer:
         trial: int = 0,
         episode: int = 0,
         pipeline_cycle: int = 0,
-        action_biases: list = None,
-    ) -> Optional[int]:
+    ) -> npt.NDArray:
         """
         Get action from an agent
 
@@ -176,62 +175,43 @@ class Trainer:
             step (int): used to calculate epsilon
 
         Returns:
-            None
+            Q values array
         """
 
         # TODO: warn if last_frame=0/1 or last_trial=0/1 or last_episode=0/1 in any of the below values: for disabling the epsilon counting for corresponding variable one should use -1
-        epsilon = self.hparams.model_params.eps_start - self.hparams.model_params.eps_end        
-        if self.hparams.model_params.eps_last_frame > 1:     
-            epsilon *= max(0, 1 - step / self.hparams.model_params.eps_last_frame)             
-        if self.hparams.model_params.eps_last_trial > 1:
-            epsilon *= max(
-                0, 1 - trial / self.hparams.model_params.eps_last_trial
-            ) 
-        if self.hparams.model_params.eps_last_episode > 1:  
-            epsilon *= max(
-                0, 1 - episode / self.hparams.model_params.eps_last_episode
-            )
-        if self.hparams.model_params.eps_last_pipeline_cycle > 1: 
-            epsilon *= max(
-                0, 1 - pipeline_cycle / self.hparams.model_params.eps_last_pipeline_cycle
-            )
-        epsilon += self.hparams.model_params.eps_end
 
         # print(f"Epsilon: {epsilon}")
 
-        if np.random.random() < epsilon:
-            action = self.action_spaces[agent_id].sample()
-        else:
-            logger.debug("debug observation", type(observation))
+        logger.debug("debug observation", type(observation))
 
-            observation = (
-                torch.tensor(
-                    np.expand_dims(
-                        observation[0], 0
-                    ),  # vision     # call .flatten() in case you want to force 1D network even on 3D vision
+        observation = (
+            torch.tensor(
+                np.expand_dims(
+                    observation[0], 0
                 ),
-                torch.tensor(np.expand_dims(observation[1], 0)),  # interoception
+            ),
+            torch.tensor(np.expand_dims(observation[1], 0)),  # interoception
+        )
+        logger.debug(
+            "debug observation tensor",
+            (type(observation[0]), type(observation[1])),
+            (observation[0].shape, observation[1].shape),
+        )
+
+        if str(self.device) not in ["cpu"]:
+            observation = (
+                observation[0].cuda(self.device),
+                observation[1].cuda(self.device),
             )
-            logger.debug(
-                "debug observation tensor",
-                (type(observation[0]), type(observation[1])),
-                (observation[0].shape, observation[1].shape),
-            )
 
-            if str(self.device) not in ["cpu"]:
-                observation = (
-                    observation[0].cuda(self.device),
-                    observation[1].cuda(self.device),
-                )
+        q_values = self.policy_nets[agent_id](observation).cpu().numpy()
+        ## q_values = np.zeros(self.policy_nets[agent_id](observation).cpu().shape)
 
-            q_values = self.policy_nets[agent_id](observation).cpu().numpy()
-            action = self.tiebreaking_argmax(q_values) + action_space.min_action    # when no axis is provided, argmax returns index into flattened array
+        ##q_values = self.policy_nets[agent_id](observation)
+        ##_, action = torch.max(q_values, dim=1)
+        ##action = int(action.item()) + action_space.min_action
 
-            #q_values = self.policy_nets[agent_id](observation)
-            #_, action = torch.max(q_values, dim=1)
-            #action = int(action.item()) + action_space.min_action
-
-        return action
+        return q_values
 
     def update_memory(
         self,

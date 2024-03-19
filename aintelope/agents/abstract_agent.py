@@ -24,7 +24,6 @@ class Agent(ABC):
         trial: int = 0,
         episode: int = 0,
         pipeline_cycle: int = 0,
-        action_biases: list = None,
     ) -> Optional[int]:
         ...
 

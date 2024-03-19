@@ -1,6 +1,7 @@
 import logging
 from typing import List, NamedTuple, Optional, Tuple
 
+import numpy as np
 import numpy.typing as npt
 
 from aintelope.agents import Agent
@@ -30,6 +31,7 @@ class QAgent(Agent):
     ) -> None:
         self.id = agent_id
         self.trainer = trainer
+        self.hparams = trainer.hparams
         # self.history: List[HistoryStep] = []    # this is actually unused
         self.done = False
         self.last_action = None
@@ -53,7 +55,6 @@ class QAgent(Agent):
         trial: int = 0,
         episode: int = 0,      
         pipeline_cycle: int = 0,
-        action_biases: list = None,
     ) -> Optional[int]:
         """Given an observation, ask your net what to do. State is needed to be
         given here as other agents have changed the state!
@@ -68,11 +69,41 @@ class QAgent(Agent):
         """
         if self.done:
             return None
-        else:
-            # For future: observation can go to instincts here
-            action = self.trainer.get_action(
-                self.id, observation, self.info, step, trial, episode, pipeline_cycle, action_biases
+
+        # TODO: warn if last_frame=0/1 or last_trial=0/1 or last_episode=0/1 in any of the below values: for disabling the epsilon counting for corresponding variable one should use -1
+        epsilon = self.hparams.model_params.eps_start - self.hparams.model_params.eps_end        
+        if self.hparams.model_params.eps_last_frame > 1:     
+            epsilon *= max(0, 1 - step / self.hparams.model_params.eps_last_frame)             
+        if self.hparams.model_params.eps_last_trial > 1:
+            epsilon *= max(
+                0, 1 - trial / self.hparams.model_params.eps_last_trial
+            ) 
+        if self.hparams.model_params.eps_last_episode > 1:  
+            epsilon *= max(
+                0, 1 - episode / self.hparams.model_params.eps_last_episode
             )
+        if self.hparams.model_params.eps_last_pipeline_cycle > 1: 
+            epsilon *= max(
+                0, 1 - pipeline_cycle / self.hparams.model_params.eps_last_pipeline_cycle
+            )
+        epsilon += self.hparams.model_params.eps_end
+
+        # print(f"Epsilon: {epsilon}")
+
+        action_space = self.trainer.action_spaces[self.id]
+
+        if np.random.random() < epsilon:
+            action = action_space.sample()
+        else:
+            q_values = self.trainer.get_action(
+                self.id, observation, self.info, step, trial, episode, pipeline_cycle
+            )
+
+            action = self.trainer.tiebreaking_argmax(q_values) + action_space.min_action    # when no axis is provided, argmax returns index into flattened array
+
+            #q_values = self.policy_nets[agent_id](observation)
+            #_, action = torch.max(q_values, dim=1)
+            #action = int(action.item()) + action_space.min_action
 
         self.last_action = action
         return action
