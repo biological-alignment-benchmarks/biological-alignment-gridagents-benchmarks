@@ -22,10 +22,10 @@ from aintelope.utils import wait_for_enter, try_df_to_csv_write, RobustProgressB
 # duplicate entries might be still in calculation in a concurrent process and therefore would not
 # be visible in the results file yet.
 def merge_gridsearch_result_files() -> None:
-    aggregated_results_file1 = "outputs\mixed.jsonl"
-    aggregated_results_file2 = "aws_outputs\mixed_predators.jsonl"
+    aggregated_results_file1 = r"outputs\mixed.jsonl"
+    aggregated_results_file2 = r"aws_outputs\mixed_predators.jsonl"
     aggregated_results_file_out = (
-        "outputs\mixed.jsonl"  # "aws_outputs\score_cooperation_merged.jsonl"
+        r"outputs\mixed.jsonl"  # "aws_outputs\score_cooperation_merged.jsonl"
     )
 
     test_summaries1 = []
