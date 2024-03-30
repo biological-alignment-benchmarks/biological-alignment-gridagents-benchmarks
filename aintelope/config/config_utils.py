@@ -28,7 +28,9 @@ def create_range(start, exclusive_end):
 
 
 def minus_3(entry):
-    if hasattr(entry, "__iter__"):  # isinstance(entry, list) does not work here
+    if entry is None:
+        return None
+    elif hasattr(entry, "__iter__"):  # isinstance(entry, list) does not work here
         return [x - 3 for x in entry]
     else:
         return entry - 3
@@ -142,6 +144,18 @@ def set_memory_limits():
 
 
 def select_gpu():
+    gridsearch_gpu = os.environ.get("GRIDSEARCH_GPU")
+    if gridsearch_gpu is not None:
+        gridsearch_gpu = int(gridsearch_gpu)
+        torch.cuda.set_device(gridsearch_gpu)
+        device_name = torch.cuda.get_device_name(gridsearch_gpu)
+        print(f"Using CUDA GPU {gridsearch_gpu} : {device_name}")
+    else:
+        # for each next experiment select next available GPU to maximally balance the load considering multiple running processes
+        rotate_active_gpu_selection()
+
+
+def rotate_active_gpu_selection():
     """Rotates over available GPU-s, selecting a next GPU for each subsequent
     program launch in order to distribute the workload of concurrently running
     programs over all available GPU-s.
@@ -271,6 +285,5 @@ class DummyContext(object):
 
     def __getattr__(self, attr):
         return self._blackHoleMethod
-
 
 # / class DummyContext(object):
