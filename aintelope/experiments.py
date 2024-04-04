@@ -89,7 +89,9 @@ def run_experiment(
         checkpoint = None
 
         if (
-            prev_agent_checkpoint is not None
+            prev_agent_checkpoint
+            is not None
+            # and not use_separate_models_for_each_experiment   # if each experiment has separate models then the model of first agent will have same age as the model of second agent. In this case there is no reason to restrict the model of second agent to be equal of the first agent
         ):  # later experiments may have more agents    # TODO: configuration option for determining whether new agents can copy the checkpoints of earlier agents, and if so then specifically which agent's checkpoint to use
             checkpoint = prev_agent_checkpoint
         else:
@@ -157,7 +159,7 @@ def run_experiment(
 
     with (
         ProgressBar(max_value=len(r)) if not unit_test_mode else DummyContext()
-    ) as episode_bar:  # this is a slow task so lets use a progress bar    # note that ProgressBar crashes under unit test mode, so it will be disabled if unit_test_mode is on
+    ) as episode_bar:  # this is a slow task so lets use a progress bar    # note that ProgressBar crashes under unit test mode, so it will be disabled if unit_test_mode is on   # TODO: create a custom extended ProgressBar class that automatically turns itself off during unit test mode
         for i_episode in r:
             # test_mode = (i_episode >= cfg.hparams.num_episodes)
             test_mode = is_last_pipeline_cycle

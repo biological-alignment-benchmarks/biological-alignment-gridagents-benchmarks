@@ -144,7 +144,7 @@ async def run_gridsearch_experiments() -> None:
                             task.exception()
                         )  # https://rotational.io/blog/spooky-asyncio-errors-and-how-to-fix-them/
                         if ex is not None:
-                            print(f"\nExperiment seems to have choked. Exception: {ex}")
+                            print(f"\nError in experiment. Exception: {ex}")
 
                     completed_coroutine_count += len(dones)
                     multiprocessing_bar.update(completed_coroutine_count)
@@ -163,7 +163,7 @@ async def run_gridsearch_experiments() -> None:
                     await run_gridsearch_experiment_multiprocess(**arguments)
                 except Exception as ex:
                     print(
-                        f"\nExperiment seems to have choked. Exception: {ex}. params: {plotting.prettyprint(gridsearch_combination_for_print)}"
+                        f"\nError in experiment. Exception: {ex}. params: {plotting.prettyprint(gridsearch_combination_for_print)}"
                     )
 
                 completed_coroutine_count += 1
@@ -183,7 +183,7 @@ async def run_gridsearch_experiments() -> None:
                     task.exception()
                 )  # https://rotational.io/blog/spooky-asyncio-errors-and-how-to-fix-them/
                 if ex is not None:
-                    print(f"\nExperiment seems to have choked. Exception: {ex}")
+                    print(f"\nError in experiment. Exception: {ex}")
             completed_coroutine_count += len(dones)
             multiprocessing_bar.update(completed_coroutine_count)
             active_coroutines = pendings
@@ -265,7 +265,7 @@ async def run_gridsearch_experiment_multiprocess(
             )
             if os.name == "nt":
                 await asyncio.sleep(
-                    30
+                    30  # TODO: config parameter for the delay
                 )  # there needs to be delay between subprocess creation, else CUDA will crash for some reason. Additionally, even when CUDA does not crash, then python will crash when processes start in a "too short" sequence (like 10 sec intervals). Source: personal experience with multiple Windows machines and operating system versions.
 
         try:
@@ -276,9 +276,7 @@ async def run_gridsearch_experiment_multiprocess(
             stdout, stderr = await proc.communicate()
             print("\n" + stdout.decode("utf-8", "ignore"))
         except Exception as ex:
-            print(
-                f"\nExperiment worker process seems to have choked. Exception: {ex}. Params:"
-            )
+            print(f"\nError in experiment worker process. Exception: {ex}. Params:")
             plotting.prettyprint(gridsearch_combination_for_print)
 
         return
