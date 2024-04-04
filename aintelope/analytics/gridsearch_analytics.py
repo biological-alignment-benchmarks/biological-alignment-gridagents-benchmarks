@@ -39,7 +39,13 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
         cfg.hparams.use_separate_models_for_each_experiment
     )
     use_separate_parameters_for_each_experiment = (
-        False  # TODO: override function argument
+        True  # TODO: override function argument
+    )
+
+    compute_average_evals_scores_per_parameter_combination = True  # if set to false then all cycles of evals with best gridsearch parameter combination are outputted in separate rows of the output CSV file
+
+    return_n_best_combinations = (
+        2 if compute_average_evals_scores_per_parameter_combination else 1
     )
 
     # extract list parameters and compute cross product over their values
@@ -169,7 +175,7 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
 
     # "timestamp", "experiment_name", "title", "params_set_title", "gridsearch_params", "score_dimensions", "test_totals", "test_averages", "test_variances", "test_sfella_totals", "test_sfella_averages", "test_sfella_variances"
 
-    parameter_grouping_cols = [
+    evals_parameter_grouping_cols = [
         col
         for col in df.columns
         if
@@ -202,95 +208,232 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
     ]
 
     gridsearch_cycle_count = 4  # max cycle count   # TODO: read from config
-    eval_cycle_count = 25  # gridsearch_cycle_count if gridsearch_cycle_count is not None else 25    # min cycle count       # TODO: read from config
+    eval_cycle_count = 4  # gridsearch_cycle_count if gridsearch_cycle_count is not None else 25    # min cycle count       # TODO: read from config
 
     df = df[
         df["gridsearch_params.hparams.gridsearch_trial_no"] < eval_cycle_count
     ]  # ignore results past eval_cycle_count
     # df = df[df["gridsearch_params.hparams.model_params.conv_size"] == 3]
 
-    params_and_results_cols = parameter_grouping_cols + score_cols
-    df_params_and_results = df[params_and_results_cols]
+    evals_params_and_results_cols = (
+        evals_parameter_grouping_cols
+        + (
+            ["gridsearch_params.hparams.gridsearch_trial_no"]
+            if not compute_average_evals_scores_per_parameter_combination
+            else []
+        )
+        + score_cols
+    )
+    evals_df_params_and_results = df[evals_params_and_results_cols]
 
-    if gridsearch_cycle_count is not None:  # keep only rows up to given trial no
+    if (
+        gridsearch_cycle_count is not None
+    ):  # keep only rows up to given trial no in gridsearch df
         gridsearch_df = df[
             df["gridsearch_params.hparams.gridsearch_trial_no"] < gridsearch_cycle_count
         ]
-        gridsearch_df_params_and_results = gridsearch_df[
-            gridsearch_parameter_grouping_cols
-            + ["test_averages.Score", "sfella_score_average"]
-        ]
     else:
-        gridsearch_df_params_and_results = df[
-            gridsearch_parameter_grouping_cols
-            + ["test_averages.Score", "sfella_score_average"]
-        ]
+        gridsearch_df = df
+
+    gridsearch_df_params_and_results = gridsearch_df[
+        gridsearch_parameter_grouping_cols
+        + ["test_averages.Score", "sfella_score_average"]
+    ]
+    gridsearch_df_params_and_results_with_experiment_name = gridsearch_df[
+        gridsearch_parameter_grouping_cols + ["experiment_name"]
+    ]
 
     score_cols_mean_renames = {col: "mean." + col for col in score_cols}
     score_cols_std_renames = {col: "std." + col for col in score_cols}
 
-    # TODO: refactor this into a separate helper function since this code does not seem to be quite straightforward, but is a general use case
-    # preserve the groupby cols after aggregation by mean(). See https://stackoverflow.com/questions/40139184/keeping-key-column-when-using-groupby-with-transform-in-pandas
-    averages_per_parameter_combination = pd.concat(
-        [
-            df_params_and_results[
-                parameter_grouping_cols
-            ],  # returns parameter_grouping_cols
-            df_params_and_results.groupby(parameter_grouping_cols)
-            .transform("size")  # count rows per group  # returns averaged score_cols
-            .rename("count", inplace=False),
-            df_params_and_results.groupby(parameter_grouping_cols)
-            .transform("mean")  # returns averaged score_cols
-            .rename(columns=score_cols_mean_renames, inplace=False),
-            df_params_and_results.groupby(parameter_grouping_cols)
-            .transform("std", ddof=0)  # TODO: ddof  # returns averaged score_cols
-            .rename(columns=score_cols_std_renames, inplace=False),
-        ],
-        axis=1,
-    ).drop_duplicates()
-    averages_per_parameter_combination["score_mean_minus_std"] = (
-        averages_per_parameter_combination["mean.test_averages.Score"]
-        - averages_per_parameter_combination["std.test_averages.Score"]
-    )
+    if not use_separate_parameters_for_each_experiment:
+        # NB! Ensure that all experiments have sufficient cycle count.
+        # Evan if we will find common parameters over all experiments, we still need to ensure that all
+        # experiments with a given parameter set have sufficient count of cycles.
+        # In case of "not use_separate_parameters_for_each_experiment" this filtering can be done only
+        # before running aggregating evals_aggregations on gridsearch data.
+
+        gridsearch_cycle_count_transforms = [
+            gridsearch_df_params_and_results_with_experiment_name[
+                gridsearch_parameter_grouping_cols + ["experiment_name"]
+            ],
+            gridsearch_df_params_and_results_with_experiment_name.groupby(
+                gridsearch_parameter_grouping_cols + ["experiment_name"], sort=False
+            )
+            .transform(  # NB! here we transform(), not agg() so that the input rows are preserved and just a new column is added
+                "size"
+            )  # count rows per group
+            .rename("count_per_experiment", inplace=False),
+        ]
+        gridsearch_df_params_and_results_with_experiment_name = pd.concat(
+            gridsearch_cycle_count_transforms,  # NB! Here we do not reindex, else it would not be possible to apply gridsearch_mask to gridsearch_df_params_and_results. Also we do not need to reindex here since this list contains only transforms and not aggregations.
+            axis=1,
+        )
+
+        gridsearch_mask = (
+            gridsearch_df_params_and_results_with_experiment_name[
+                "count_per_experiment"
+            ]
+            >= gridsearch_cycle_count
+        )
+        gridsearch_df_params_and_results = gridsearch_df_params_and_results[
+            gridsearch_mask
+        ]
+        gridsearch_df_params_and_results_with_experiment_name = (
+            gridsearch_df_params_and_results_with_experiment_name[gridsearch_mask]
+        )
+
+    # / if not use_separate_parameters_for_each_experiment:
+
+    gridsearch_aggregations = [
+        # preserve the groupby cols after aggregation by mean(). See https://stackoverflow.com/questions/40139184/keeping-key-column-when-using-groupby-with-transform-in-pandas
+        gridsearch_df_params_and_results[
+            gridsearch_parameter_grouping_cols
+        ].drop_duplicates(),
+        gridsearch_df_params_and_results.groupby(
+            gridsearch_parameter_grouping_cols, sort=False
+        )
+        .agg("size")  # count rows per group  # count rows per group
+        .rename("count", inplace=False),
+        gridsearch_df_params_and_results.groupby(
+            gridsearch_parameter_grouping_cols, sort=False
+        )
+        .agg("mean")  # returns averaged score_cols
+        .rename(columns=score_cols_mean_renames, inplace=False),
+        gridsearch_df_params_and_results.groupby(
+            gridsearch_parameter_grouping_cols, sort=False
+        )
+        .agg("std", ddof=0)  # TODO: ddof
+        .rename(columns=score_cols_std_renames, inplace=False),
+    ]
+
+    if (
+        not use_separate_parameters_for_each_experiment
+    ):  # count the number of different experiments in each parameter combination
+        gridsearch_aggregations += [
+            gridsearch_df_params_and_results_with_experiment_name.groupby(
+                gridsearch_parameter_grouping_cols, sort=False
+            )["experiment_name"]
+            .agg("nunique")
+            .rename("nunique_experiment_name", inplace=False),
+            gridsearch_df_params_and_results_with_experiment_name.groupby(
+                gridsearch_parameter_grouping_cols, sort=False
+            )["experiment_name"]
+            .apply(set)
+            .rename("experiment_names", inplace=False),  # this is used for debugging
+        ]
 
     gridsearch_averages_per_parameter_combination = pd.concat(
-        [
-            gridsearch_df_params_and_results[
-                gridsearch_parameter_grouping_cols
-            ],  # returns gridsearch_parameter_grouping_cols
-            gridsearch_df_params_and_results.groupby(gridsearch_parameter_grouping_cols)
-            .transform("size")  # count rows per group  # returns averaged score_cols
-            .rename("count", inplace=False),
-            gridsearch_df_params_and_results.groupby(gridsearch_parameter_grouping_cols)
-            .transform("mean")  # returns averaged score_cols
-            .rename(columns=score_cols_mean_renames, inplace=False),
-            gridsearch_df_params_and_results.groupby(gridsearch_parameter_grouping_cols)
-            .transform("std", ddof=0)  # TODO: ddof  # returns averaged score_cols
-            .rename(columns=score_cols_std_renames, inplace=False),
-        ],
+        [x.reset_index(drop=True) for x in gridsearch_aggregations],
         axis=1,
-    ).drop_duplicates()
+    )
     gridsearch_averages_per_parameter_combination["score_mean_minus_std"] = (
         gridsearch_averages_per_parameter_combination["mean.test_averages.Score"]
         - gridsearch_averages_per_parameter_combination["std.test_averages.Score"]
     )
 
-    # keep only parameter combinations with sufficient cycle count
-    averages_per_parameter_combination = averages_per_parameter_combination[
-        averages_per_parameter_combination["count"] >= eval_cycle_count
-    ]
-    gridsearch_averages_per_parameter_combination = (
-        gridsearch_averages_per_parameter_combination[
-            gridsearch_averages_per_parameter_combination["count"] >= eval_cycle_count
+    if use_separate_parameters_for_each_experiment:
+        gridsearch_averages_per_parameter_combination = (
+            gridsearch_averages_per_parameter_combination[
+                gridsearch_averages_per_parameter_combination["count"]
+                >= gridsearch_cycle_count
+            ]
+        )  # TODO!!! check the cycle count per experiment, not per parameter combination
+
+    else:
+        # check how many unique experiment names remained per gridsearch parameter combination after removing rows with too few eval_cycle_count
+
+        # if "not use_separate_parameters_for_each_experiment" then the count-based filtering is already done above before aggregation
+
+        max_nunique_experiment_name_count = evals_df_params_and_results[
+            "experiment_name"
+        ].nunique()
+
+        # AFTER removing low-cycle count gridsearch groups, keep only gridsearch parameter combinations that have same maximum unique experiment count as maximum unique experiment count of eval dataset
+        gridsearch_averages_per_parameter_combination = gridsearch_averages_per_parameter_combination[
+            gridsearch_averages_per_parameter_combination["nunique_experiment_name"]
+            == max_nunique_experiment_name_count
+        ]  # Even though above code line already multiplies by max_nunique_experiment_name_count, we need to recheck here. It may happen that some gridsearch has many cycles on one experiment (more than gridsearch_cycle_count parameter), but is missing cycles on other environment
+
+    # / if not use_separate_parameters_for_each_experiment:
+
+    if compute_average_evals_scores_per_parameter_combination:
+        evals_aggregations = [
+            # preserve the groupby cols after aggregation by mean(). See https://stackoverflow.com/questions/40139184/keeping-key-column-when-using-groupby-with-transform-in-pandas
+            evals_df_params_and_results[
+                evals_parameter_grouping_cols
+            ].drop_duplicates(),
+            evals_df_params_and_results.groupby(
+                evals_parameter_grouping_cols, sort=False
+            )
+            .agg("size")  # count rows per group
+            .rename("count", inplace=False),
+            evals_df_params_and_results.groupby(
+                evals_parameter_grouping_cols, sort=False
+            )
+            .agg("mean")  # returns averaged score_cols
+            .rename(columns=score_cols_mean_renames, inplace=False),
+            evals_df_params_and_results.groupby(
+                evals_parameter_grouping_cols, sort=False
+            )
+            .agg("std", ddof=0)  # TODO: ddof
+            .rename(columns=score_cols_std_renames, inplace=False),
         ]
-    )
+
+        # TODO: refactor this into a separate helper function since this code does not seem to be quite straightforward, but is a general use case
+        evals_averages_per_parameter_combination = pd.concat(
+            [x.reset_index(drop=True) for x in evals_aggregations],
+            axis=1,
+        )
+
+        # keep only parameter combinations with sufficient cycle count
+        evals_averages_per_parameter_combination = (
+            evals_averages_per_parameter_combination[
+                evals_averages_per_parameter_combination["count"] >= eval_cycle_count
+            ]
+        )
+
+        evals_averages_per_parameter_combination["score_mean_minus_std"] = (
+            evals_averages_per_parameter_combination["mean.test_averages.Score"]
+            - evals_averages_per_parameter_combination["std.test_averages.Score"]
+        )
+
+    else:  # / if compute_average_evals_scores_per_parameter_combination:
+        evals_cycle_count_transforms = [
+            evals_df_params_and_results,  # [evals_parameter_grouping_cols],
+            evals_df_params_and_results.groupby(
+                evals_parameter_grouping_cols, sort=False
+            )
+            .transform(  # NB! here we transform(), not agg() so that the input rows are preserved and just a new column is added
+                "size"
+            )  # count rows per group
+            .rename("count_per_experiment", inplace=False),
+        ]
+        evals_averages_per_parameter_combination = pd.concat(
+            evals_cycle_count_transforms,  # NB! Here we do not reindex, else it would not be possible to apply gridsearch_mask to gridsearch_df_params_and_results. Also we do not need to reindex here since this list contains only transforms and not aggregations.
+            axis=1,
+        )
+
+        # keep only parameter combinations with sufficient cycle count
+        evals_averages_per_parameter_combination = (
+            evals_averages_per_parameter_combination[
+                evals_averages_per_parameter_combination["count_per_experiment"]
+                >= eval_cycle_count
+            ]
+        )
+
+    # / if compute_average_evals_scores_per_parameter_combination:
 
     # group by columns: hparams, map_max, experiment_name
 
     # TODO: in case multiple rows have same best value, take all of them
 
-    environment_grouping_dims = ["gridsearch_params.hparams.env_params.map_max"]
-    environment_grouping_dims.append("experiment_name")
+    evals_environment_grouping_dims = ["gridsearch_params.hparams.env_params.map_max"]
+    evals_environment_grouping_dims.append("experiment_name")
+    if not compute_average_evals_scores_per_parameter_combination:
+        evals_environment_grouping_dims.append(
+            "gridsearch_params.hparams.gridsearch_trial_no"
+        )
 
     gridsearch_environment_grouping_dims = [
         "gridsearch_params.hparams.env_params.map_max"
@@ -298,33 +441,39 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
     if use_separate_parameters_for_each_experiment:
         gridsearch_environment_grouping_dims.append("experiment_name")
 
+    # select evals rows that have same parameter sets as best gridsearch parameter sets
+
     test = (
         gridsearch_averages_per_parameter_combination.groupby(
-            gridsearch_environment_grouping_dims
+            gridsearch_environment_grouping_dims, sort=False
         )
-        .transform("max")
-        .drop_duplicates()
-    )
+        .agg("max")
+        .reset_index(drop=True)
+    )  # for debugging
 
-    # TODO: index by parameters, not by row index
-    gridsearch_best_parameters_by_score_row_indexes = (
-        gridsearch_averages_per_parameter_combination.groupby(
-            gridsearch_environment_grouping_dims
-        )["mean.test_averages.Score"].idxmax()
+    gridsearch_best_parameters_by_score_sorted = (
+        gridsearch_averages_per_parameter_combination.sort_values(
+            by="mean.test_averages.Score", ascending=False
+        )
     )
     gridsearch_best_parameters_by_score = (
-        gridsearch_averages_per_parameter_combination.loc[
-            gridsearch_best_parameters_by_score_row_indexes
-        ]
-    )
+        gridsearch_best_parameters_by_score_sorted.groupby(
+            gridsearch_environment_grouping_dims, sort=False
+        )
+        .head(return_n_best_combinations)
+        .sort_values(
+            gridsearch_environment_grouping_dims + ["mean.test_averages.Score"],
+            ascending=([True] * len(gridsearch_environment_grouping_dims) + [False]),
+        )
+    )  # sorting is needed in case of writing specialised config file(s) at the end. TODO: If two rows have same scores then it might happen that the order of rows in evals-based CSV file and in gridsearch-based config files is different (more precisely, first row may end up in config file with suffix _2 and second row in config file with suffix _1).
 
     # select rows from full dataset which match the gridsearch best parameters
     rows = []
     with RobustProgressBar(
-        max_value=len(averages_per_parameter_combination), granularity=10
+        max_value=len(evals_averages_per_parameter_combination), granularity=10
     ) as bar:
         for index, (pd_index, row) in enumerate(
-            averages_per_parameter_combination.iterrows()
+            evals_averages_per_parameter_combination.iterrows()
         ):
             mask = (
                 gridsearch_best_parameters_by_score[gridsearch_parameter_grouping_cols]
@@ -336,31 +485,41 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
                 assert mask.sum() == 1
                 # assert row["mean.test_averages.Score"] == gridsearch_best_parameters_by_score[mask]["mean.test_averages.Score"].item()
                 rows.append(row)
+            else:
+                qqq = True  # for debugging
             bar.update(index + 1)
-    if use_separate_parameters_for_each_experiment:
+    if (
+        use_separate_parameters_for_each_experiment
+        and compute_average_evals_scores_per_parameter_combination
+    ):
         assert len(rows) == len(gridsearch_best_parameters_by_score)
-    best_parameters_by_score = pd.concat(rows, axis=1).transpose()
-    # best_parameters_by_score = averages_per_parameter_combination.loc[best_parameters_by_score_row_indexes]
-    # assert list(test["mean.test_averages.Score"]) == list(best_parameters_by_score["mean.test_averages.Score"])
+    evals_best_parameters_by_score = pd.concat(rows, axis=1).transpose()
+    # evals_best_parameters_by_score = evals_averages_per_parameter_combination.loc[best_parameters_by_score_row_indexes]
+    # assert list(test["mean.test_averages.Score"]) == list(evals_best_parameters_by_score["mean.test_averages.Score"])
 
-    gridsearch_best_parameters_by_sfella_score_row_indexes = (
-        gridsearch_averages_per_parameter_combination.groupby(
-            gridsearch_environment_grouping_dims
-        )["mean.sfella_score_average"].idxmax()
+    gridsearch_best_parameters_by_sfella_score_sorted = (
+        gridsearch_averages_per_parameter_combination.sort_values(
+            by="mean.sfella_score_average", ascending=False
+        )
     )
     gridsearch_best_parameters_by_sfella_score = (
-        gridsearch_averages_per_parameter_combination.loc[
-            gridsearch_best_parameters_by_sfella_score_row_indexes
-        ]
-    )
+        gridsearch_best_parameters_by_sfella_score_sorted.groupby(
+            gridsearch_environment_grouping_dims, sort=False
+        )
+        .head(return_n_best_combinations)
+        .sort_values(
+            gridsearch_environment_grouping_dims + ["mean.sfella_score_average"],
+            ascending=([True] * len(gridsearch_environment_grouping_dims) + [False]),
+        )
+    )  # sorting is needed in case of writing specialised config file(s) at the end. TODO: If two rows have same scores then it might happen that the order of rows in evals-based CSV file and in gridsearch-based config files is different (more precisely, first row may end up in config file with suffix _2 and second row in config file with suffix _1).
 
     # select rows from full dataset which match the gridsearch best parameters
     rows = []
     with RobustProgressBar(
-        max_value=len(averages_per_parameter_combination), granularity=10
+        max_value=len(evals_averages_per_parameter_combination), granularity=10
     ) as bar:
         for index, (pd_index, row) in enumerate(
-            averages_per_parameter_combination.iterrows()
+            evals_averages_per_parameter_combination.iterrows()
         ):
             mask = (
                 gridsearch_best_parameters_by_sfella_score[
@@ -374,37 +533,53 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
                 assert mask.sum() == 1
                 # assert row["mean.sfella_score_average"] == gridsearch_best_parameters_by_sfella_score[mask]["mean.sfella_score_average"].item()
                 rows.append(row)
+            else:
+                qqq = True  # for debugging
             bar.update(index + 1)
-    if use_separate_parameters_for_each_experiment:
+    if (
+        use_separate_parameters_for_each_experiment
+        and compute_average_evals_scores_per_parameter_combination
+    ):
         assert len(rows) == len(gridsearch_best_parameters_by_sfella_score)
-    best_parameters_by_sfella_score = pd.concat(rows, axis=1).transpose()
-    # best_parameters_by_sfella_score = averages_per_parameter_combination.loc[best_parameters_by_sfella_score_row_indexes]
+    evals_best_parameters_by_sfella_score = pd.concat(rows, axis=1).transpose()
+    # evals_best_parameters_by_sfella_score = evals_averages_per_parameter_combination.loc[best_parameters_by_sfella_score_row_indexes]
 
-    # if best_parameters_by_sfella_score contain -inf values then ignore these rows
-    infinities = best_parameters_by_sfella_score["mean.sfella_score_average"] == -np.inf
-    best_parameters_by_sfella_score = best_parameters_by_sfella_score.drop(
-        best_parameters_by_sfella_score[infinities].index
-    )
-    # assert list(test["mean.sfella_score_average"]) == list(best_parameters_by_sfella_score["mean.sfella_score_average"])
+    if compute_average_evals_scores_per_parameter_combination:
+        # if evals_best_parameters_by_sfella_score contain -inf values then ignore these rows
+        infinities = (
+            evals_best_parameters_by_sfella_score["mean.sfella_score_average"]
+            == -np.inf
+        )
+        evals_best_parameters_by_sfella_score = (
+            evals_best_parameters_by_sfella_score.drop(
+                evals_best_parameters_by_sfella_score[infinities].index
+            )
+        )
+        # assert list(test["mean.sfella_score_average"]) == list(evals_best_parameters_by_sfella_score["mean.sfella_score_average"])
 
-    gridsearch_best_parameters_by_score_minus_std_row_indexes = (
-        gridsearch_averages_per_parameter_combination.groupby(
-            gridsearch_environment_grouping_dims
-        )["score_mean_minus_std"].idxmax()
+    gridsearch_best_parameters_by_score_minus_std_sorted = (
+        gridsearch_averages_per_parameter_combination.sort_values(
+            by="score_mean_minus_std", ascending=False
+        )
     )
     gridsearch_best_parameters_by_score_minus_std = (
-        gridsearch_averages_per_parameter_combination.loc[
-            gridsearch_best_parameters_by_score_minus_std_row_indexes
-        ]
-    )
+        gridsearch_best_parameters_by_score_minus_std_sorted.groupby(
+            gridsearch_environment_grouping_dims, sort=False
+        )
+        .head(return_n_best_combinations)
+        .sort_values(
+            gridsearch_environment_grouping_dims + ["score_mean_minus_std"],
+            ascending=([True] * len(gridsearch_environment_grouping_dims) + [False]),
+        )
+    )  # sorting is needed in case of writing specialised config file(s) at the end. TODO: If two rows have same scores then it might happen that the order of rows in evals-based CSV file and in gridsearch-based config files is different (more precisely, first row may end up in config file with suffix _2 and second row in config file with suffix _1).
 
     # select rows from full dataset which match the gridsearch best parameters
     rows = []
     with RobustProgressBar(
-        max_value=len(averages_per_parameter_combination), granularity=10
+        max_value=len(evals_averages_per_parameter_combination), granularity=10
     ) as bar:
         for index, (pd_index, row) in enumerate(
-            averages_per_parameter_combination.iterrows()
+            evals_averages_per_parameter_combination.iterrows()
         ):
             mask = (
                 gridsearch_best_parameters_by_score_minus_std[
@@ -418,44 +593,72 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
                 assert mask.sum() == 1
                 # assert row["mean.sfella_score_average"] == gridsearch_best_parameters_by_sfella_score[mask]["mean.sfella_score_average"].item()
                 rows.append(row)
+            else:
+                qqq = True  # for debugging
             bar.update(index + 1)
-    if use_separate_parameters_for_each_experiment:
+    if (
+        use_separate_parameters_for_each_experiment
+        and compute_average_evals_scores_per_parameter_combination
+    ):
         assert len(rows) == len(gridsearch_best_parameters_by_score_minus_std)
-    best_parameters_by_score_minus_std = pd.concat(rows, axis=1).transpose()
-    # best_parameters_by_score_minus_std = averages_per_parameter_combination.loc[best_parameters_by_score_minus_std_row_indexes]
+    evals_best_parameters_by_score_minus_std = pd.concat(rows, axis=1).transpose()
+    # evals_best_parameters_by_score_minus_std = evals_averages_per_parameter_combination.loc[best_parameters_by_score_minus_std_row_indexes]
     # assert list(test["score_mean_minus_std"]) == list(best_parameters_by_score_minus_std_row_indexes["score_mean_minus_std"])
 
-    total_score_dims = [
-        "mean.test_averages.Score",
-        "std.test_averages.Score",
-        "mean.sfella_score_average",
-        "std.sfella_score_average",
-        "score_mean_minus_std",
-    ]
-    reward_dims = [
-        "mean.test_averages.Reward",
-        "std.test_averages.Reward",
-        "mean.test_sfella_averages.Reward",
-        "std.test_sfella_averages.Reward",
-    ]
-    average_score_subdims = [
-        col
-        for col in averages_per_parameter_combination.columns
-        if (
-            col.startswith("mean.test_averages.") or col == "score_mean_minus_std"
-        )  # or col.startswith("std.test_averages."))
-        and col not in total_score_dims
-        and col not in reward_dims
-    ]
-    sfella_average_score_subdims = [
-        col
-        for col in averages_per_parameter_combination.columns
-        if (
-            col.startswith("mean.test_sfella_averages.")
-        )  # or col.startswith("std.test_sfella_averages."))
-        and col not in total_score_dims
-        and col not in reward_dims
-    ]
+    # / # select evals rows that have same parameter sets as best gridsearch parameter sets
+
+    if compute_average_evals_scores_per_parameter_combination:
+        total_score_dims = [
+            "mean.test_averages.Score",
+            "std.test_averages.Score",
+            "mean.sfella_score_average",
+            "std.sfella_score_average",
+            "score_mean_minus_std",
+        ]
+        reward_dims = [
+            "mean.test_averages.Reward",
+            "std.test_averages.Reward",
+            "mean.test_sfella_averages.Reward",
+            "std.test_sfella_averages.Reward",
+        ]
+        average_score_subdims = [
+            col
+            for col in evals_averages_per_parameter_combination.columns
+            if (
+                col.startswith("mean.test_averages.") or col == "score_mean_minus_std"
+            )  # or col.startswith("std.test_averages."))
+            and col not in total_score_dims
+            and col not in reward_dims
+        ]
+        sfella_average_score_subdims = [
+            col
+            for col in evals_averages_per_parameter_combination.columns
+            if (
+                col.startswith("mean.test_sfella_averages.")
+            )  # or col.startswith("std.test_sfella_averages."))
+            and col not in total_score_dims
+            and col not in reward_dims
+        ]
+
+    else:  # / if compute_average_evals_scores_per_parameter_combination:
+        total_score_dims = ["test_averages.Score", "sfella_score_average"]
+        reward_dims = ["test_averages.Reward", "test_sfella_averages.Reward"]
+        average_score_subdims = [
+            col
+            for col in evals_averages_per_parameter_combination.columns
+            if col.startswith("test_averages.")
+            and col not in total_score_dims
+            and col not in reward_dims
+        ]
+        sfella_average_score_subdims = [
+            col
+            for col in evals_averages_per_parameter_combination.columns
+            if col.startswith("test_sfella_averages.")
+            and col not in total_score_dims
+            and col not in reward_dims
+        ]
+
+    # / if compute_average_evals_scores_per_parameter_combination:
 
     gridsearch_cols = list(gridsearch_cols)
     gridsearch_cols.sort()
@@ -464,7 +667,7 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
         for col in gridsearch_cols
         if not col.endswith(".gridsearch_trial_no")  # this one is averaged out
         and ("gridsearch_params." + col)
-        not in environment_grouping_dims  # map_max, experiment_name
+        not in evals_environment_grouping_dims  # map_max, experiment_name
     ]
 
     non_gridsearch_cols = list(flattened_config_without_gridsearch_keys.keys())
@@ -473,47 +676,78 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
         "gridsearch_params." + col
         for col in non_gridsearch_cols
         if ("gridsearch_params." + col)
-        not in environment_grouping_dims  # exclude map_max, experiment_name here as well, even if they happen to be not part of gridsearch, else we get duplicate columns below
+        not in evals_environment_grouping_dims  # exclude map_max, experiment_name here as well, even if they happen to be not part of gridsearch, else we get duplicate columns below
     ]
 
-    best_parameters_by_score = best_parameters_by_score[
-        environment_grouping_dims
+    evals_best_parameters_by_score = evals_best_parameters_by_score[
+        evals_environment_grouping_dims
         + gridsearch_cols
-        + ["count"]
+        + [
+            "count"
+            if compute_average_evals_scores_per_parameter_combination
+            else "count_per_experiment"
+        ]
         + total_score_dims
         + reward_dims
         + sfella_average_score_subdims
         + non_gridsearch_cols
     ]
 
-    best_parameters_by_sfella_score = best_parameters_by_sfella_score[
-        environment_grouping_dims
+    evals_best_parameters_by_sfella_score = evals_best_parameters_by_sfella_score[
+        evals_environment_grouping_dims
         + gridsearch_cols
-        + ["count"]
+        + [
+            "count"
+            if compute_average_evals_scores_per_parameter_combination
+            else "count_per_experiment"
+        ]
         + total_score_dims
         + reward_dims
         + sfella_average_score_subdims
         + non_gridsearch_cols
     ]
 
-    best_parameters_by_score_minus_std = best_parameters_by_score_minus_std[
-        environment_grouping_dims
+    evals_best_parameters_by_score_minus_std = evals_best_parameters_by_score_minus_std[
+        evals_environment_grouping_dims
         + gridsearch_cols
-        + ["count"]
+        + [
+            "count"
+            if compute_average_evals_scores_per_parameter_combination
+            else "count_per_experiment"
+        ]
         + total_score_dims
         + reward_dims
         + sfella_average_score_subdims
         + non_gridsearch_cols
     ]
 
-    best_parameters_by_score = best_parameters_by_score.sort_values(
-        by=environment_grouping_dims
+    evals_best_parameters_by_score = evals_best_parameters_by_score.sort_values(
+        by=evals_environment_grouping_dims
+        + (
+            ["mean.test_averages.Score"]
+            if compute_average_evals_scores_per_parameter_combination
+            else ["test_averages.Score"]
+        ),
+        ascending=([True] * len(evals_environment_grouping_dims) + [False]),
     )
-    best_parameters_by_sfella_score = best_parameters_by_sfella_score.sort_values(
-        by=environment_grouping_dims
+
+    evals_best_parameters_by_sfella_score = (
+        evals_best_parameters_by_sfella_score.sort_values(
+            by=evals_environment_grouping_dims
+            + (
+                ["mean.sfella_score_average"]
+                if compute_average_evals_scores_per_parameter_combination
+                else ["sfella_score_average"]
+            ),
+            ascending=([True] * len(evals_environment_grouping_dims) + [False]),
+        )
     )
-    best_parameters_by_score_minus_std = best_parameters_by_score_minus_std.sort_values(
-        by=environment_grouping_dims
+
+    evals_best_parameters_by_score_minus_std = (
+        evals_best_parameters_by_score_minus_std.sort_values(
+            by=evals_environment_grouping_dims + ["score_mean_minus_std"],
+            ascending=([True] * len(evals_environment_grouping_dims) + [False]),
+        )
     )
 
     if (
@@ -521,38 +755,60 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
     ):  # keep only config parameter names, remove their path to make column names shorter in the CSV file   # TODO: config option
         renames = {
             col: col.split(".")[-1]
-            for col in best_parameters_by_score.columns
+            for col in evals_best_parameters_by_score.columns
             if col.startswith("gridsearch_params.")
         }
-        best_parameters_by_score_shortened = best_parameters_by_score.rename(
+        best_parameters_by_score_shortened = evals_best_parameters_by_score.rename(
             columns=renames, inplace=False
         )
 
         renames = {
             col: col.split(".")[-1]
-            for col in best_parameters_by_sfella_score.columns
+            for col in evals_best_parameters_by_sfella_score.columns
             if col.startswith("gridsearch_params.")
         }
         best_parameters_by_sfella_score_shortened = (
-            best_parameters_by_sfella_score.rename(columns=renames, inplace=False)
+            evals_best_parameters_by_sfella_score.rename(columns=renames, inplace=False)
         )
         best_parameters_by_score_minus_std_shortened = (
-            best_parameters_by_score_minus_std.rename(columns=renames, inplace=False)
+            evals_best_parameters_by_score_minus_std.rename(
+                columns=renames, inplace=False
+            )
         )
     else:
-        best_parameters_by_score_shortened = best_parameters_by_score
-        best_parameters_by_sfella_score_shortened = best_parameters_by_sfella_score
+        best_parameters_by_score_shortened = evals_best_parameters_by_score
+        best_parameters_by_sfella_score_shortened = (
+            evals_best_parameters_by_sfella_score
+        )
         best_parameters_by_score_minus_std_shortened = (
-            best_parameters_by_score_minus_std
+            evals_best_parameters_by_score_minus_std
         )
 
-    filepath = cfg.hparams.params_set_title + "_best_parameters_by_score.csv"
+    filepath = (
+        cfg.hparams.params_set_title
+        + "_best_parameters_by_score"
+        + (
+            "_all_cycles"
+            if not compute_average_evals_scores_per_parameter_combination
+            else ""
+        )
+        + ".csv"
+    )
     print(f"\nWriting to {filepath}")
     try_df_to_csv_write(
         best_parameters_by_score_shortened, filepath, index=False, mode="w", header=True
     )
 
-    filepath = cfg.hparams.params_set_title + "_best_parameters_by_sfella_score.csv"
+    filepath = (
+        cfg.hparams.params_set_title
+        + "_best_parameters_by_sfella_score"
+        + (
+            "_all_cycles"
+            if not compute_average_evals_scores_per_parameter_combination
+            else ""
+        )
+        + ".csv"
+    )
     print(f"\nWriting to {filepath}")
     try_df_to_csv_write(
         best_parameters_by_sfella_score_shortened,
@@ -562,7 +818,16 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
         header=True,
     )
 
-    filepath = cfg.hparams.params_set_title + "_best_parameters_by_score_minus_std.csv"
+    filepath = (
+        cfg.hparams.params_set_title
+        + "_best_parameters_by_score_minus_std"
+        + (
+            "_all_cycles"
+            if not compute_average_evals_scores_per_parameter_combination
+            else ""
+        )
+        + ".csv"
+    )
     print(f"\nWriting to {filepath}")
     try_df_to_csv_write(
         best_parameters_by_score_minus_std_shortened,
@@ -572,73 +837,95 @@ def gridsearch_analytics(cfg: DictConfig) -> None:
         header=True,
     )
 
-    # create a new specialised pipeline config file based on the best parameters per experiment
-
-    # TODO: ensure to do not use special pipeline config when doing initial gridsearch
     pipeline_config_file = os.environ.get("PIPELINE_CONFIG")
+    using_default_pipeline_config_file = False
     if pipeline_config_file is None:
         pipeline_config_file = "config_pipeline.yaml"
-        parts = os.path.splitext(pipeline_config_file)
-        specialised_pipeline_config_file = (
-            parts[0]
-            + "_"
-            + cfg.hparams.params_set_title
-            + ("_common" if not use_separate_parameters_for_each_experiment else "")
-            + parts[1]
-        )
-    else:
-        specialised_pipeline_config_file = pipeline_config_file
+        using_default_pipeline_config_file = True
+
     pipeline_config = OmegaConf.load(
         os.path.join("aintelope/config", pipeline_config_file)
     )
 
-    specialised_config_params_source = best_parameters_by_score  # TODO: config for choosing between best_parameters_by_score, best_parameters_by_sfella_score, best_parameters_by_score_minus_std
+    for combination_i in range(0, return_n_best_combinations):
+        # create a new specialised pipeline config file based on the best parameters per experiment
 
-    specialised_pipeline_config = copy.deepcopy(pipeline_config)
-    for map_size in [
-        7
-    ]:  # TODO: config, or select all available map sizes from gridsearch config
-        for env_conf_name in pipeline_config:
-            result_row_selector = (
-                specialised_config_params_source[
-                    "gridsearch_params.hparams.env_params.map_max"
-                ]
-                == map_size
+        # TODO: ensure to do not use special pipeline config when doing initial gridsearch
+        if using_default_pipeline_config_file:
+            parts = os.path.splitext(pipeline_config_file)
+            specialised_pipeline_config_file = (
+                parts[0]
+                + "_"
+                + cfg.hparams.params_set_title
+                + ("_common" if not use_separate_parameters_for_each_experiment else "")
+                + (f"_{combination_i + 1}" if combination_i > 0 else "")
+                + parts[1]
             )
-            if "experiment_name" in parameter_grouping_cols:
-                result_row_selector &= (
-                    specialised_config_params_source["experiment_name"] == env_conf_name
+        else:
+            parts = os.path.splitext(pipeline_config_file)
+            specialised_pipeline_config_file = (
+                parts[0]
+                + f"_{combination_i + 1}"  # NB! If PIPELINE_CONFIG is specified then do not overwrite it. Therefore we need to append combination_i for combination_i == 0 as well.
+                + parts[1]
+            )
+
+        specialised_config_params_source = gridsearch_best_parameters_by_score  # TODO: config for choosing between gridsearch_best_parameters_by_score, gridsearch_best_parameters_by_sfella_score, gridsearch_best_parameters_by_score_minus_std
+        specialised_config_params_source = (
+            specialised_config_params_source.groupby(
+                gridsearch_environment_grouping_dims, sort=False
+            )
+            .nth(combination_i)
+            .dropna()
+        )  # dropna() will drop rows which match indexes missing in the source
+
+        specialised_pipeline_config = copy.deepcopy(pipeline_config)
+        for map_size in [
+            7
+        ]:  # TODO: config, or select all available map sizes from gridsearch config
+            for env_conf_name in pipeline_config:
+                result_row_selector = (
+                    specialised_config_params_source[
+                        "gridsearch_params.hparams.env_params.map_max"
+                    ]
+                    == map_size
                 )
-
-            result_row = specialised_config_params_source[result_row_selector]
-
-            if (
-                len(result_row) > 0
-            ):  # check whether the grid search produced data for this map_max and experiment_name pair
-                key = env_conf_name + ".env_params.map_max"
-                value = map_size
-                OmegaConf.update(
-                    specialised_pipeline_config, key, value, force_add=True
-                )
-
-                for gridsearch_col in gridsearch_cols:
-                    key = (
-                        env_conf_name
-                        + "."
-                        + gridsearch_col[len("gridsearch_params.hparams.") :]
+                if "experiment_name" in evals_parameter_grouping_cols:
+                    result_row_selector &= (
+                        specialised_config_params_source["experiment_name"]
+                        == env_conf_name
                     )
-                    value = result_row[gridsearch_col].item()
+
+                result_row = specialised_config_params_source[result_row_selector]
+
+                if (
+                    len(result_row) > 0
+                ):  # check whether the grid search produced data for this map_max and experiment_name pair
+                    key = env_conf_name + ".env_params.map_max"
+                    value = map_size
                     OmegaConf.update(
                         specialised_pipeline_config, key, value, force_add=True
                     )
 
-    # TODO: confirm overwriting existing file
-    # print(f"\nWriting to {specialised_pipeline_config_file}")
-    # OmegaConf.save(
-    #    specialised_pipeline_config,
-    #    os.path.join("aintelope/config", specialised_pipeline_config_file),
-    #    resolve=False,
-    # )
+                    for gridsearch_col in gridsearch_cols:
+                        key = (
+                            env_conf_name
+                            + "."
+                            + gridsearch_col[len("gridsearch_params.hparams.") :]
+                        )
+                        value = result_row[gridsearch_col].item()
+                        OmegaConf.update(
+                            specialised_pipeline_config, key, value, force_add=True
+                        )
+
+        # TODO: confirm overwriting existing file
+        print(f"\nWriting to {specialised_pipeline_config_file}")
+        OmegaConf.save(
+            specialised_pipeline_config,
+            os.path.join("aintelope/config", specialised_pipeline_config_file),
+            resolve=False,
+        )
+
+    # / for combination_i in range(0, return_n_best_combinations):
 
     wait_for_enter("\nAnalytics done. Press [enter] to continue.")
     qqq = True
