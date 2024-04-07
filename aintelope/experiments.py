@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 from omegaconf import DictConfig
 
-from progressbar import ProgressBar
+from aintelope.utils import RobustProgressBar
 
 from aintelope.agents import get_agent_class
 from aintelope.analytics import recording as rec
@@ -158,7 +158,7 @@ def run_experiment(
     )  # TODO: concatenate test plot in plotting.py
 
     with (
-        ProgressBar(max_value=len(r)) if not unit_test_mode else DummyContext()
+        RobustProgressBar(max_value=len(r)) if not unit_test_mode else DummyContext()
     ) as episode_bar:  # this is a slow task so lets use a progress bar    # note that ProgressBar crashes under unit test mode, so it will be disabled if unit_test_mode is on   # TODO: create a custom extended ProgressBar class that automatically turns itself off during unit test mode
         for i_episode in r:
             # test_mode = (i_episode >= cfg.hparams.num_episodes)
@@ -225,7 +225,9 @@ def run_experiment(
 
             # Iterations within the episode
             with (
-                ProgressBar(max_value=cfg.hparams.env_params.num_iters)
+                RobustProgressBar(
+                    max_value=cfg.hparams.env_params.num_iters, granularity=100
+                )
                 if not unit_test_mode
                 else DummyContext()
             ) as step_bar:  # this is a slow task so lets use a progress bar    # note that ProgressBar crashes under unit test mode, so it will be disabled if unit_test_mode is on
@@ -417,16 +419,15 @@ def run_experiment(
                         step_bar.update(cfg.hparams.env_params.num_iters)
                         break
 
-                    if (step + 1) % 100 == 0:
-                        step_bar.update(step + 1)
+                    step_bar.update(step + 1)
 
                 # / for step in range(cfg.hparams.env_params.num_iters):
-            # / with ProgressBar(max_value=cfg.hparams.env_params.num_iters) as step_bar:
+            # / with RobustProgressBar(max_value=cfg.hparams.env_params.num_iters) as step_bar:
 
             episode_bar.update(i_episode + 1 - r.start)
 
         # / for i_episode in range(cfg.hparams.num_episodes + cfg.hparams.test_episodes):
-    # / with ProgressBar(max_value=len(r)) as bar:
+    # / with RobustProgressBar(max_value=len(r)) as bar:
 
     if (
         not last_episode_was_saved

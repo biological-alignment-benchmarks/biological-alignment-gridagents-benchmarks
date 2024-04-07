@@ -21,7 +21,7 @@ def wait_for_enter(message):
         import msvcrt
 
         print(message)
-        msvcrt.getch()  # Uses less CPU on Windows than input() function. This becomes perceptible when multiple console windows with Python are waiting for input.
+        msvcrt.getch()  # Uses less CPU on Windows than input() function. This becomes perceptible when multiple console windows with Python are waiting for input. Note that the graph window will be frozen, but will still show graphs.
     else:
         input(message)
 

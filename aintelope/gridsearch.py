@@ -23,7 +23,7 @@ from omegaconf import DictConfig, OmegaConf
 from flatten_dict import flatten
 from flatten_dict.reducers import make_reducer
 
-from progressbar import ProgressBar
+from aintelope.utils import RobustProgressBar, wait_for_enter
 
 from aintelope.analytics import plotting, recording
 from aintelope.config.config_utils import DummyContext
@@ -85,7 +85,7 @@ async def run_gridsearch_experiments() -> None:
         *list_entries.items()
     )  # this performs unzip - split dictionary in to list of keys and list of values
     values_combinations = list(itertools.product(*values))
-    with ProgressBar(
+    with RobustProgressBar(
         max_value=len(values_combinations)
     ) as multiprocessing_bar:  # this is a slow task so lets use a progress bar
         active_coroutines = set()
@@ -188,9 +188,9 @@ async def run_gridsearch_experiments() -> None:
             multiprocessing_bar.update(completed_coroutine_count)
             active_coroutines = pendings
 
-    # / with ProgressBar(max_value=len(values_combinations)) as multiprocessing_bar:
+    # / with RobustProgressBar(max_value=len(values_combinations)) as multiprocessing_bar:
 
-    input("Gridsearch done. Press [enter] to continue.")
+    wait_for_enter("Gridsearch done. Press [enter] to continue.")
     return
 
 

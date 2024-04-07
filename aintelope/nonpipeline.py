@@ -12,6 +12,8 @@ from aintelope.experiments import run_experiment
 
 from aintelope.analytics import plotting, recording
 
+from aintelope.utils import wait_for_enter
+
 logger = logging.getLogger("aintelope.__main__")
 
 
@@ -43,13 +45,7 @@ def aintelope_main(cfg: DictConfig) -> None:
 
     if not do_not_show_plot:
         # keep plots visible until the user decides to close the program
-        if os.name == "nt":
-            import msvcrt
-
-            print("Press [enter] to continue.")
-            msvcrt.getch()  # uses less CPU on Windows than input() function. Note that the graph window will be frozen, but will still show graphs
-        else:
-            input("Press [enter] to continue.")
+        wait_for_enter("Press [enter] to continue.")
 
 
 def analytics(cfg, score_dimensions, title, experiment_name, do_not_show_plot=False):
