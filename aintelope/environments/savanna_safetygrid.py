@@ -227,9 +227,7 @@ class GridworldZooBaseEnv:
             "flatten_observations": "flatten_observations",
         }
 
-        self.super_initargs = {
-            "env_name": "ai_safety_gridworlds.aintelope_savanna"
-        }
+        self.super_initargs = {"env_name": "ai_safety_gridworlds.aintelope_savanna"}
 
         for super_initargs_key, metadata_key in metadata_to_super_initargs_dict.items():
             if self.metadata.get(metadata_key, None) is not None:
