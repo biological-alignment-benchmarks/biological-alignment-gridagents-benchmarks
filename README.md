@@ -23,6 +23,7 @@ The project installation is managed via `make` and `pip`. Please see the
 respective commanads in the `Makefile`. To setup the environment follow these
 steps:
 
+0. Install CPython from python.org. The code is tested with Python version 3.10.
 1. Create a virtual python environment: `make venv`
 2. Activate the environment: `source venv_aintelope/bin/activate`
 3. Install dependencies: `make install`
