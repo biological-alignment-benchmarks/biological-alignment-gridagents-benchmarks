@@ -1,6 +1,8 @@
 import os
 import glob
 
+from collections import OrderedDict
+
 import pandas as pd
 
 # this one is cross-platform
@@ -30,8 +32,28 @@ def boxplot() -> None:
 
     df = pd.concat(dfs, ignore_index=True)
 
-    # df = df[df["experiment_name"] != "e_5_sustainability"]
-    # df["experiment_name"] = df["experiment_name"].str.replace('e_5_sustainability2', 'e_5_sustainability')
+    df = df[df["experiment_name"] != "e_5_sustainability"]
+    df["experiment_name"] = df["experiment_name"].str.replace(
+        "e_5_sustainability2", "e_5_sustainability"
+    )
+
+    agent_type_labels_mapping = OrderedDict(
+        {
+            "random": "random",
+            "dqn": "industry standard (dqn)",
+            "our_version": "our version",
+            "estimated_optimum": "estimated optimum",
+        }
+    )
+    df["params_set_title"] = df["params_set_title"].map(agent_type_labels_mapping)
+    hue_order = list(agent_type_labels_mapping.values())
+
+    palette = [
+        "tab:red",  # random
+        "tab:green",  # industry standard (dqn)
+        "tab:orange",  # our version
+        "tab:blue",  # estimated optimum
+    ]
 
     df["experiment_name"] = df["experiment_name"].str.replace("_", " ")
     df["experiment_name"] = df["experiment_name"].str[3:]  # drop experiment number
@@ -40,13 +62,18 @@ def boxplot() -> None:
         "figure.constrained_layout.use"
     ] = True  # ensure that plot labels fit to the image and do not overlap
 
+    linewidth = 0.75  # TODO: config
+
     axes = sns.boxplot(
         data=df,
         x="test_averages.Score",
         y="experiment_name",
         hue="params_set_title",
+        hue_order=hue_order,
+        palette=palette,
         showfliers=False,
         orient="h",
+        linewidth=linewidth,
     )  # "y" means grouping by experiment, "hue" means bars inside a group of experiment
     axes.set(xlabel="score", ylabel="experiment name")
 
