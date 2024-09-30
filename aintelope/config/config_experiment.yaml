@@ -27,7 +27,8 @@ hparams:
   #env_entry_point: "aintelope.environments.savanna_safetygrid:SavannaGridworldSequentialEnv"
   #env_type: zoo
   unit_test_mode: False      # is set during tests in order to speed up DQN computations
-  agent_class: q_agent 
+  agent_class: example_agent 
+  warm_start_steps: 0       # not used at the moment, except for the unit tests
   save_frequency: 10 # how often to save a model
   use_separate_models_for_each_experiment: True
   agent_params: {}
