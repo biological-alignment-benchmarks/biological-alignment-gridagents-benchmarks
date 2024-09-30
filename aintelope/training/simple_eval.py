@@ -75,22 +75,22 @@ def run_episode(full_params: Dict) -> None:
     # Common trainer for each agent's models
     trainer = Trainer(full_params)
 
-    model_spec = hparams["model"]
+    # model_spec = hparams["model"]   # TODO
     unit_test_mode = hparams[
         "unit_test_mode"
     ]  # is set during tests in order to speed up DQN computations
 
     # TODO: support for different observation shapes in different agents?
     # TODO: support for different action spaces in different agents?
-    if isinstance(model_spec, list):
-        models = [
-            MODEL_LOOKUP[net](obs_size, n_actions, unit_test_mode=unit_test_mode)
-            for net in model_spec
-        ]
-    else:
-        models = [
-            MODEL_LOOKUP[model_spec](obs_size, n_actions, unit_test_mode=unit_test_mode)
-        ]
+    # if isinstance(model_spec, list):
+    #    models = [
+    #        MODEL_LOOKUP[net](obs_size, n_actions, unit_test_mode=unit_test_mode)
+    #        for net in model_spec
+    #    ]
+    # else:
+    #    models = [
+    #        MODEL_LOOKUP[model_spec](obs_size, n_actions, unit_test_mode=unit_test_mode)
+    #    ]
 
     agent_spec = hparams.agent_class
     if isinstance(agent_spec, list) and len(agent_spec) == 1:
@@ -99,9 +99,9 @@ def run_episode(full_params: Dict) -> None:
         agent_spec = agent_spec[0]
 
     if isinstance(agent_spec, list):
-        if len(models) < len(agent_spec):
-            # TODO: shouldnt it be env_params["amount_agents"] here?
-            models *= len(agent_spec)
+        # if len(models) < len(agent_spec):
+        #    # TODO: shouldnt it be env_params["amount_agents"] here?
+        #    models *= len(agent_spec)
         # TODO: this nested list structure probably will not work in below code.
         # What is the intention of using multiple agent_specs?
         agents = [
