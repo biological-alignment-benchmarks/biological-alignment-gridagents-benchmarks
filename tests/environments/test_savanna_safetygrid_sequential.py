@@ -120,12 +120,19 @@ def test_gridworlds_step_result(execution_number):
     done = terminated or truncated
 
     assert not done
-    assert isinstance(
-        observation[0], np.ndarray
-    ), "observation[0] of agent is not an array"
-    assert isinstance(
-        observation[1], np.ndarray
-    ), "observation[1] of agent is not an array"
+
+    if not env._combine_interoception_and_vision:
+        assert isinstance(
+            observation[0], np.ndarray
+        ), "observation[0] of agent is not an array"
+        assert isinstance(
+            observation[1], np.ndarray
+        ), "observation[1] of agent is not an array"
+    else:
+        assert isinstance(
+            observation, np.ndarray
+        ), "observation of agent is not an array"
+
     assert isinstance(reward, dict), "reward of agent is not a dict"
 
 

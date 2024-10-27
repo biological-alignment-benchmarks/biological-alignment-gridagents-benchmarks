@@ -45,10 +45,14 @@ def run_episode(full_params: Dict) -> None:
 
         # TODO: multi-agent compatibility
         # TODO: support for 3D-observation cube
-        obs_size = (
-            env.observation_space("agent_0")[0].shape,
-            env.observation_space("agent_0")[1].shape,
-        )
+        if not env_params.combine_interoception_and_vision:
+            obs_size = (
+                env.observation_space("agent_0")[0].shape,
+                env.observation_space("agent_0")[1].shape,
+            )
+        else:
+            obs_size = env.observation_space("agent_0").shape
+
         logger.info("obs size", obs_size)
 
         # TODO: multi-agent compatibility
@@ -83,12 +87,22 @@ def run_episode(full_params: Dict) -> None:
     # TODO: support for different action spaces in different agents?
     if isinstance(model_spec, list):
         models = [
-            MODEL_LOOKUP[net](obs_size, n_actions, unit_test_mode=unit_test_mode)
+            MODEL_LOOKUP[net](
+                obs_size,
+                n_actions,
+                unit_test_mode=unit_test_mode,
+                combine_interoception_and_vision=env_params.combine_interoception_and_vision,
+            )
             for net in model_spec
         ]
     else:
         models = [
-            MODEL_LOOKUP[model_spec](obs_size, n_actions, unit_test_mode=unit_test_mode)
+            MODEL_LOOKUP[model_spec](
+                obs_size,
+                n_actions,
+                unit_test_mode=unit_test_mode,
+                combine_interoception_and_vision=env_params.combine_interoception_and_vision,
+            )
         ]
 
     agent_spec = hparams.agent_class

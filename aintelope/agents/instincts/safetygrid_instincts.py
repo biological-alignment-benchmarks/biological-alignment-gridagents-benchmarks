@@ -57,7 +57,7 @@ class Food:
         interoception_index = info[INFO_AGENT_INTEROCEPTION_ORDER].index(
             INTEROCEPTION_FOOD
         )
-        interoception_vector = state[1]
+        interoception_vector = info[INFO_AGENT_INTEROCEPTION_VECTOR]
         interoception = interoception_vector[interoception_index]
 
         rewards = 0
@@ -152,7 +152,7 @@ class Drink:
         interoception_index = info[INFO_AGENT_INTEROCEPTION_ORDER].index(
             INTEROCEPTION_DRINK
         )
-        interoception_vector = state[1]
+        interoception_vector = info[INFO_AGENT_INTEROCEPTION_VECTOR]
         interoception = interoception_vector[interoception_index]
 
         rewards = 0
@@ -246,7 +246,7 @@ class Gold:
         drink_interoception_index = info[INFO_AGENT_INTEROCEPTION_ORDER].index(
             INTEROCEPTION_DRINK
         )
-        interoception_vector = state[1]
+        interoception_vector = info[INFO_AGENT_INTEROCEPTION_VECTOR]
         food_interoception = interoception_vector[food_interoception_index]
         drink_interoception = interoception_vector[drink_interoception_index]
 
@@ -316,7 +316,7 @@ class Silver:
         drink_interoception_index = info[INFO_AGENT_INTEROCEPTION_ORDER].index(
             INTEROCEPTION_DRINK
         )
-        interoception_vector = state[1]
+        interoception_vector = info[INFO_AGENT_INTEROCEPTION_VECTOR]
         food_interoception = interoception_vector[food_interoception_index]
         drink_interoception = interoception_vector[drink_interoception_index]
 

@@ -248,23 +248,15 @@ class GridworldZooBaseEnv:
         if self._observe_bitmap_layers:
             if self._combine_interoception_and_vision:
                 self.transformed_observation_spaces = {
-                    agent: gymnasium.spaces.Tuple(
-                        [
-                            Box(
-                                low=0,  # this is a boolean bitmap
-                                high=1,  # this is a boolean bitmap
-                                shape=(
-                                    len(
-                                        infos[agent][
-                                            INFO_AGENT_OBSERVATION_LAYERS_ORDER
-                                        ]
-                                    )
-                                    + 2,  # this already includes all_agents layer + 2 for interoception
-                                    parent_observation_spaces[agent].shape[1],
-                                    parent_observation_spaces[agent].shape[2],
-                                ),
-                            ),
-                        ]
+                    agent: Box(
+                        low=0,  # this is a boolean bitmap
+                        high=1,  # this is a boolean bitmap
+                        shape=(
+                            len(infos[agent][INFO_AGENT_OBSERVATION_LAYERS_ORDER])
+                            + 2,  # this already includes all_agents layer + 2 for interoception
+                            parent_observation_spaces[agent].shape[1],
+                            parent_observation_spaces[agent].shape[2],
+                        ),
                     )
                     for agent in self.possible_agents
                 }
@@ -473,6 +465,7 @@ class GridworldZooBaseEnv:
         allowed_keys = [
             INFO_AGENT_OBSERVATION_COORDINATES,
             INFO_AGENT_OBSERVATION_LAYERS_ORDER,
+            INFO_AGENT_INTEROCEPTION_VECTOR,  # keeping interoception available in info since in observation it may be either located in its own vector or be part of the vision. That make access to this data cumbersome when writing hardcoded rules. Accessing via info argument is more convenient in such cases.
             INFO_AGENT_INTEROCEPTION_ORDER,
             ACTION_RELATIVE_COORDINATE_MAP,
         ]
