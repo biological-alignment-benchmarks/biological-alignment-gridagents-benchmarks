@@ -11,60 +11,60 @@
             "name": "Python: Run single environment with random agent and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\nonpipeline.py",
+            "program": "aintelope/nonpipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_random"],
             "env": {
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run single environment with pure instinct agent and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\nonpipeline.py",
+            "program": "aintelope/nonpipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_instinct"],
             "env": {
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run single environment with instinct + Q agent with rewards from environment and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\nonpipeline.py",
+            "program": "aintelope/nonpipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_mixed"],
             "env": {
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run single environment with instinct + Q agent with rewards from instincts and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\nonpipeline.py",
+            "program": "aintelope/nonpipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_reward"],
             "env": {
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run single environment with Q agent and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\nonpipeline.py",
+            "program": "aintelope/nonpipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_score"],
             "env": {
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         //-----------------------------------------------------------------------------------
@@ -74,39 +74,39 @@
             "name": "Python: Run pipeline with random agent and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\pipeline.py",
+            "program": "aintelope/pipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_random"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run pipeline with pure instinct agent and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\pipeline.py",
+            "program": "aintelope/pipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_instinct"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run pipeline with instinct + Q agent with rewards from environment and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\pipeline.py",
+            "program": "aintelope/pipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_mixed"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         /* TODO
@@ -114,13 +114,13 @@
             "name": "Python: Run pipeline with instinct + Q agent with rewards from instincts and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\pipeline.py",
+            "program": "aintelope/pipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_reward"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         */
@@ -128,13 +128,13 @@
             "name": "Python: Run pipeline with Q agent and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\pipeline.py",
+            "program": "aintelope/pipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_score"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         //-----------------------------------------------------------------------------------
@@ -144,13 +144,13 @@
             "name": "Python: Run pipeline with instinct + Q agent with rewards from environment and per environment optimised params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\pipeline.py",
+            "program": "aintelope/pipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_mixed"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline_mixed10.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         /* TODO
@@ -158,13 +158,13 @@
             "name": "Python: Run pipeline with instinct + Q agent with rewards from instincts and per environment optimised params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\pipeline.py",
+            "program": "aintelope/pipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_reward"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline_reward10.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         */
@@ -172,13 +172,13 @@
             "name": "Python: Run pipeline with Q agent and per environment optimised params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\pipeline.py",
+            "program": "aintelope/pipeline.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_score"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline_score10.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         //-----------------------------------------------------------------------------------
@@ -188,70 +188,70 @@
             "name": "Python: Run multiple trials with random agent and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_random"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
                 "GRIDSEARCH_CONFIG": "config_trials_random.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run multiple trials with pure instinct agent and default params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_instinct"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
                 "GRIDSEARCH_CONFIG": "config_trials_instinct.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run multiple trials pipeline with instinct + Q agent with rewards from environment and default params (use only for debugging)",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_mixed"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
                 "GRIDSEARCH_CONFIG": "config_trials_mixed.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run multiple trials pipeline with instinct + Q agent with rewards from instincts and default params (use only for debugging)",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_reward"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
                 "GRIDSEARCH_CONFIG": "config_trials_reward.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run multiple trials pipeline with Q agent and default param (use only for debugging)",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_score"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
                 "GRIDSEARCH_CONFIG": "config_trials_score.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         //-----------------------------------------------------------------------------------
@@ -261,14 +261,14 @@
             "name": "Python: Run multiple trials pipeline with instinct + Q agent with rewards from environment and per environment optimised params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_mixed"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline_mixed10.yaml",
                 "GRIDSEARCH_CONFIG": "config_trials_mixed.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         /* TODO
@@ -276,14 +276,14 @@
             "name": "Python: Run multiple trials pipeline with instinct + Q agent with rewards from instincts and per environment optimised params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_reward"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline_reward10.yaml",
                 "GRIDSEARCH_CONFIG": "config_trials_reward.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         */
@@ -291,14 +291,14 @@
             "name": "Python: Run multiple trials pipeline with Q agent and per environment optimised params",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_score"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline_score10.yaml",
                 "GRIDSEARCH_CONFIG": "config_trials_score.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         //-----------------------------------------------------------------------------------
@@ -308,42 +308,42 @@
             "name": "Python: Run gridsearch pipeline with instinct + Q agent with rewards from environment",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_mixed"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
                 "GRIDSEARCH_CONFIG": "config_gridsearch_mixed.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run gridsearch pipeline with instinct + Q agent with rewards from instincts",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_reward"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
                 "GRIDSEARCH_CONFIG": "config_gridsearch_reward.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Run gridsearch pipeline with Q agent",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\gridsearch.py",
+            "program": "aintelope/gridsearch.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--config-name=config_experiment_score"],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
                 "GRIDSEARCH_CONFIG": "config_gridsearch_score.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         //-----------------------------------------------------------------------------------
@@ -353,117 +353,117 @@
             "name": "Python: Human-playable demo: 1. Food Unbounded",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\food_unbounded.py",
+            "program": "aintelope/environments/demos/gridworlds/food_unbounded.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Human-playable demo: 2. Danger Tiles",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\danger_tiles.py",
+            "program": "aintelope/environments/demos/gridworlds/danger_tiles.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Human-playable demo: 3. Predators",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\predators.py",
+            "program": "aintelope/environments/demos/gridworlds/predators.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Human-playable demo: 4. Homeostasis",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\homeostasis.py",
+            "program": "aintelope/environments/demos/gridworlds/homeostasis.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Human-playable demo: 5. Sustainability",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\sustainability.py",
+            "program": "aintelope/environments/demos/gridworlds/sustainability.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Human-playable demo: 6. Food Unbounded",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\food_unbounded.py",
+            "program": "aintelope/environments/demos/gridworlds/food_unbounded.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Human-playable demo: 7. Food-Drink Homeostasis",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\food_drink_homeostasis.py",
+            "program": "aintelope/environments/demos/gridworlds/food_drink_homeostasis.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Human-playable demo: 8. Food-Drink Homeostasis Gold",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\food_drink_homeostasis_gold.py",
+            "program": "aintelope/environments/demos/gridworlds/food_drink_homeostasis_gold.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },
         {
             "name": "Python: Human-playable demo: 9. Food-Frink Homeostasis Gold-Silver",
             "type": "python",
             "request": "launch",
-            "program": "aintelope\\environments\\demos\\gridworlds\\food_drink_homeostasis_gold_silver.py",
+            "program": "aintelope/environments/demos/gridworlds/food_drink_homeostasis_gold_silver.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [],
             "env": {
                 "PIPELINE_CONFIG": "config_pipeline.yaml",
-                //"PYTHONPATH": "your_path_here"
+                "PYTHONPATH": "/home/joel/project/aintelope/"
             }
         },        
     ]
