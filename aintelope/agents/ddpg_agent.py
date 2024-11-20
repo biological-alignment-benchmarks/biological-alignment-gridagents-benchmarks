@@ -57,7 +57,9 @@ class DDPGAgent:
         env = ss.pettingzoo_env_to_vec_env_v1(env)
 
         n_actions = env.action_space(self.id).n
-        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
+        action_noise = NormalActionNoise(
+            mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
+        )
 
         self.model = DDPG("CnnPolicy", env, action_noise=action_noise, verbose=1)
 

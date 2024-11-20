@@ -475,7 +475,7 @@ def run_baseline_training(cfg: DictConfig):
     to accommodate stable_baselines agents' training.
     """
 
-    env = get_env_class(cfg.env_params.env)(env_params=cfg.env_params)
+    env = get_env_class(cfg.hparams.env_params.env)(env_params=cfg.hparams.env_params)
 
     # Add agents
     agents = []
@@ -483,7 +483,7 @@ def run_baseline_training(cfg: DictConfig):
     for i in range(env.max_num_agents):
         agent_id = f"agent_{i}"
         agents.append(
-            get_agent_class(cfg.agent_params.agent_class)(
+            get_agent_class(cfg.hparams.agent_class)(
                 agent_id=agent_id,
                 trainer=None,
                 cfg=cfg,
@@ -492,15 +492,15 @@ def run_baseline_training(cfg: DictConfig):
         )
 
     # Train
-    for i_episode in range(cfg.run_params.num_episodes):
+    for i_episode in range(cfg.hparams.num_episodes):
         seed = i_episode
-        env = get_env_class(cfg.env_params.env)(env_params=cfg.env_params)
+        env = get_env_class(cfg.hparams.env)(env_params=cfg.hparams.env_params)
         env.reset(trial_no=seed)
 
         for agent in agents:
             agent.set_env(env)
             # WORKS ONLY FOR ONE AGENT ATM! Cutoff here to synchronize the run
-            agent.train(cfg.run_params.num_steps)
+            agent.train(cfg.env_params.num_iters * cfg.hparams.num_episodes)
 
     # Save models
     for agent in agents:
