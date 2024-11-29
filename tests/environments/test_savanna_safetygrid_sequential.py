@@ -185,7 +185,7 @@ def test_gridworlds_action_spaces():
     env = safetygrid.SavannaGridworldSequentialEnv()
 
     for agent in env.possible_agents:
-        assert isinstance(env.action_space(agent), MultiDiscrete)
+        assert isinstance(env.action_space(agent), Discrete)
         assert env.action_space(agent).n == 5  # includes no-op
 
 
