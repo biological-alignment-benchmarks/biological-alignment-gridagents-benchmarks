@@ -46,7 +46,7 @@ class InstinctAgent(QAgent):
         self,
         agent_id: str,
         trainer: Trainer,
-        env: Environment,
+        env: Environment = None,
         cfg: DictConfig = None,
         target_instincts: List[str] = [],
     ) -> None:
