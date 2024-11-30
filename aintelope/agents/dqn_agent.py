@@ -53,6 +53,7 @@ class DQNAgent:
         ] = [],  # unused, argument present for compatibility with other agents
     ) -> None:
         self.id = agent_id
+        self.env = env
         self.cfg = cfg
         self.done = False
         self.last_action = None
@@ -94,17 +95,19 @@ class DQNAgent:
         if self.done:
             return None
 
-        action_space = self.trainer.action_spaces[self.id]
+        # action_space = self.env.action_space(self.id)
 
-        action, _states = self.model.predict(observation)
-        if isinstance(action_space, Discrete):
-            min_action = action_space.start
-        else:
-            min_action = action_space.min_action
-        action = action + min_action
+        action, _states = self.model.predict(observation, deterministic=False)
+        # if isinstance(action_space, Discrete):
+        #    min_action = action_space.start
+        # else:
+        #    min_action = action_space.min_action
+        # action = action + min_action
+
+        self.state = observation
 
         self.last_action = action
-        return action
+        return action[0]
 
     def update(
         self,
@@ -116,7 +119,7 @@ class DQNAgent:
         score: float = 0.0,
         done: bool = False,
         test_mode: bool = False,
-        save_path: Optional[str] = None,  # TODO: this is unused right now
+        save_path: Optional[str] = None,
     ) -> list:
         """
         Takes observations and updates trainer on perceived experiences.
@@ -141,10 +144,10 @@ class DQNAgent:
 
         next_state = observation
 
-        if next_state is not None:
-            next_s_hist = next_state
-        else:
-            next_s_hist = None
+        # if next_state is not None:
+        #    next_s_hist = next_state
+        # else:
+        #    next_s_hist = None
 
         event = [self.id, self.state, self.last_action, score, done, next_state]
         self.state = next_state

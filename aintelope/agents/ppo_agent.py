@@ -13,10 +13,11 @@ from aintelope.agents import Agent
 from aintelope.aintelope_typing import ObservationFloat, PettingZooEnv
 from aintelope.training.dqn_training import Trainer
 
+import stable_baselines3
 from stable_baselines3 import PPO
 import supersuit as ss
 
-from typing import Union
+from typing import Any, Union
 import gymnasium as gym
 from pettingzoo import AECEnv, ParallelEnv
 
@@ -47,6 +48,10 @@ def vec_env_args(env, num_envs):
     return [env_fn] * num_envs, env.observation_space, env.action_space
 
 
+def is_json_serializable(item: Any) -> bool:
+    return False
+
+
 class PPOAgent:
     """PPOAgent class from stable baselines
     https://pettingzoo.farama.org/tutorials/sb3/waterworld/
@@ -66,10 +71,12 @@ class PPOAgent:
     ) -> None:
         self.id = agent_id
         self.cfg = cfg
+        self.env = env
         self.done = False
         self.last_action = None
 
         ss.vector.vector_constructors.vec_env_args = vec_env_args  # The original function tries to do environment cloning, but absl flags currently do not support it. Since we need only one environment, there is no reason for cloning, so lets replace the cloning function with identity function.
+        stable_baselines3.common.save_util.is_json_serializable = is_json_serializable  # The original function throws many "Pythonic" exceptions which make debugging in Visual Studio too noisy since VS does not have capacity to filter out handled exceptions
 
         env = ss.pettingzoo_env_to_vec_env_v1(env)
         env = ss.concat_vec_envs_v1(
@@ -112,17 +119,19 @@ class PPOAgent:
         if self.done:
             return None
 
-        action_space = self.trainer.action_spaces[self.id]
+        # action_space = self.env.action_space(self.id)
 
-        action, _states = self.model.predict(observation)
-        if isinstance(action_space, Discrete):
-            min_action = action_space.start
-        else:
-            min_action = action_space.min_action
-        action = action + min_action
+        action, _states = self.model.predict(observation, deterministic=False)
+        # if isinstance(action_space, Discrete):
+        #    min_action = action_space.start
+        # else:
+        #    min_action = action_space.min_action
+        # action = action + min_action
+
+        self.state = observation
 
         self.last_action = action
-        return action
+        return action[0]
 
     def update(
         self,
@@ -134,7 +143,7 @@ class PPOAgent:
         score: float = 0.0,
         done: bool = False,
         test_mode: bool = False,
-        save_path: Optional[str] = None,  # TODO: this is unused right now
+        save_path: Optional[str] = None,
     ) -> list:
         """
         Takes observations and updates trainer on perceived experiences.
@@ -159,10 +168,10 @@ class PPOAgent:
 
         next_state = observation
 
-        if next_state is not None:
-            next_s_hist = next_state
-        else:
-            next_s_hist = None
+        # if next_state is not None:
+        #    next_s_hist = next_state
+        # else:
+        #    next_s_hist = None
 
         event = [self.id, self.state, self.last_action, score, done, next_state]
         self.state = next_state

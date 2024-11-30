@@ -53,7 +53,10 @@ def run_experiment(
         raise NotImplementedError(f"Unknown environment type {type(env)}")
 
     # Common trainer for each agent's models
-    trainer = Trainer(cfg)
+    if "ppo" in cfg.hparams.agent_class:
+        trainer = None
+    else:
+        trainer = Trainer(cfg)
 
     # normalise slashes in paths. This is not mandatory, but will be cleaner to debug
     dir_out = os.path.normpath(cfg.log_dir)
@@ -131,8 +134,7 @@ def run_experiment(
         # Add agent, with potential checkpoint
         if "ppo" in cfg.hparams.agent_class:
             agents[-1].load_model(checkpoint)
-
-        if not cfg.hparams.env_params.combine_interoception_and_vision:
+        elif not cfg.hparams.env_params.combine_interoception_and_vision:
             trainer.add_agent(
                 agent_id,
                 (observation[0].shape, observation[1].shape),
