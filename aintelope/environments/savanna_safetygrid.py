@@ -1,3 +1,9 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# Repository: https://github.com/aintelope/biological-compatibility-benchmarks
+
 import sys
 import logging
 from collections import OrderedDict, namedtuple
@@ -69,6 +75,8 @@ Step = Tuple[
     Dict[AgentId, bool],
     Dict[AgentId, Info],
 ]
+
+reset_count = 0  # for debugging
 
 
 class GridworldZooBaseEnv:
@@ -640,6 +648,11 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
     def reset(
         self, seed: Optional[int] = None, options=None, *args, **kwargs
     ) -> Tuple[Dict[AgentId, Observation], Dict[AgentId, Info]]:
+        global reset_count
+
+        reset_count += 1
+        # print("env reset_count: " + str(reset_count))
+
         observations, infos = GridworldZooParallelEnv.reset(
             self, seed=seed, options=options, *args, **kwargs
         )
