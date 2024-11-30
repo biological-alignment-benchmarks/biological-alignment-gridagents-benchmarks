@@ -827,6 +827,11 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
     def reset(
         self, seed: Optional[int] = None, options=None, *args, **kwargs
     ) -> Tuple[Dict[AgentId, Observation], Dict[AgentId, Info]]:
+        global reset_count
+
+        reset_count += 1
+        # print("env reset_count: " + str(reset_count))
+
         GridworldZooAecEnv.reset(self, seed=seed, options=options, *args, **kwargs)
 
         # observe observations, transform observations
