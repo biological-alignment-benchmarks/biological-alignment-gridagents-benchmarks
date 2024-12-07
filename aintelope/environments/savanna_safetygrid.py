@@ -76,8 +76,6 @@ Step = Tuple[
     Dict[AgentId, Info],
 ]
 
-reset_count = 0  # for debugging
-
 
 class GridworldZooBaseEnv:
     metadata = {
@@ -253,6 +251,10 @@ class GridworldZooBaseEnv:
         self._combine_interoception_and_vision = self.metadata[
             "combine_interoception_and_vision"
         ]
+        self._pre_reset_callback2 = None
+        self._post_reset_callback2 = None
+        self._pre_step_callback2 = None
+        self._post_step_callback2 = None
 
     def init_observation_spaces(self, parent_observation_spaces, infos):
         # for @zoo-api
@@ -413,6 +415,7 @@ class GridworldZooBaseEnv:
             INFO_AGENT_INTEROCEPTION_VECTOR,  # keeping interoception available in info since in observation it may be either located in its own vector or be part of the vision. That make access to this data cumbersome when writing hardcoded rules. Accessing via info argument is more convenient in such cases.
             INFO_AGENT_INTEROCEPTION_ORDER,
             ACTION_RELATIVE_COORDINATE_MAP,
+            INFO_REWARD_DICT,  # keep reward dict for case the score is scalarised
         ]
         result = {key: value for key, value in info.items() if key in allowed_keys}
 
@@ -648,14 +651,24 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
     def reset(
         self, seed: Optional[int] = None, options=None, *args, **kwargs
     ) -> Tuple[Dict[AgentId, Observation], Dict[AgentId, Info]]:
-        global reset_count
-
-        reset_count += 1
-        # print("env reset_count: " + str(reset_count))
+        if self._pre_reset_callback2 is not None:
+            (allow_reset, seed, options, args, kwargs) = self._pre_reset_callback2(
+                seed, options, *args, **kwargs
+            )
+            if not allow_reset:
+                return
 
         observations, infos = GridworldZooParallelEnv.reset(
             self, seed=seed, options=options, *args, **kwargs
         )
+
+        print(
+            "trial_no: "
+            + str(GridworldZooParallelEnv.get_trial_no(self))
+            + " episode_no: "
+            + str(GridworldZooParallelEnv.get_episode_no(self))
+        )
+
         infos = self.format_infos(infos)
         self._last_infos = infos
         # transform observations
@@ -665,7 +678,12 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}
 
-        return self.observations2, self.filter_infos(infos)
+        result = (self.observations2, self.filter_infos(infos))
+
+        if self._post_reset_callback2 is not None:
+            self._post_reset_callback2(*result, seed, options, *args, **kwargs)
+
+        return result
 
     def step(self, actions: Dict[str, Action]) -> Step:
         """step(action) takes in an action for each agent and should return the
@@ -680,10 +698,17 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
             {<agent_name>: <agent_action or None if agent is done>}
         """
         logger.debug("debug actions", actions)
+
+        if self._pre_step_callback2 is not None:
+            actions = self._pre_step_callback2(actions)
+
         # If a user passes in actions with no agents,
         # then just return empty observations, etc.
         if not actions:
-            return {}, {}, {}, {}, {}
+            result = {}, {}, {}, {}, {}
+            if self._post_step_callback is not None:
+                self._post_step_callback(actions, *result)
+            return result
 
         (
             observations,
@@ -728,13 +753,18 @@ class SavannaGridworldParallelEnv(GridworldZooBaseEnv, GridworldZooParallelEnv):
             truncateds,
             self.filter_infos(infos),
         )
-        return (
+        result = (
             self.observations2,
             rewards2,
             terminateds,
             truncateds,
             self.filter_infos(infos),
         )
+
+        if self._post_step_callback2 is not None:
+            self._post_step_callback2(actions, *result)
+
+        return result
 
 
 class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
@@ -789,7 +819,7 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         self,
     ):
         """Needed for tests.
-        Zoo is unable to compare infos unless they have simple structure.
+        Note, Zoo is unable to compare infos unless they have simple structure.
         """
         infos = GridworldZooAecEnv.infos.fget(
             self
@@ -827,12 +857,21 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
     def reset(
         self, seed: Optional[int] = None, options=None, *args, **kwargs
     ) -> Tuple[Dict[AgentId, Observation], Dict[AgentId, Info]]:
-        global reset_count
-
-        reset_count += 1
-        # print("env reset_count: " + str(reset_count))
+        if self._pre_reset_callback2 is not None:
+            (allow_reset, seed, options, args, kwargs) = self._pre_reset_callback2(
+                seed, options, *args, **kwargs
+            )
+            if not allow_reset:
+                return  # TODO!!! return value
 
         GridworldZooAecEnv.reset(self, seed=seed, options=options, *args, **kwargs)
+
+        print(
+            "trial_no: "
+            + str(GridworldZooParallelEnv.get_trial_no(self))
+            + " episode_no: "
+            + str(GridworldZooParallelEnv.get_episode_no(self))
+        )
 
         # observe observations, transform observations
         infos = {}
@@ -857,7 +896,12 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         if self._override_infos:
             infos = {agent: {} for agent in infos.keys()}
 
-        return self.observations2, self.filter_infos(infos)
+        result = (self.observations2, self.filter_infos(infos))
+
+        if self._post_reset_callback2 is not None:
+            self._post_reset_callback2(*result, seed, options, *args, **kwargs)
+
+        return result
 
     def last(self, observe=True):
         """Returns observation, cumulative reward, terminated, truncated, info for the
@@ -915,6 +959,9 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
         logger.debug("debug action", action)
 
         agent = self.agent_selection
+
+        if self._pre_step_callback2 is not None:
+            action = self._pre_step_callback2(agent, action)
 
         # need to set current step rewards to zero for other agents
         # the agent should be visible in .rewards after it dies
@@ -975,13 +1022,18 @@ class SavannaGridworldSequentialEnv(GridworldZooBaseEnv, GridworldZooAecEnv):
             truncated,
             self.filter_info(agent, info),
         )
-        return (
+        result = (
             observation2,
             reward2,
             terminated,
             truncated,
             self.filter_info(agent, info),
         )
+
+        if self._post_step_callback2 is not None:
+            self._post_step_callback2(agent, action, *result)
+
+        return result
 
     def step_multiple_agents(self, actions: Dict[str, Action]) -> Step:
         """step(action) takes in an action for each agent and should return the
