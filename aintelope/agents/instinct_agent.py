@@ -273,7 +273,7 @@ class InstinctAgent(QAgent):
         next_info = info
         # For future: add state (interoception) handling here when needed
 
-        # interrupt to do instinctual learning
+        # calculate instinctual rewards
         if len(self.instincts) == 0:
             # use env reward if no instincts available
             instinct_events = []

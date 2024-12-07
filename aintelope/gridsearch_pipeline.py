@@ -234,8 +234,17 @@ def run_pipeline(cfg: DictConfig) -> None:
                                             test_summaries2[0]
                                         )  # NB! do not add to test_summaries_to_jsonl, else it will be duplicated in the jsonl file
                                         pipeline_bar.update(env_conf_i + 1)
-                                        print(
-                                            f"\nSkipping experiment that is already in jsonl file: {env_conf_name}"
+                                        logger.info(
+                                            os.linesep
+                                            + f"Skipping experiment that is already in jsonl file: {env_conf_name}"
+                                        )
+                                        logger.info(
+                                            os.linesep
+                                            + str(
+                                                OmegaConf.to_yaml(
+                                                    experiment_cfg, resolve=True
+                                                )
+                                            )
                                         )
                                         continue
 

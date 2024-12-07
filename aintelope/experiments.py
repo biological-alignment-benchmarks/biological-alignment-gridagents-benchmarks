@@ -527,10 +527,6 @@ def run_experiment(
 def run_baseline_training(
     cfg: DictConfig, i_pipeline_cycle: int, env: Environment, agents: list
 ):
-    """
-    This is a copy of the above run_experiment() function
-    to accommodate stable_baselines agents' training.
-    """
 
     # SB3 models are designed for single-agent settings, we get around this by using the same model for every agent
     # https://pettingzoo.farama.org/tutorials/sb3/waterworld/
