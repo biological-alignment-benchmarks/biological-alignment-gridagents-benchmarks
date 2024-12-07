@@ -93,6 +93,7 @@ def read_checkpoints(checkpoint_dir):
 
 ### Old stuff, not in use, but should belong here:
 
+
 def plot_events(agent, style: str = "thickness", color: str = "viridis") -> Figure:
     """
     Docstring missing, these are old functions I'm unsure are in use atm.

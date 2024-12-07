@@ -149,7 +149,6 @@ class QAgent(Agent):
 
         next_state = observation
 
-
         event = [self.id, self.state, self.last_action, score, done, next_state]
         if not test_mode:  # TODO: do we need to update replay memories during test?
             self.trainer.update_memory(*event)
