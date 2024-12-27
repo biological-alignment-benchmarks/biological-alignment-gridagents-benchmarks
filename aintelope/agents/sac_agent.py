@@ -12,7 +12,7 @@ import numpy.typing as npt
 import os
 import datetime
 
-from aintelope.agents.sb3_base_agent import SB3BaseAgent
+from aintelope.agents.sb3_base_agent import SB3BaseAgent, CustomCNN
 from aintelope.aintelope_typing import ObservationFloat, PettingZooEnv
 from aintelope.training.dqn_training import Trainer
 
