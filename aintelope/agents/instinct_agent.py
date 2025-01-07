@@ -183,16 +183,6 @@ class InstinctAgent(QAgent):
             self.hparams.model_params.apply_instinct_eps_before_random_eps
         )
 
-        action_space = self.trainer.action_spaces[self.id]
-        if isinstance(action_space, Discrete):
-            min_action = action_space.start
-            max_action = (
-                action_space.start + action_space.n - 1
-            )  # NB! this is inclusive max as is used in MultiDiscrete action space
-        else:
-            min_action = action_space.min_action
-            max_action = action_space.max_action
-
         if (
             not apply_instinct_eps_before_random_eps
             and epsilon > 0
@@ -297,22 +287,6 @@ class InstinctAgent(QAgent):
                         instinct_events.append((instinct_name, instinct_event))
 
             # print(f"reward: {reward}")
-        # interruption done
-
-        # if next_state is not None:
-        #    next_s_hist = next_state
-        # else:
-        #    next_s_hist = None
-        # self.history.append(
-        #    HistoryStep(
-        #        state=self.state,
-        #        action=self.last_action,
-        #        reward=reward,
-        #        done=done,
-        #        instinct_events=instinct_events,
-        #        next_state=next_s_hist,
-        #    )
-        # )
 
         event = [self.id, self.state, self.last_action, reward, done, next_state]
         if not test_mode:  # TODO: do we need to update replay memories during test?

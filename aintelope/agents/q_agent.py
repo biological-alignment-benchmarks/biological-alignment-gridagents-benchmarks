@@ -51,8 +51,6 @@ class QAgent(Agent):
         self.state = state
         self.info = info
         self.env_class = env_class
-        # if isinstance(self.state, tuple):
-        #    self.state = self.state[0]
 
     def get_action(
         self,
