@@ -22,8 +22,8 @@ from aintelope.agents.sac_agent import SACAgent
 from aintelope.agents.td3_agent import TD3Agent
 
 from aintelope.agents.simple_agents import (
-    IterativeWeightOptimizationAgent,
-    OneStepPerfectPredictionAgent,
+    # IterativeWeightOptimizationAgent,
+    # OneStepPerfectPredictionAgent,
     RandomWalkAgent,
 )
 
@@ -44,10 +44,11 @@ def get_agent_class(agent_id: str) -> Type[Agent]:
 
 # add agent class to registry
 register_agent_class("random_walk_agent", RandomWalkAgent)
-register_agent_class("one_step_perfect_prediction_agent", OneStepPerfectPredictionAgent)
-register_agent_class(
-    "iterative_weight_optimization_agent", IterativeWeightOptimizationAgent
-)
+# register_agent_class("one_step_perfect_prediction_agent", OneStepPerfectPredictionAgent)
+# register_agent_class(
+#    "iterative_weight_optimization_agent", IterativeWeightOptimizationAgent
+# )
+
 register_agent_class("q_agent", QAgent)
 register_agent_class("example_agent", ExampleAgent)
 register_agent_class("instinct_agent", InstinctAgent)
