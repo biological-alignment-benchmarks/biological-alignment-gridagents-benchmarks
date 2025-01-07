@@ -10,10 +10,15 @@ from aintelope.agents.example_agent import ExampleAgent
 from aintelope.agents.instinct_agent import InstinctAgent
 from aintelope.agents.q_agent import QAgent
 
+# SB3 Discrete action space models
 from aintelope.agents.ppo_agent import PPOAgent
 from aintelope.agents.dqn_agent import DQNAgent
-from aintelope.agents.sac_agent import SACAgent
+from aintelope.agents.a2c_agent import A2CAgent
+
+# SB3 Box action space models
+# TODO: Action space wrapper
 from aintelope.agents.ddpg_agent import DDPGAgent
+from aintelope.agents.sac_agent import SACAgent
 from aintelope.agents.td3_agent import TD3Agent
 
 from aintelope.agents.simple_agents import (
@@ -49,6 +54,8 @@ register_agent_class("instinct_agent", InstinctAgent)
 
 register_agent_class("sb3_ppo_agent", PPOAgent)
 register_agent_class("sb3_dqn_agent", DQNAgent)
-register_agent_class("sb3_sac_agent", SACAgent)
+register_agent_class("sb3_a2c_agent", A2CAgent)
+
 register_agent_class("sb3_ddpg_agent", DDPGAgent)
+register_agent_class("sb3_sac_agent", SACAgent)
 register_agent_class("sb3_td3_agent", TD3Agent)
