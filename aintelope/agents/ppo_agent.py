@@ -50,17 +50,21 @@ def ppo_model_constructor(env, cfg):
     # https://github.com/DLR-RM/stable-baselines3/issues/1863
     # Also: make sure your image is in the channel-first format.
     return PPO(
-        "CnnPolicy",
+        "CnnPolicy" if cfg.hparams.model_params.num_conv_layers > 0 else "MlpPolicy",
         env,
         verbose=1,
-        policy_kwargs={
-            "normalize_images": False,
-            "features_extractor_class": CustomCNN,  # need custom CNN in order to handle observation shape 9x9
-            "features_extractor_kwargs": {
-                "features_dim": 256,  # TODO: config parameter. Note this is not related to the number of features in the original observation (15), this parameter here is model's internal feature dimensionality
-                "num_conv_layers": cfg.hparams.model_params.num_conv_layers,
-            },
-        },
+        policy_kwargs=(
+            {
+                "normalize_images": False,
+                "features_extractor_class": CustomCNN,  # need custom CNN in order to handle observation shape 9x9
+                "features_extractor_kwargs": {
+                    "features_dim": 256,  # TODO: config parameter. Note this is not related to the number of features in the original observation (15), this parameter here is model's internal feature dimensionality
+                    "num_conv_layers": cfg.hparams.model_params.num_conv_layers,
+                },
+            }
+            if cfg.hparams.model_params.num_conv_layers > 0
+            else {"normalize_images": False}
+        ),
         device=torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         ),  # Note, CUDA-based CPU performance is much better than Torch-CPU mode.
