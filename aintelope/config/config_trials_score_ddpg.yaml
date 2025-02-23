@@ -6,7 +6,7 @@
 
 hparams:
   gridsearch_trial_no: ${range:0,100}        # used just to repeat same experiment multiple times
-  params_set_title: "score"
+  params_set_title: "score_ddpg"
   use_separate_models_for_each_experiment: True
   model_params:
     eps_start: 0.0

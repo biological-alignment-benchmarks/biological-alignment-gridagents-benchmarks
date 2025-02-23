@@ -103,6 +103,7 @@ e_9_food_sharing:
     FOOD_DEFICIENCY_INITIAL: 0
     FOOD_OVERSATIATION_LIMIT: 4    
 
+# TODO: add this benchmark to the main pipeline as well
 e_10_gold_silver:
   env_params:
     env_experiment: "ai_safety_gridworlds.aintelope_savanna"
