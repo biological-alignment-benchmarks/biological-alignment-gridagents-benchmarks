@@ -4,7 +4,7 @@
 #
 # Repository: https://github.com/aintelope/biological-compatibility-benchmarks
 
-from typing import Dict
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 import numpy as np
 from gymnasium.spaces import Box, Discrete
