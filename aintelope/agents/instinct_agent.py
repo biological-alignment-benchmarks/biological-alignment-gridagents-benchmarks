@@ -325,32 +325,8 @@ class InstinctAgent(QAgent):
         for instinct in self.instincts.values():
             instinct.reset()
 
-    def init_model(
-        self,
-        observation_shape,
-        action_space,
-        unit_test_mode: bool,
-        checkpoint: Optional[str] = None,
-        *args,
-        **kwargs,
-    ):
-        self.trainer.add_agent(
-            self.id,
-            observation_shape,
-            action_space,
-            unit_test_mode,
-            checkpoint,
-            *args,
-            **kwargs,
-        )
+    def init_model(self, *args, **kwargs):
+        self.trainer.add_agent(self.id, *args, **kwargs)
 
-    def save_model(
-        self,
-        i_episode,
-        path,
-        experiment_name,
-        use_separate_models_for_each_experiment,
-        *args,
-        **kwargs,
-    ):
-        pass
+    def save_model(self, *args, **kwargs):
+        self.trainer.save_model(self.id, *args, **kwargs)
