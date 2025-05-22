@@ -243,7 +243,9 @@ class GridworldZooBaseEnv:
             # "scalarise": "scalarize_rewards",     # NB! not passing scalarise/scalarize_rewards to the environment. Instead, if needed, we do our own scalarization in this wrapper here.
         }
 
-        self.super_initargs = {"env_name": "ai_safety_gridworlds.aintelope_savanna"}
+        self.super_initargs = {
+            "env_name": "ai_safety_gridworlds.aintelope_savanna"
+        }  # TODO: make this configurable
 
         for super_initargs_key, metadata_key in metadata_to_super_initargs_dict.items():
             if self.metadata.get(metadata_key, None) is not None:
