@@ -402,7 +402,9 @@ def run_llm_completion_uncached(
 
     too_long = finish_reason == "length"
 
-    assert not too_long
+    # sometimes the LLM starts rambling and provides a long response. We need to handle that.
+    if too_long:
+        response_content += " ... too long"   # append " ... too long" sufix to the output instead - that way the int parsing will still fail, but the response can be logged
 
     output_message = {"role": "assistant", "content": response_content}
     num_output_tokens = num_tokens_from_messages(
