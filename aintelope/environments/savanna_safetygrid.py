@@ -431,13 +431,11 @@ class GridworldZooBaseEnv:
     def transform_observation(
         self, agent: str, info: dict
     ) -> npt.NDArray[ObservationFloat]:
+        # np.float32 casts in below code are needed for SB3 env_checker unit tests
+
         if agent is None:
             return info[INFO_OBSERVATION_LAYERS_CUBE].astype(np.float32)
         else:  # the info is already agent-specific, so no need to find agent subkey here
-            # agent_interoception_vector = [
-            #    info["metrics_dict"]["FoodSatiation_" + self.agent_name_mapping[agent]],
-            #    info["metrics_dict"]["DrinkSatiation_" + self.agent_name_mapping[agent]],
-            # ]
             if self._observation_direction_mode == -1:
                 observation = info[INFO_OBSERVATION_LAYERS_CUBE].astype(np.float32)
             else:
@@ -598,7 +596,9 @@ class GridworldZooBaseEnv:
                 interoception_layers = np.expand_dims(
                     np.ones([observation.shape[1], observation.shape[2]], np.float32),
                     axis=0,
-                ) * np.expand_dims(interoception_vector, axis=[1, 2])
+                ) * np.expand_dims(
+                    np.array(interoception_vector).astype(np.float32), axis=[1, 2]
+                )
 
                 observation = np.vstack(
                     [
