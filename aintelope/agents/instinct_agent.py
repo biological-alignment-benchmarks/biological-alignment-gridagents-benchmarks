@@ -82,6 +82,9 @@ class InstinctAgent(QAgent):
         env_layout_seed: int = 0,
         episode: int = 0,
         pipeline_cycle: int = 0,
+        test_mode: bool = False,
+        *args,
+        **kwargs,
     ) -> Optional[int]:
         """Given an observation, ask your model what to do. State is needed to be
         given here as other agents have changed the state!
@@ -93,54 +96,60 @@ class InstinctAgent(QAgent):
         if self.done:
             return None
 
-        # TODO: warn if last_frame=0/1 or last_env_layout_seed=0/1 or last_episode=0/1 in any of the below values: for disabling the epsilon counting for corresponding variable one should use -1
-        epsilon = (
-            self.hparams.model_params.eps_start - self.hparams.model_params.eps_end
-        )
-        if self.hparams.model_params.eps_last_frame > 1:
-            epsilon *= max(0, 1 - step / self.hparams.model_params.eps_last_frame)
-        if self.hparams.model_params.eps_last_env_layout_seed > 1:
-            epsilon *= max(
-                0,
-                1
-                - env_layout_seed / self.hparams.model_params.eps_last_env_layout_seed,
+        if test_mode:
+            epsilon = 0
+            instinct_epsilon = 0
+        else:
+            # TODO: warn if last_frame=0/1 or last_env_layout_seed=0/1 or last_episode=0/1 in any of the below values: for disabling the epsilon counting for corresponding variable one should use -1
+            epsilon = (
+                self.hparams.model_params.eps_start - self.hparams.model_params.eps_end
             )
-        if self.hparams.model_params.eps_last_episode > 1:
-            epsilon *= max(0, 1 - episode / self.hparams.model_params.eps_last_episode)
-        if self.hparams.model_params.eps_last_pipeline_cycle > 1:
-            epsilon *= max(
-                0,
-                1 - pipeline_cycle / self.hparams.model_params.eps_last_pipeline_cycle,
-            )
-        epsilon += self.hparams.model_params.eps_end
+            if self.hparams.model_params.eps_last_frame > 1:
+                epsilon *= max(0, 1 - step / self.hparams.model_params.eps_last_frame)
+            if self.hparams.model_params.eps_last_env_layout_seed > 1:
+                epsilon *= max(
+                    0,
+                    1
+                    - env_layout_seed / self.hparams.model_params.eps_last_env_layout_seed,
+                )
+            if self.hparams.model_params.eps_last_episode > 1:
+                epsilon *= max(0, 1 - episode / self.hparams.model_params.eps_last_episode)
+            if self.hparams.model_params.eps_last_pipeline_cycle > 1:
+                epsilon *= max(
+                    0,
+                    1 - pipeline_cycle / self.hparams.model_params.eps_last_pipeline_cycle,
+                )
+            epsilon += self.hparams.model_params.eps_end
 
-        instinct_epsilon = (
-            self.hparams.model_params.instinct_bias_epsilon_start
-            - self.hparams.model_params.instinct_bias_epsilon_end
-        )
-        if self.hparams.model_params.eps_last_frame > 1:
-            instinct_epsilon *= max(
-                0, 1 - step / self.hparams.model_params.eps_last_frame
+            instinct_epsilon = (
+                self.hparams.model_params.instinct_bias_epsilon_start
+                - self.hparams.model_params.instinct_bias_epsilon_end
             )
-        if self.hparams.model_params.eps_last_env_layout_seed > 1:
-            instinct_epsilon *= max(
-                0,
-                1
-                - env_layout_seed / self.hparams.model_params.eps_last_env_layout_seed,
-            )
-        if self.hparams.model_params.eps_last_episode > 1:
-            instinct_epsilon *= max(
-                0, 1 - episode / self.hparams.model_params.eps_last_episode
-            )
-        if self.hparams.model_params.eps_last_pipeline_cycle > 1:
-            instinct_epsilon *= max(
-                0,
-                1 - pipeline_cycle / self.hparams.model_params.eps_last_pipeline_cycle,
-            )
-        instinct_epsilon += self.hparams.model_params.instinct_bias_epsilon_end
+            if self.hparams.model_params.eps_last_frame > 1:
+                instinct_epsilon *= max(
+                    0, 1 - step / self.hparams.model_params.eps_last_frame
+                )
+            if self.hparams.model_params.eps_last_env_layout_seed > 1:
+                instinct_epsilon *= max(
+                    0,
+                    1
+                    - env_layout_seed / self.hparams.model_params.eps_last_env_layout_seed,
+                )
+            if self.hparams.model_params.eps_last_episode > 1:
+                instinct_epsilon *= max(
+                    0, 1 - episode / self.hparams.model_params.eps_last_episode
+                )
+            if self.hparams.model_params.eps_last_pipeline_cycle > 1:
+                instinct_epsilon *= max(
+                    0,
+                    1 - pipeline_cycle / self.hparams.model_params.eps_last_pipeline_cycle,
+                )
+            instinct_epsilon += self.hparams.model_params.instinct_bias_epsilon_end
 
-        # print(f"Epsilon: {epsilon}")
-        # print(f"Instinct bias epsilon: {instinct_epsilon}")
+            # print(f"Epsilon: {epsilon}")
+            # print(f"Instinct bias epsilon: {instinct_epsilon}")
+
+        #/ if info["test_mode"]:
 
         action_space = self.trainer.action_spaces[self.id]
         if isinstance(action_space, Discrete):
