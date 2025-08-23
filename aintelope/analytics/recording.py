@@ -179,6 +179,7 @@ class EventLog(object):
         self.file.flush()
         self.file.close()
 
+        # TODO: support for re-opening xz file in append mode, like gzip mode already does
         if self.lzma_log and not self.gzip_log:
             xz_path = Path(str(self.record_path) + ".xz")
             if to_xz(self.record_path, xz_path, verify=True):
