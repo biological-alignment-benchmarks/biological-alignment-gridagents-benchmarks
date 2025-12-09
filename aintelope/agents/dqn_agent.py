@@ -165,6 +165,7 @@ def dqn_model_constructor(env, env_classname, agent_id, cfg):
                     "features_dim": 256,  # TODO: config parameter. Note this is not related to the number of features in the original observation (15 or 39), this parameter here is model's internal feature dimensionality
                     "num_conv_layers": cfg.hparams.model_params.num_conv_layers,
                 },
+                # DQN does not have "use_expln" argument
             }
             if cfg.hparams.model_params.num_conv_layers > 0
             else {"normalize_images": False}
