@@ -21,6 +21,7 @@ import numpy.typing as npt
 import os
 import sys
 import datetime
+from collections import OrderedDict
 
 from aintelope.config.config_utils import select_gpu, set_priorities, set_memory_limits
 
@@ -280,7 +281,7 @@ class SB3BaseAgent(Agent):
         # if isinstance(self.state, tuple):
         #    self.state = self.state[0]
 
-    def get_action(
+    def get_action(  # Called during test mode only. At that time each agent has their own object instance with own id.
         self,
         observation: Tuple[  # TODO: SB3 observation is NOT a Tuple
             npt.NDArray[ObservationFloat], npt.NDArray[ObservationFloat]
@@ -314,8 +315,17 @@ class SB3BaseAgent(Agent):
 
         self.infos[self.id] = self.info
 
-        if self.model and hasattr(self.model.policy, "set_info"):
-            self.model.policy.set_info(self.info)
+        if self.model:
+            if not self.cfg.hparams.model_params.use_weight_sharing and hasattr(
+                self.model.policy, "set_info"
+            ):
+                self.model.policy.set_info(self.info)
+
+            if hasattr(self.model.policy, "set_infos"):
+                infos_to_model = list(OrderedDict(sorted(self.infos.items())).values())
+                self.model.policy.set_infos(infos_to_model)
+
+        # / if self.model:
 
         action, _states = self.model.predict(
             observation, deterministic=True
@@ -392,8 +402,24 @@ class SB3BaseAgent(Agent):
         if self.model:
             if hasattr(self.model.policy, "my_reset"):
                 self.model.policy.my_reset(self.state, self.info)
-            if hasattr(self.model.policy, "set_info"):
+
+            if hasattr(self.model.policy, "my_reset_with_infos"):
+                states_to_model = list(
+                    OrderedDict(sorted(self.states.items())).values()
+                )
+                infos_to_model = list(OrderedDict(sorted(self.infos.items())).values())
+                self.model.policy.my_reset_with_infos(states_to_model, infos_to_model)
+
+            if not self.cfg.hparams.model_params.use_weight_sharing and hasattr(
+                self.model.policy, "set_info"
+            ):
                 self.model.policy.set_info(self.info)
+
+            if hasattr(self.model.policy, "set_infos"):
+                infos_to_model = list(OrderedDict(sorted(self.infos.items())).values())
+                self.model.policy.set_infos(infos_to_model)
+
+        # / if self.model:
 
     def env_pre_step_callback(self, actions):
         return actions  # you can modify the actions in this method but keep in mind that the calling RL algorithm might not become aware of the modified actions later
@@ -487,11 +513,19 @@ class SB3BaseAgent(Agent):
         self.states = next_states
         self.infos = infos
 
-        if self.model and hasattr(self.model.policy, "set_info"):
-            self.state = next_states[self.id]
-            self.info = infos[self.id]
+        if self.model:
+            if not self.cfg.hparams.model_params.use_weight_sharing and hasattr(
+                self.model.policy, "set_info"
+            ):
+                self.state = next_states[self.id]
+                self.info = infos[self.id]
+                self.model.policy.set_info(self.info)
 
-            self.model.policy.set_info(self.info)
+            if hasattr(self.model.policy, "set_infos"):
+                infos_to_model = list(OrderedDict(sorted(self.infos.items())).values())
+                self.model.policy.set_infos(infos_to_model)
+
+        # / if self.model:
 
     def sequential_env_post_step_callback(
         self,
@@ -560,10 +594,19 @@ class SB3BaseAgent(Agent):
         self.info[INFO_STEP] = step
         self.info[INFO_TEST_MODE] = test_mode
 
-        self.infos[self.id] = self.info
+        self.infos[agent] = self.info  # TODO: test this
 
-        if self.model and hasattr(self.model.policy, "set_info"):
-            self.model.policy.set_info(self.info)
+        if self.model:
+            if not self.cfg.hparams.model_params.use_weight_sharing and hasattr(
+                self.model.policy, "set_info"
+            ):
+                self.model.policy.set_info(self.info)
+
+            if hasattr(self.model.policy, "set_infos"):
+                infos_to_model = list(OrderedDict(sorted(self.infos.items())).values())
+                self.model.policy.set_infos(infos_to_model)
+
+        # / if self.model:
 
         self.events.log_event(
             [

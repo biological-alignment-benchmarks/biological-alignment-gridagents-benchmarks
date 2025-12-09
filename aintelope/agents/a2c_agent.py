@@ -70,6 +70,7 @@ class ExpertOverrideMixin:  # TODO: merge with code from PPO agent (the code is 
         self.info = info
 
     def my_reset(self, observation, info):
+        self.info = info
         self.expert.reset()
 
     # code adapted from

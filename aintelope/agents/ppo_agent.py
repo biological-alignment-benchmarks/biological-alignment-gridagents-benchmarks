@@ -63,16 +63,24 @@ class ExpertOverrideMixin:  # TODO: merge with code from A2C agent (the code is 
 
         self.expert = SB3HandWrittenRulesExpert(
             env_classname=env_classname,
-            agent_id=agent_id,
+            agent_id=agent_id,  # in case of weight sharing, the agent_id = "agent_0" always
             cfg=cfg,
             action_space=self.action_space,
             **cfg.hparams.agent_params,
         )
 
-    def set_info(self, info):
-        self.info = info
+    # def set_info(self, info):
+    #     self.info = info
 
-    def my_reset(self, observation, info):
+    def set_infos(self, infos):
+        self.infos = infos
+
+    # def my_reset(self, observation, info):
+    #     self.info = info
+    #     self.expert.reset()
+
+    def my_reset_with_infos(self, observations, infos):
+        self.infos = infos
         self.expert.reset()
 
     # code adapted from
@@ -101,28 +109,70 @@ class ExpertOverrideMixin:  # TODO: merge with code from A2C agent (the code is 
         distribution = self._get_action_dist_from_latent(latent_pi)
 
         # inserted code
-        step = self.info[INFO_STEP]
-        env_layout_seed = self.info[INFO_ENV_LAYOUT_SEED]
-        episode = self.info[INFO_EPISODE]
-        pipeline_cycle = self.info[INFO_PIPELINE_CYCLE]
-        test_mode = self.info[INFO_TEST_MODE]
-
         obs_nps = obs.detach().cpu().numpy()
-        obs_np = obs_nps[0, :]
+        num_agents = obs_nps.shape[
+            0
+        ]  # in case of weight sharing, there are observations of both agents
 
-        (override_type, _random) = self.expert.should_override(
-            deterministic,
-            step,
-            env_layout_seed,
-            episode,
-            pipeline_cycle,
-            test_mode,
-            obs_np,
-        )
-        if override_type != 0:
+        need_to_call_get_actions = False
+        need_to_use_numpy_actions = False
+        overrides = [None] * num_agents
+        randoms = [None] * num_agents
+
+        for agent_i in range(0, num_agents):
+            obs_np = obs_nps[agent_i, :]
+            info = self.infos[agent_i]
+
+            step = info[INFO_STEP]
+            env_layout_seed = info[INFO_ENV_LAYOUT_SEED]
+            episode = info[INFO_EPISODE]
+            pipeline_cycle = info[INFO_PIPELINE_CYCLE]
+            test_mode = info[INFO_TEST_MODE]
+
+            (override_type, _random) = self.expert.should_override(
+                deterministic,
+                step,
+                env_layout_seed,
+                episode,
+                pipeline_cycle,
+                test_mode,
+                obs_np,
+            )
+            overrides[agent_i] = override_type
+            randoms[agent_i] = _random
+            if override_type == 0:
+                need_to_call_get_actions = True
+            else:
+                need_to_use_numpy_actions = True
+
+        # / for agent_i in range(0, num_agents):
+
+        if need_to_call_get_actions:
+            actions = distribution.get_actions(deterministic=deterministic)
+            if need_to_use_numpy_actions:
+                actions = actions.detach().cpu().tolist()
+        else:
+            # assume need_to_use_numpy_actions = True
+            actions = [None] * num_agents
+
+        for agent_i in range(0, num_agents):
+            override_type = overrides[agent_i]
+            if override_type == 0:
+                continue
+
+            obs_np = obs_nps[agent_i, :]
+            info = self.infos[agent_i]
+
+            step = info[INFO_STEP]
+            env_layout_seed = info[INFO_ENV_LAYOUT_SEED]
+            episode = info[INFO_EPISODE]
+            pipeline_cycle = info[INFO_PIPELINE_CYCLE]
+            test_mode = info[INFO_TEST_MODE]
+
+            _random = randoms[agent_i]
             action = self.expert.get_action(
                 obs_np,
-                self.info,
+                info,
                 step,
                 env_layout_seed,
                 episode,
@@ -132,11 +182,14 @@ class ExpertOverrideMixin:  # TODO: merge with code from A2C agent (the code is 
                 deterministic,
                 _random,
             )
+
             # TODO: handle multiple observations and actions (for that we need also multiple infos)
-            actions = [action]
+            actions[agent_i] = action
+
+        # / for agent_i in range(0, num_agents):
+
+        if need_to_use_numpy_actions:
             actions = torch.as_tensor(actions, device=obs.device, dtype=torch.long)
-        else:
-            actions = distribution.get_actions(deterministic=deterministic)
 
         log_prob = distribution.log_prob(actions)
         actions = actions.reshape((-1, *self.action_space.shape))  # type: ignore[misc]
