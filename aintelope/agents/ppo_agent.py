@@ -232,34 +232,36 @@ def ppo_model_constructor(env, env_classname, agent_id, cfg):
             "CnnPolicy" if cfg.hparams.model_params.num_conv_layers > 0 else "MlpPolicy"
         )
 
+    policy_kwargs = (
+        {
+            "normalize_images": False,
+            "features_extractor_class": CustomCNN,  # need custom CNN in order to handle observation shape 9x9
+            "features_extractor_kwargs": {
+                "features_dim": 256,  # TODO: config parameter. Note this is not related to the number of features in the original observation (15 or 39), this parameter here is model's internal feature dimensionality
+                "num_conv_layers": cfg.hparams.model_params.num_conv_layers,
+            },
+            # expln=True and optimiser=AdamW: avoid NaNs in SB3 tensors - see https://github.com/DLR-RM/rl-baselines3-zoo/issues/427#issuecomment-1829495239
+            "use_expln": cfg.hparams.model_params.use_expln,
+        }
+        if cfg.hparams.model_params.num_conv_layers > 0
+        else {
+            "normalize_images": False,
+            # expln=True and optimiser=AdamW: avoid NaNs in SB3 tensors - see https://github.com/DLR-RM/rl-baselines3-zoo/issues/427#issuecomment-1829495239
+            "use_expln": cfg.hparams.model_params.use_expln,
+        }
+    )
+
+    optimizer_class = get_optimizer_class(cfg.hparams.model_params.optimizer_class)
+    if (
+        optimizer_class is not None
+    ):  # cannot specify None as dictionary entry, else SB3 would fail
+        policy_kwargs["optimizer_class"] = optimizer_class
+
     return PPO(
         policy,
         env,
         verbose=1,
-        policy_kwargs=(
-            {
-                "normalize_images": False,
-                "features_extractor_class": CustomCNN,  # need custom CNN in order to handle observation shape 9x9
-                "features_extractor_kwargs": {
-                    "features_dim": 256,  # TODO: config parameter. Note this is not related to the number of features in the original observation (15 or 39), this parameter here is model's internal feature dimensionality
-                    "num_conv_layers": cfg.hparams.model_params.num_conv_layers,
-                },
-                # expln=True and optimiser=AdamW: avoid NaNs in SB3 tensors - see https://github.com/DLR-RM/rl-baselines3-zoo/issues/427#issuecomment-1829495239
-                "use_expln": cfg.hparams.model_params.use_expln,
-                "optimizer_class": get_optimizer_class(
-                    cfg.hparams.model_params.optimizer_class
-                ),
-            }
-            if cfg.hparams.model_params.num_conv_layers > 0
-            else {
-                "normalize_images": False,
-                # expln=True and optimiser=AdamW: avoid NaNs in SB3 tensors - see https://github.com/DLR-RM/rl-baselines3-zoo/issues/427#issuecomment-1829495239
-                "use_expln": cfg.hparams.model_params.use_expln,
-                "optimizer_class": get_optimizer_class(
-                    cfg.hparams.model_params.optimizer_class
-                ),
-            }
-        ),
+        policy_kwargs=policy_kwargs,
         device=torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         ),  # Note, CUDA-based CPU performance is much better than Torch-CPU mode.
