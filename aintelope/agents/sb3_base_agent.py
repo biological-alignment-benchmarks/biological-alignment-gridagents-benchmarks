@@ -14,7 +14,7 @@ from gymnasium.spaces import Discrete
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 
-from aintelope.utils import RobustProgressBar, wait_for_enter
+from aintelope.utils import RobustProgressBar, wait_for_enter, check_for_nan_errors
 
 import numpy as np
 import numpy.typing as npt
@@ -229,20 +229,15 @@ def sb3_agent_train_thread_entry_point(
         try:
             model.learn(total_timesteps=num_total_steps, callback=checkpoint_callback)
             # capture errors raised by NaN's in SB3 tensors, which occur with PPO imitation learning in 2-layout configuration
-        except ValueError as ex:
-            msg = str(ex)
-            if (
-                cfg.hparams.model_params.soft_stop_training_on_nan_errors
-                and "Expected parameter logits" in msg
-                and "but found invalid values" in msg
-            ):
-                print("SB3 encountered NaNs in the logits tensor")
+        except Exception as ex:
+            if check_for_nan_errors(ex, cfg):
                 # NB! do not save model - once NaNs appear the model may be already corrupted
                 # TODO: detect whether model parameters actually contain NaNs and decide based on that
-                # NB! ValueError raised by NaN's in SB3 tensors is propagated here to the parent process in order to terminate the training of both agents
+                # NB! Exceptions raised by NaN's are propagated here to the parent process in order to terminate the training of both agents
                 raise
             else:
                 raise
+
         env_wrapper.save_or_return_model(model, filename_timestamp_sufix_str)
     except (
         Exception
@@ -726,17 +721,11 @@ class SB3BaseAgent(Agent):
                     total_timesteps=num_total_steps, callback=checkpoint_callback
                 )
             # capture errors raised by NaN's in SB3 tensors, which occur with PPO imitation learning in 2-layout configuration
-            except ValueError as ex:
-                msg = str(ex)
-                if (
-                    self.cfg.hparams.model_params.soft_stop_training_on_nan_errors
-                    and "Expected parameter logits" in msg
-                    and "but found invalid values" in msg
-                ):
-                    print("SB3 encountered NaNs in the logits tensor")
-                    # wait_for_enter("Press enter to continue")
+            except Exception as ex:
+                if check_for_nan_errors(ex, self.cfg):
                     # NB! do not save model - once NaNs appear the model may be already corrupted
                     # TODO: detect whether model parameters actually contain NaNs and decide based on that
+                    wait_for_enter("Press enter to continue")
                     result = False
                 else:
                     raise
@@ -761,17 +750,14 @@ class SB3BaseAgent(Agent):
             )
 
             if self.exceptions:
-                msg = str(self.exceptions[0])
-                if (
-                    self.cfg.hparams.model_params.soft_stop_training_on_nan_errors
-                    and "Expected parameter logits" in msg
-                    and "but found invalid values" in msg
-                ):
-                    print("SB3 encountered NaNs in the logits tensor")
-                    # wait_for_enter("Press enter to continue")
+                ex = self.exceptions[0]
+                if check_for_nan_errors(ex, self.cfg):
                     # NB! do not save model - once NaNs appear the model may be already corrupted
                     # TODO: detect whether model parameters actually contain NaNs and decide based on that
+                    wait_for_enter("Press enter to continue")
                     result = False
+                else:
+                    pass  # raise later towards the end of the method
 
         self.env._pre_reset_callback2 = None
         self.env._post_reset_callback2 = None

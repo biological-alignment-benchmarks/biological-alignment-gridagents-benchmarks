@@ -196,3 +196,43 @@ class Semaphore(object):
 
 
 # / class Semaphore(object):
+
+
+def check_for_nan_errors(ex, cfg):
+    if isinstance(ex, ValueError):
+        msg = str(ex)
+        if (
+            cfg.hparams.model_params.soft_stop_training_on_nan_errors
+            and "found invalid values" in msg  # f"but found invalid values:\n{value}"
+        ):
+            print("SB3 encountered NaNs")
+            return True
+        else:
+            return False
+    elif isinstance(ex, RuntimeError):
+        msg = str(ex)
+        if (
+            cfg.hparams.model_params.soft_stop_training_on_nan_errors
+            and cfg.hparams.model_params.early_detect_nans  # is torch.autograd.set_detect_anomaly(True) called?
+            and " nan values" in msg  # "' returned nan values in its "
+        ):
+            print("Torch encountered NaNs")
+            return True
+        else:
+            return False
+    elif isinstance(ex, FloatingPointError):
+        msg = str(ex)
+        if (
+            cfg.hparams.model_params.soft_stop_training_on_nan_errors
+            and cfg.hparams.model_params.early_detect_nans  # is np.seterr(divide="raise", over="raise", invalid="raise", under="ignore") called?
+            and "encountered in" in msg  # "%s encountered in %s"
+        ):
+            print("Numpy encountered NaNs")
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+# / def check_for_nan_errors(ex, cfg):
