@@ -43,6 +43,7 @@ import torch as th
 import stable_baselines3
 from stable_baselines3 import PPO
 from stable_baselines3.ppo.policies import CnnPolicy, MlpPolicy
+from stable_baselines3.common.vec_env import VecCheckNan
 
 import supersuit as ss
 
@@ -291,6 +292,8 @@ class PPOAgent(SB3BaseAgent):
             self.test_mode
         ):  # during test, each agent has a separate in-process instance with its own model and not using threads/subprocesses
             env = SingleAgentZooToGymAdapter(env, self.id)
+            if cfg.hparams.model_params.early_detect_nans:
+                env = VecCheckNan(env, raise_exception=True)
             self.model = self.model_constructor(env, self.env_classname, self.id, cfg)
         elif self.env.num_agents == 1 or cfg.hparams.model_params.use_weight_sharing:
             # PPO supports weight sharing for multi-agent scenarios
@@ -302,6 +305,8 @@ class PPOAgent(SB3BaseAgent):
             env = ss.concat_vec_envs_v1(
                 env, num_vec_envs=1, num_cpus=1, base_class="stable_baselines3"
             )  # NB! num_vec_envs=1 is important here so that we can use identity function instead of cloning in vec_env_args
+            if cfg.hparams.model_params.early_detect_nans:
+                env = VecCheckNan(env, raise_exception=True)
             self.model = self.model_constructor(env, self.env_classname, self.id, cfg)
         else:
             pass  # multi-model training will be automatically set up by the base class when self.model is None. These models will be saved to self.models and there will be only one agent instance in the main process. Actual agents will run in threads/subprocesses because SB3 requires Gym interface.

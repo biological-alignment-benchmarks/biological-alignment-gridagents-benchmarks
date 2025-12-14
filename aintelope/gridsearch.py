@@ -16,6 +16,7 @@ import json
 import itertools
 import subprocess
 import asyncio
+import traceback
 from collections import OrderedDict
 
 import hydra
@@ -197,8 +198,9 @@ async def run_gridsearch_experiments_async() -> None:
                 try:
                     await run_gridsearch_experiment_multiprocess(**arguments)
                 except Exception as ex:
+                    msg = str(ex) + os.linesep + traceback.format_exc()
                     print(
-                        f"\nError in experiment. Exception: {ex}. params: {plotting.prettyprint(gridsearch_combination_for_print)}"
+                        f"\nError in experiment. Exception: {msg}. params: {plotting.prettyprint(gridsearch_combination_for_print)}"
                     )
 
                 completed_coroutine_count += 1

@@ -41,6 +41,7 @@ import torch
 import torch as th
 from stable_baselines3 import A2C
 from stable_baselines3.a2c.policies import CnnPolicy, MlpPolicy
+from stable_baselines3.common.vec_env import VecCheckNan
 import supersuit as ss
 
 from typing import Union
@@ -240,6 +241,8 @@ class A2CAgent(SB3BaseAgent):
             env = SingleAgentZooToGymAdapter(env, self.id)
             # TODO: turn off GPU for A2C and use parallel computation which is supported by A2C:
             # env = make_vec_env(env, n_envs=8, vec_env_cls=SubprocVecEnv)
+            if cfg.hparams.model_params.early_detect_nans:
+                env = VecCheckNan(env, raise_exception=True)
             self.model = self.model_constructor(env, self.env_classname, self.id, cfg)
         else:
             pass  # multi-model training will be automatically set up by the base class when self.model is None. These models will be saved to self.models and there will be only one agent instance in the main process. Actual agents will run in threads/subprocesses because SB3 requires Gym interface.

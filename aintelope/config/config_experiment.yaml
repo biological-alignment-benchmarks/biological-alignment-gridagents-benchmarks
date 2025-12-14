@@ -37,12 +37,17 @@ hparams:
   unit_test_mode: False      # is set during tests in order to speed up DQN computations
   agent_class: example_agent 
   warm_start_steps: 0       # not used at the moment, except for the unit tests
-  save_frequency: ${muldiv:${hparams.num_episodes},${hparams.env_params.num_iters},10} # how often to save a model
+  save_frequency: ${muldiv:${hparams.num_episodes},${hparams.env_params.num_iters},10} # how often to save a model. 0 means that the model is saved only at the end, improving training performance
   use_separate_models_for_each_experiment: True
   agent_params:
     target_handwritten_rules: [food,drink,gold,silver,danger,predator,collision,antimovement]    
   model_params:
     use_weight_sharing: False
+    num_conv_layers: 0
+    use_expln: False
+    optimizer_class: null   # use default
+    soft_stop_training_on_nan_errors: False
+    early_detect_nans: False
     eps_start: 0.66
     eps_end: 0.0
     instinct_bias_epsilon_start: 0.0

@@ -14,7 +14,7 @@ from gymnasium.spaces import Discrete
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 
-from aintelope.utils import RobustProgressBar
+from aintelope.utils import RobustProgressBar, wait_for_enter
 
 import numpy as np
 import numpy.typing as npt
@@ -43,6 +43,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 import torch
 import torch.nn as nn
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
+from stable_baselines3.common.vec_env import VecCheckNan
 
 from typing import Any, Union, Optional, Type
 import gymnasium as gym
@@ -217,9 +218,31 @@ def sb3_agent_train_thread_entry_point(
             else None
         )
 
-        model = model_constructor(env_wrapper, env_classname, agent_id, cfg)
+        if cfg.hparams.model_params.early_detect_nans:
+            env_wrapper2 = VecCheckNan(env_wrapper, raise_exception=True)
+        else:
+            env_wrapper2 = env_wrapper
+
+        model = model_constructor(env_wrapper2, env_classname, agent_id, cfg)
+
         env_wrapper.set_model(model)
-        model.learn(total_timesteps=num_total_steps, callback=checkpoint_callback)
+        try:
+            model.learn(total_timesteps=num_total_steps, callback=checkpoint_callback)
+            # capture errors raised by NaN's in SB3 tensors, which occur with PPO imitation learning in 2-layout configuration
+        except ValueError as ex:
+            msg = str(ex)
+            if (
+                cfg.hparams.model_params.soft_stop_training_on_nan_errors
+                and "Expected parameter logits" in msg
+                and "but found invalid values" in msg
+            ):
+                print("SB3 encountered NaNs in the logits tensor")
+                # NB! do not save model - once NaNs appear the model may be already corrupted
+                # TODO: detect whether model parameters actually contain NaNs and decide based on that
+                # NB! ValueError raised by NaN's in SB3 tensors is propagated here to the parent process in order to terminate the training of both agents
+                raise
+            else:
+                raise
         env_wrapper.save_or_return_model(model, filename_timestamp_sufix_str)
     except (
         Exception
@@ -682,6 +705,7 @@ class SB3BaseAgent(Agent):
         else:
             self.env._post_step_callback2 = self.sequential_env_post_step_callback
 
+        result = True
         if self.model is not None:  # single-model scenario
             checkpoint_filenames = self.get_checkpoint_filenames(include_timestamp=True)
             filename_with_timestamp = checkpoint_filenames[self.id]
@@ -697,9 +721,25 @@ class SB3BaseAgent(Agent):
                 else None
             )
 
-            self.model.learn(
-                total_timesteps=num_total_steps, callback=checkpoint_callback
-            )
+            try:
+                self.model.learn(
+                    total_timesteps=num_total_steps, callback=checkpoint_callback
+                )
+            # capture errors raised by NaN's in SB3 tensors, which occur with PPO imitation learning in 2-layout configuration
+            except ValueError as ex:
+                msg = str(ex)
+                if (
+                    self.cfg.hparams.model_params.soft_stop_training_on_nan_errors
+                    and "Expected parameter logits" in msg
+                    and "but found invalid values" in msg
+                ):
+                    print("SB3 encountered NaNs in the logits tensor")
+                    # wait_for_enter("Press enter to continue")
+                    # NB! do not save model - once NaNs appear the model may be already corrupted
+                    # TODO: detect whether model parameters actually contain NaNs and decide based on that
+                    result = False
+                else:
+                    raise
         else:
             checkpoint_filenames = self.get_checkpoint_filenames(
                 include_timestamp=False
@@ -720,12 +760,27 @@ class SB3BaseAgent(Agent):
                 checkpoint_filenames=checkpoint_filenames,
             )
 
+            if self.exceptions:
+                msg = str(self.exceptions[0])
+                if (
+                    self.cfg.hparams.model_params.soft_stop_training_on_nan_errors
+                    and "Expected parameter logits" in msg
+                    and "but found invalid values" in msg
+                ):
+                    print("SB3 encountered NaNs in the logits tensor")
+                    # wait_for_enter("Press enter to continue")
+                    # NB! do not save model - once NaNs appear the model may be already corrupted
+                    # TODO: detect whether model parameters actually contain NaNs and decide based on that
+                    result = False
+
         self.env._pre_reset_callback2 = None
         self.env._post_reset_callback2 = None
         self.env._post_step_callback2 = None
 
         if self.exceptions:
             raise Exception(str(self.exceptions))
+
+        return result
 
     def get_checkpoint_filenames(self, include_timestamp=True):
         checkpoint_filenames = {}

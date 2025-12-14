@@ -41,6 +41,7 @@ import torch
 import torch as th
 from stable_baselines3 import DQN
 from stable_baselines3.dqn.policies import CnnPolicy, MlpPolicy
+from stable_baselines3.common.vec_env import VecCheckNan
 from stable_baselines3.common.type_aliases import PyTorchObs
 import supersuit as ss
 
@@ -218,6 +219,8 @@ class DQNAgent(SB3BaseAgent):
             self.env.num_agents == 1 or self.test_mode
         ):  # during test, each agent has a separate in-process instance with its own model and not using threads/subprocesses
             env = SingleAgentZooToGymAdapter(env, self.id)
+            if cfg.hparams.model_params.early_detect_nans:
+                env = VecCheckNan(env, raise_exception=True)
             self.model = self.model_constructor(env, self.env_classname, self.id, cfg)
         else:
             pass  # multi-model training will be automatically set up by the base class when self.model is None. These models will be saved to self.models and there will be only one agent instance in the main process. Actual agents will run in threads/subprocesses because SB3 requires Gym interface.

@@ -14,6 +14,9 @@ import gc
 import pandas as pd
 from omegaconf import DictConfig
 
+import numpy as np
+import torch
+
 from aintelope.utils import RobustProgressBar
 
 from aintelope.agents import get_agent_class
@@ -46,6 +49,12 @@ def run_experiment(
     logger = logging.getLogger("aintelope.experiment")
 
     is_sb3 = cfg.hparams.agent_class.startswith("sb3_")
+
+    if cfg.hparams.model_params.early_detect_nans:
+        torch.autograd.set_detect_anomaly(True)
+        np.seterr(
+            divide="raise", over="raise", invalid="raise", under="ignore"
+        )  # NB! ignore underflows
 
     # Environment
     env = get_env_class(cfg.hparams.env)(
@@ -566,12 +575,15 @@ def run_baseline_training(
         disable=unit_test_mode,
     ) as step_bar:  # this is a slow task so lets use a progress bar    # note that ProgressBar crashes under unit test mode, so it will be disabled if unit_test_mode is on
         agents[0].progressbar = step_bar
-        agents[0].train(num_total_steps)
+        can_save_model = agents[0].train(num_total_steps)
 
     # Save models
-    # for agent in agents:
-    #    agent.save_model()
-    agents[0].save_model()
+    if (
+        can_save_model
+    ):  # Do not save model when it became unstable and NaNs appeared. Then keep only the checkpoints around.
+        agents[0].save_model()
+    else:
+        pass  # TODO: keep track of failed training count
 
     # NB! PPO doing extra episodes causes the episode index counting for test episodes to collide with train episodes, therefore need to offset the test episode numbers
     num_actual_train_episodes = agents[
