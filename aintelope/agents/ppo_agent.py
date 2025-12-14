@@ -263,6 +263,7 @@ def ppo_model_constructor(env, env_classname, agent_id, cfg):
         env,
         verbose=1,
         policy_kwargs=policy_kwargs,
+        target_kl=cfg.hparams.model_params.target_kl,
         device=torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         ),  # Note, CUDA-based CPU performance is much better than Torch-CPU mode.

@@ -35,7 +35,7 @@ hparams:
   #env_entry_point: "aintelope.environments.savanna_safetygrid:SavannaGridworldSequentialEnv"
   #env_type: zoo
   unit_test_mode: False      # is set during tests in order to speed up DQN computations
-  agent_class: sb3_ppo_agent 
+  agent_class: sb3_ppo_agent
   save_frequency: ${muldiv:${hparams.num_episodes},${hparams.env_params.num_iters},10}  # how often to save a model. 0 means that the model is saved only at the end, improving training performance
   use_separate_models_for_each_experiment: True
   agent_params:
@@ -43,8 +43,9 @@ hparams:
   model_params:  # TODO
     use_weight_sharing: False
     num_conv_layers: 0
-    use_expln: True     # NB! needed here to avoid NaNs in SB3 tensors
-    optimizer_class: AdamW     # NB! needed here to avoid NaNs in SB3 tensors
+    use_expln: False
+    optimizer_class: null     # NB! needed here to avoid NaNs in SB3 tensors
+    target_kl: 0.05  # https://spinningup.openai.com/en/latest/algorithms/ppo.html     # NB! needed here to avoid NaNs in SB3 tensors
     soft_stop_training_on_nan_errors: True     # NB! needed here to handle NaNs in SB3 tensors during training
     early_detect_nans: False
     eps_start: 0.0

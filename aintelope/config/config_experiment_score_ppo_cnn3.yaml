@@ -45,6 +45,7 @@ hparams:
     num_conv_layers: 3
     use_expln: False
     optimizer_class: null   # use default
+    target_kl: null         # used with SB3 PPO only
     soft_stop_training_on_nan_errors: False
     early_detect_nans: False
     eps_start: 0.0

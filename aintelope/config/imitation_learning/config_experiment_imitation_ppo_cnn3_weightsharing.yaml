@@ -43,8 +43,9 @@ hparams:
   model_params:  # TODO
     use_weight_sharing: True
     num_conv_layers: 3
-    use_expln: True     # NB! needed here to avoid NaNs in SB3 tensors
-    optimizer_class: AdamW     # NB! needed here to avoid NaNs in SB3 tensors
+    use_expln: False
+    optimizer_class: null
+    target_kl: 0.05  # https://spinningup.openai.com/en/latest/algorithms/ppo.html     # NB! needed here to avoid NaNs in SB3 tensors
     soft_stop_training_on_nan_errors: True     # NB! needed here to handle NaNs in SB3 tensors during training
     early_detect_nans: False
     eps_start: 0.0
