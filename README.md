@@ -203,4 +203,3 @@ Original upstream repository: https://github.com/biological-alignment-benchmarks
 License: see `LICENSE.txt`.  
 Authors and contribution details: see `AUTHORS.md`.
 
-(Full installation instructions and extended docs moved to `docs/INSTALL.md`.)
