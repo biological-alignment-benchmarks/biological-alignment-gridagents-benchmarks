@@ -43,7 +43,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 import torch
 import torch.nn as nn
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.vec_env import VecCheckNan
+from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
 
 from typing import Any, Union, Optional, Type
 import gymnasium as gym
@@ -80,6 +80,7 @@ def vec_env_args(env, num_envs):
     assert num_envs == 1
 
     def env_fn():
+        # TODO: Environment duplication support for parallel compute purposes. Abseil package needs to be replaced for that end. Also note that environment seeding needs to be adapted so that each environment gets potentially a different seed, as it is currently set by experiments.py.
         # env_copy = cloudpickle.loads(cloudpickle.dumps(env))
         env_copy = env  # TODO: add an assertion check that verifies that this "cloning" function is called only once per environment
         return env_copy
@@ -219,11 +220,13 @@ def sb3_agent_train_thread_entry_point(
         )
 
         if cfg.hparams.model_params.early_detect_nans:
-            env_wrapper2 = VecCheckNan(env_wrapper, raise_exception=True)
+            # VecCheckNan expects a vectorised env. The reset() method of vectorised env does not return a tuple like Gym env does. Also, the step infos are provided inside a list (though infos are not used or checked).
+            env = DummyVecEnv([lambda: env_wrapper])
+            env = VecCheckNan(env, raise_exception=True)
         else:
-            env_wrapper2 = env_wrapper
+            env = env_wrapper
 
-        model = model_constructor(env_wrapper2, env_classname, agent_id, cfg)
+        model = model_constructor(env, env_classname, agent_id, cfg)
 
         env_wrapper.set_model(model)
         try:
@@ -242,9 +245,13 @@ def sb3_agent_train_thread_entry_point(
     except (
         Exception
     ) as ex:  # NB! need to catch exception so that the env wrapper can signal the training ended
-        info = str(ex) + os.linesep + traceback.format_exc()
-        env_wrapper.terminate_with_exception(info)
-        print(info)
+        trace = traceback.format_exc()
+        exception_info = (
+            ex,
+            trace,
+        )  # NB! return exception in its original type, not as a str
+        env_wrapper.terminate_with_exception(exception_info)
+        print(exception_info)
 
 
 class SB3BaseAgent(Agent):
@@ -708,7 +715,7 @@ class SB3BaseAgent(Agent):
             # resulting filename looks like checkpointfilename_timestamp_100000_steps.zip next checkpointfilename_timestamp_200000_steps.zip etc
             checkpoint_callback = (
                 CheckpointCallback(
-                    save_freq=self.cfg.hparams.save_frequency,  # save frequency in timesteps
+                    save_freq=self.cfg.hparams.save_frequency,  # save frequency in timesteps.
                     save_path=os.path.dirname(filename_with_timestamp),
                     name_prefix=os.path.basename(filename_with_timestamp),
                 )
@@ -720,15 +727,10 @@ class SB3BaseAgent(Agent):
                 self.model.learn(
                     total_timesteps=num_total_steps, callback=checkpoint_callback
                 )
-            # capture errors raised by NaN's in SB3 tensors, which occur with PPO imitation learning in 2-layout configuration
+            # capture errors raised by NaN's in SB3 tensors, which occur with PPO imitation learning
             except Exception as ex:
-                if check_for_nan_errors(ex, self.cfg):
-                    # NB! do not save model - once NaNs appear the model may be already corrupted
-                    # TODO: detect whether model parameters actually contain NaNs and decide based on that
-                    wait_for_enter("Press enter to continue")
-                    result = False
-                else:
-                    raise
+                trace = traceback.format_exc()
+                self.exceptions = {self.id: (ex, trace)}
         else:
             checkpoint_filenames = self.get_checkpoint_filenames(
                 include_timestamp=False
@@ -749,22 +751,20 @@ class SB3BaseAgent(Agent):
                 checkpoint_filenames=checkpoint_filenames,
             )
 
-            if self.exceptions:
-                ex = self.exceptions[0]
-                if check_for_nan_errors(ex, self.cfg):
-                    # NB! do not save model - once NaNs appear the model may be already corrupted
-                    # TODO: detect whether model parameters actually contain NaNs and decide based on that
-                    wait_for_enter("Press enter to continue")
-                    result = False
-                else:
-                    pass  # raise later towards the end of the method
-
         self.env._pre_reset_callback2 = None
         self.env._post_reset_callback2 = None
         self.env._post_step_callback2 = None
 
         if self.exceptions:
-            raise Exception(str(self.exceptions))
+            exs = list(self.exceptions.values())
+            for ex, trace in exs:
+                if check_for_nan_errors(ex, self.cfg):
+                    # NB! do not save model - once NaNs appear the model may be already corrupted
+                    # TODO: detect whether model parameters actually contain NaNs and decide based on that
+                    # wait_for_enter("Press enter to continue")
+                    result = False
+                else:
+                    raise Exception(str(self.exceptions))
 
         return result
 

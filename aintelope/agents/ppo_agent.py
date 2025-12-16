@@ -43,7 +43,7 @@ import torch as th
 import stable_baselines3
 from stable_baselines3 import PPO
 from stable_baselines3.ppo.policies import CnnPolicy, MlpPolicy
-from stable_baselines3.common.vec_env import VecCheckNan
+from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
 
 import supersuit as ss
 
@@ -289,20 +289,24 @@ class PPOAgent(SB3BaseAgent):
 
         self.model_constructor = ppo_model_constructor
 
+        # TODO: Environment duplication support for parallel compute purposes. Abseil package needs to be replaced for that end. Also note that environment seeding needs to be adapted so that each environment gets potentially a different seed, as it is currently set by experiments.py.
         if (
-            self.test_mode
+            self.env.num_agents == 1 or self.test_mode
         ):  # during test, each agent has a separate in-process instance with its own model and not using threads/subprocesses
-            env = SingleAgentZooToGymAdapter(env, self.id)
+            adapter_env = SingleAgentZooToGymAdapter(env, self.id)
             if cfg.hparams.model_params.early_detect_nans:
+                # VecCheckNan expects a vectorised env. The reset() method of vectorised env does not return a tuple like Gym env does. Also, the step infos are provided inside a list (though infos are not used or checked).
+                env = DummyVecEnv([lambda: adapter_env])
                 env = VecCheckNan(env, raise_exception=True)
+            else:
+                env = adapter_env
             self.model = self.model_constructor(env, self.env_classname, self.id, cfg)
-        elif self.env.num_agents == 1 or cfg.hparams.model_params.use_weight_sharing:
+        elif cfg.hparams.model_params.use_weight_sharing:
             # PPO supports weight sharing for multi-agent scenarios
-            # TODO: Environment duplication support for parallel compute purposes. Abseil package needs to be replaced for that end.
-
             ss.vector.vector_constructors.vec_env_args = vec_env_args  # Since we need only one environment, there is no reason for cloning, so lets replace the cloning function with identity function.
-
-            env = ss.pettingzoo_env_to_vec_env_v1(env)
+            env = ss.pettingzoo_env_to_vec_env_v1(
+                env
+            )  # NB! this is essential in case there are two agents and weight sharing is enabled. Then DummyVecEnv would not be sufficient.
             env = ss.concat_vec_envs_v1(
                 env, num_vec_envs=1, num_cpus=1, base_class="stable_baselines3"
             )  # NB! num_vec_envs=1 is important here so that we can use identity function instead of cloning in vec_env_args

@@ -41,7 +41,7 @@ import torch
 import torch as th
 from stable_baselines3 import A2C
 from stable_baselines3.a2c.policies import CnnPolicy, MlpPolicy
-from stable_baselines3.common.vec_env import VecCheckNan
+from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
 import supersuit as ss
 
 from typing import Union
@@ -238,11 +238,16 @@ class A2CAgent(SB3BaseAgent):
         if (
             self.env.num_agents == 1 or self.test_mode
         ):  # during test, each agent has a separate in-process instance with its own model and not using threads/subprocesses
-            env = SingleAgentZooToGymAdapter(env, self.id)
             # TODO: turn off GPU for A2C and use parallel computation which is supported by A2C:
             # env = make_vec_env(env, n_envs=8, vec_env_cls=SubprocVecEnv)
+            # TODO: Environment duplication support for parallel compute purposes. Abseil package needs to be replaced for that end. Also note that environment seeding needs to be adapted so that each environment gets potentially a different seed, as it is currently set by experiments.py.
+            adapter_env = SingleAgentZooToGymAdapter(env, self.id)
             if cfg.hparams.model_params.early_detect_nans:
+                # VecCheckNan expects a vectorised env. The reset() method of vectorised env does not return a tuple like Gym env does. Also, the step infos are provided inside a list (though infos are not used or checked).
+                env = DummyVecEnv([lambda: adapter_env])
                 env = VecCheckNan(env, raise_exception=True)
+            else:
+                env = adapter_env
             self.model = self.model_constructor(env, self.env_classname, self.id, cfg)
         else:
             pass  # multi-model training will be automatically set up by the base class when self.model is None. These models will be saved to self.models and there will be only one agent instance in the main process. Actual agents will run in threads/subprocesses because SB3 requires Gym interface.
