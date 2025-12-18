@@ -44,7 +44,11 @@ def aintelope_main(cfg: DictConfig) -> None:
     score_dimensions = get_score_dimensions(cfg)
 
     # train
-    num_actual_train_episodes = run_experiment(
+    (
+        num_actual_train_episodes,
+        training_run_was_terminated_early_due_to_nans,
+        _,
+    ) = run_experiment(
         cfg,
         experiment_name=cfg.experiment_name,
         score_dimensions=score_dimensions,
@@ -53,7 +57,7 @@ def aintelope_main(cfg: DictConfig) -> None:
     )
 
     # test
-    run_experiment(
+    (_, _, test_checkpoint_filenames) = run_experiment(
         cfg,
         experiment_name=cfg.experiment_name,
         score_dimensions=score_dimensions,
@@ -69,6 +73,9 @@ def aintelope_main(cfg: DictConfig) -> None:
         score_dimensions,
         title=title,
         experiment_name=cfg.experiment_name,
+        num_actual_train_episodes=num_actual_train_episodes,
+        training_run_was_terminated_early_due_to_nans=training_run_was_terminated_early_due_to_nans,
+        test_checkpoint_filenames=test_checkpoint_filenames,
         do_not_show_plot=do_not_show_plot,
     )
 
@@ -77,7 +84,16 @@ def aintelope_main(cfg: DictConfig) -> None:
         wait_for_enter("Press [enter] to continue.")
 
 
-def analytics(cfg, score_dimensions, title, experiment_name, do_not_show_plot=False):
+def analytics(
+    cfg,
+    score_dimensions,
+    title,
+    experiment_name,
+    num_actual_train_episodes=-1,  # currently unused here
+    training_run_was_terminated_early_due_to_nans=False,  # currently unused here
+    test_checkpoint_filenames=None,  # currently unused here
+    do_not_show_plot=False,
+):
     # normalise slashes in paths. This is not mandatory, but will be cleaner to debug
     log_dir = os.path.normpath(cfg.log_dir)
     events_fname = cfg.events_fname

@@ -295,10 +295,15 @@ def run_pipeline(cfg: DictConfig) -> None:
                         score_dimensions = get_score_dimensions(experiment_cfg)
 
                         num_actual_train_episodes = -1
+                        training_run_was_terminated_early_due_to_nans = False
                         if (
                             train_mode and test_mode
                         ):  # In case of (num_pipeline_cycles == 0), each environment has its own model. In this case run training and testing inside the same cycle immediately after each other.
-                            num_actual_train_episodes = run_experiment(
+                            (  # TODO: currently this info is lost in case num_pipeline_cycles > 0 and test is run after multiple pipeline cycles
+                                num_actual_train_episodes,
+                                training_run_was_terminated_early_due_to_nans,
+                                _,
+                            ) = run_experiment(
                                 experiment_cfg,
                                 experiment_name=env_conf_name,
                                 score_dimensions=score_dimensions,
@@ -308,7 +313,7 @@ def run_pipeline(cfg: DictConfig) -> None:
                         elif test_mode:
                             pass  # TODO: optional: obtain num_actual_train_episodes. But this is not too important: in case of training a model over one or more pipeline cycles, the final test cycle gets its own i_pipeline_cycle index, therefore it is clearly distinguishable anyway
 
-                        run_experiment(
+                        (_, _, test_checkpoint_filenames) = run_experiment(
                             experiment_cfg,
                             experiment_name=env_conf_name,
                             score_dimensions=score_dimensions,
@@ -337,6 +342,9 @@ def run_pipeline(cfg: DictConfig) -> None:
                                 group_by_pipeline_cycle=cfg.hparams.num_pipeline_cycles
                                 >= 1,
                                 gridsearch_params=gridsearch_params,
+                                num_actual_train_episodes=num_actual_train_episodes,
+                                training_run_was_terminated_early_due_to_nans=training_run_was_terminated_early_due_to_nans,
+                                test_checkpoint_filenames=test_checkpoint_filenames,
                                 do_not_show_plot=do_not_show_plot,
                             )
                             test_summaries_to_return.append(test_summary)

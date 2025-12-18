@@ -50,6 +50,7 @@ def run_experiment(
 
     is_sb3 = cfg.hparams.agent_class.startswith("sb3_")
 
+    # TODO: refactor this block to utils
     if cfg.hparams.model_params.early_detect_nans:
         torch.autograd.set_detect_anomaly(True)
         np.seterr(
@@ -127,6 +128,7 @@ def run_experiment(
     agents = []
     dones = {}
     prev_agent_checkpoint = None
+    checkpoint_filenames = None
     for i in range(env.max_num_agents):
         agent_id = f"agent_{i}"
         agent = get_agent_class(cfg.hparams.agent_class)(
@@ -175,22 +177,26 @@ def run_experiment(
         ):  # later experiments may have more agents    # TODO: configuration option for determining whether new agents can copy the checkpoints of earlier agents, and if so then specifically which agent's checkpoint to use
             checkpoint = prev_agent_checkpoint
         else:
-            checkpoint_filename = agent_id
+            checkpoint_filename_template = agent_id
             if use_separate_models_for_each_experiment:
-                checkpoint_filename += "-" + experiment_name
+                checkpoint_filename_template += "-" + experiment_name
             checkpoints = glob.glob(
-                os.path.join(dir_cp, checkpoint_filename + "-*")
+                os.path.join(dir_cp, checkpoint_filename_template + "-*")
             )  # NB! separate agent id from date explicitly in glob arguments using "-" since theoretically the agent id could be a two digit number and we do not want to match agent_10 while looking for agent_1
             if len(checkpoints) > 0:
                 checkpoint = max(checkpoints, key=os.path.getctime)
                 prev_agent_checkpoint = checkpoint
+                if checkpoint_filenames is None:
+                    checkpoint_filenames = checkpoint
+                else:
+                    checkpoint_filenames += "|" + checkpoint
             elif (
                 prev_agent_checkpoint is not None
             ):  # later experiments may have more agents    # TODO: configuration option for determining whether new agents can copy the checkpoints of earlier agents, and if so then specifically which agent's checkpoint to use
                 checkpoint = prev_agent_checkpoint
             elif (
                 test_mode
-                and not cfg.hparams.do_not_enforce_checkpoint_file_existence_during_test
+                and not cfg.hparams.do_not_enforce_checkpoint_file_existence_during_test  # used with random agent and handwritten-rules agent
             ):
                 raise Exception("No trained model found, cannot run test!")
 
@@ -217,10 +223,13 @@ def run_experiment(
 
     # Main loop
 
+    run_was_terminated_early_due_to_nans = False
+
     if is_sb3 and not test_mode:
-        num_actual_train_episodes = run_baseline_training(
-            cfg, i_pipeline_cycle, env, agents
-        )
+        (
+            num_actual_train_episodes,
+            run_was_terminated_early_due_to_nans,
+        ) = run_baseline_training(cfg, i_pipeline_cycle, env, agents)
 
     else:
         model_needs_saving = (
@@ -550,7 +559,11 @@ def run_experiment(
 
     gc.collect()
 
-    return num_actual_train_episodes
+    return (
+        num_actual_train_episodes,
+        run_was_terminated_early_due_to_nans,
+        checkpoint_filenames,
+    )
 
 
 def run_baseline_training(
@@ -581,15 +594,16 @@ def run_baseline_training(
     if (
         can_save_model
     ):  # Do not save model when it became unstable and NaNs appeared. Then keep only the checkpoints around.
+        run_was_terminated_early_due_to_nans = False
         agents[0].save_model()
     else:
-        pass  # TODO: keep track of failed training count
+        run_was_terminated_early_due_to_nans = True
 
     # NB! PPO doing extra episodes causes the episode index counting for test episodes to collide with train episodes, therefore need to offset the test episode numbers
     num_actual_train_episodes = agents[
         0
     ].next_episode_no  # We assume that the last episode is not followed by a reset. Cannot use env.get_episode_no() here since its counter is reset for each new env_layout_seed.
-    return num_actual_train_episodes
+    return num_actual_train_episodes, run_was_terminated_early_due_to_nans
 
 
 # @hydra.main(version_base=None, config_path="config", config_name="config_experiment")
