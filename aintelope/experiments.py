@@ -25,12 +25,61 @@ from aintelope.environments import get_env_class
 from aintelope.environments.savanna_safetygrid import GridworldZooBaseEnv
 from aintelope.training.dqn_training import Trainer
 
-from typing import Any, Union
+from typing import Any, Optional, Tuple, Union
 import gymnasium as gym
 from pettingzoo import AECEnv, ParallelEnv
 
 PettingZooEnv = Union[AECEnv, ParallelEnv]
 Environment = Union[gym.Env, PettingZooEnv]
+
+
+def run_experiment_with_retries(
+    cfg: DictConfig,
+    experiment_name: str = "",  # TODO: remove this argument and read it from cfg.experiment_name
+    score_dimensions: list = [],
+    test_mode: bool = True,
+    i_pipeline_cycle: int = 0,
+    num_actual_train_episodes: int = -1,
+) -> Tuple[Optional[int], Optional[bool], Optional[int], Optional[str]]:
+    num_training_retries_used = 0
+
+    num_tries = 1 + cfg.hparams.model_params.retry_training_on_nans_for_n_times
+    num_tries = max(1, num_tries)
+    for try_index in range(0, num_tries):
+        (  # TODO: currently these returned metrics are lost in case num_pipeline_cycles > 0 and test is run after multiple pipeline cycles
+            num_actual_train_episodes,
+            run_was_terminated_early_due_to_nans,
+            checkpoint_filenames,
+        ) = run_experiment(
+            cfg,
+            experiment_name,
+            score_dimensions,
+            test_mode,
+            i_pipeline_cycle,
+            num_actual_train_episodes,
+        )
+
+        if test_mode or not run_was_terminated_early_due_to_nans:
+            break
+        elif try_index + 1 < num_tries:
+            print(
+                "Training encountered NaNs, retrying from scratch with a new model..."
+            )
+            num_training_retries_used += 1
+        else:
+            print("Training encountered NaNs, not retrying")
+
+    # / for try_index in range(0, num_tries):
+
+    return (
+        num_actual_train_episodes,
+        run_was_terminated_early_due_to_nans,
+        num_training_retries_used,
+        checkpoint_filenames,
+    )
+
+
+# / def run_experiment_with_retries(
 
 
 def run_experiment(
@@ -40,7 +89,7 @@ def run_experiment(
     test_mode: bool = True,
     i_pipeline_cycle: int = 0,
     num_actual_train_episodes: int = -1,
-) -> None:
+) -> Tuple[Optional[int], Optional[bool], Optional[str]]:
     if "trial_length" in cfg:  # backwards compatibility
         cfg.env_layout_seed_repeat_sequence_length = cfg.trial_length
     if "eps_last_env_layout_seed" in cfg:  # backwards compatibility
@@ -280,7 +329,8 @@ def run_experiment(
                     f"\ni_pipeline_cycle: {i_pipeline_cycle} experiment: {experiment_name} episode: {i_episode} env_layout_seed: {env_layout_seed} test_mode: {test_mode}"
                 )
 
-                # TODO: refactor these checks into separate function        # Save models
+                # Save models
+                # TODO: refactor these checks into separate function
                 # https://pytorch.org/tutorials/recipes/recipes/
                 # saving_and_loading_a_general_checkpoint.html
                 if not test_mode:
@@ -604,8 +654,3 @@ def run_baseline_training(
         0
     ].next_episode_no  # We assume that the last episode is not followed by a reset. Cannot use env.get_episode_no() here since its counter is reset for each new env_layout_seed.
     return num_actual_train_episodes, run_was_terminated_early_due_to_nans
-
-
-# @hydra.main(version_base=None, config_path="config", config_name="config_experiment")
-if __name__ == "__main__":
-    run_experiment()  # TODO: cfg, score_dimensions

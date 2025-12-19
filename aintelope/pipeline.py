@@ -43,7 +43,7 @@ from aintelope.config.config_utils import (
     get_score_dimensions,
     set_console_title,
 )
-from aintelope.experiments import run_experiment
+from aintelope.experiments import run_experiment, run_experiment_with_retries
 
 
 logger = logging.getLogger("aintelope.__main__")
@@ -154,59 +154,71 @@ def run_pipeline(cfg: DictConfig) -> None:
 
                         num_actual_train_episodes = -1
                         training_run_was_terminated_early_due_to_nans = False
+                        num_training_retries_used = 0
                         if (
-                            train_mode and test_mode
+                            train_mode
                         ):  # In case of (num_pipeline_cycles == 0), each environment has its own model. In this case run training and testing inside the same cycle immediately after each other.
-                            (  # TODO: currently this info is lost in case num_pipeline_cycles > 0 and test is run after multiple pipeline cycles
+                            # train
+                            (  # TODO: currently these returned metrics are lost in case num_pipeline_cycles > 0 and test is run after multiple pipeline cycles
                                 num_actual_train_episodes,
                                 training_run_was_terminated_early_due_to_nans,
+                                num_training_retries_used,
                                 _,
-                            ) = run_experiment(
+                            ) = run_experiment_with_retries(
                                 experiment_cfg,
                                 experiment_name=env_conf_name,
                                 score_dimensions=score_dimensions,
                                 test_mode=False,
                                 i_pipeline_cycle=i_pipeline_cycle,
                             )
-                        elif test_mode:
-                            pass  # TODO: optional: obtain num_actual_train_episodes. But this is not too important: in case of training a model over one or more pipeline cycles, the final test cycle gets its own i_pipeline_cycle index, therefore it is clearly distinguishable anyway
-
-                        (_, _, test_checkpoint_filenames) = run_experiment(
-                            experiment_cfg,
-                            experiment_name=env_conf_name,
-                            score_dimensions=score_dimensions,
-                            test_mode=test_mode,
-                            i_pipeline_cycle=i_pipeline_cycle,
-                            num_actual_train_episodes=num_actual_train_episodes,
-                        )
-
-                        # torch.cuda.empty_cache()
-                        # gc.collect()
 
                         if test_mode:
-                            # Not using timestamp_pid_uuid here since it would make the title too long. In case of manual execution with plots, the pid-uuid is probably not needed anyway.
-                            title = (
-                                timestamp
-                                + " : "
-                                + params_set_title
-                                + " : "
-                                + env_conf_name
-                            )
-                            test_summary = analytics(
-                                experiment_cfg,
-                                score_dimensions,
-                                title=title,
-                                experiment_name=env_conf_name,
-                                group_by_pipeline_cycle=cfg.hparams.num_pipeline_cycles
-                                >= 1,
-                                gridsearch_params=None,
-                                num_actual_train_episodes=num_actual_train_episodes,
-                                training_run_was_terminated_early_due_to_nans=training_run_was_terminated_early_due_to_nans,
-                                test_checkpoint_filenames=test_checkpoint_filenames,
-                                do_not_show_plot=do_not_show_plot,
-                            )
-                            test_summaries_to_return.append(test_summary)
-                            test_summaries_to_jsonl.append(test_summary)
+                            # TODO: optional: obtain num_actual_train_episodes. But this is not too important: in case of training a model over one or more pipeline cycles, the final test cycle gets its own i_pipeline_cycle index, therefore it is clearly distinguishable anyway
+
+                            # test
+                            if (
+                                training_run_was_terminated_early_due_to_nans
+                                and cfg.hparams.model_params.skip_test_on_training_stop_on_nan_errors
+                            ):
+                                test_checkpoint_filenames = None
+                            else:
+                                (_, _, test_checkpoint_filenames) = run_experiment(
+                                    experiment_cfg,
+                                    experiment_name=env_conf_name,
+                                    score_dimensions=score_dimensions,
+                                    test_mode=True,
+                                    i_pipeline_cycle=i_pipeline_cycle,
+                                    num_actual_train_episodes=num_actual_train_episodes,
+                                )
+
+                                # Not using timestamp_pid_uuid here since it would make the title too long. In case of manual execution with plots, the pid-uuid is probably not needed anyway.
+                                title = (
+                                    timestamp
+                                    + " : "
+                                    + params_set_title
+                                    + " : "
+                                    + env_conf_name
+                                )
+                                test_summary = analytics(
+                                    experiment_cfg,
+                                    score_dimensions,
+                                    title=title,
+                                    experiment_name=env_conf_name,
+                                    group_by_pipeline_cycle=cfg.hparams.num_pipeline_cycles
+                                    >= 1,
+                                    gridsearch_params=None,
+                                    num_actual_train_episodes=num_actual_train_episodes,
+                                    training_run_was_terminated_early_due_to_nans=training_run_was_terminated_early_due_to_nans,
+                                    num_training_retries_used=num_training_retries_used,
+                                    test_checkpoint_filenames=test_checkpoint_filenames,
+                                    do_not_show_plot=do_not_show_plot,
+                                )
+                                test_summaries_to_return.append(test_summary)
+                                test_summaries_to_jsonl.append(test_summary)
+
+                            # / if training_run_was_terminated_early_due_to_nans and cfg.hparams.model_params.skip_test_on_training_stop_on_nan_errors:
+
+                        # / if test_mode:
 
                         pipeline_bar.update(env_conf_i + 1)
 
@@ -254,6 +266,7 @@ def analytics(
     gridsearch_params=DictConfig,
     num_actual_train_episodes=-1,
     training_run_was_terminated_early_due_to_nans=False,
+    num_training_retries_used=0,
     test_checkpoint_filenames=None,
     do_not_show_plot=False,
 ):
@@ -297,6 +310,7 @@ def analytics(
         "num_train_pipeline_cycles": num_train_pipeline_cycles,
         "num_actual_train_episodes": num_actual_train_episodes,
         "training_run_was_terminated_early_due_to_nans": training_run_was_terminated_early_due_to_nans,
+        "num_training_retries_used": num_training_retries_used,
         "test_checkpoint_filenames": test_checkpoint_filenames,
         "score_dimensions": score_dimensions_out,
         "group_by_pipeline_cycle": group_by_pipeline_cycle,

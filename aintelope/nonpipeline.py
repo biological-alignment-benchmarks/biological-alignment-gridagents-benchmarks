@@ -20,7 +20,7 @@ from aintelope.config.config_utils import (
     get_score_dimensions,
     set_console_title,
 )
-from aintelope.experiments import run_experiment
+from aintelope.experiments import run_experiment, run_experiment_with_retries
 
 from aintelope.analytics import plotting, recording
 
@@ -47,8 +47,9 @@ def aintelope_main(cfg: DictConfig) -> None:
     (
         num_actual_train_episodes,
         training_run_was_terminated_early_due_to_nans,
+        num_training_retries_used,
         _,
-    ) = run_experiment(
+    ) = run_experiment_with_retries(
         cfg,
         experiment_name=cfg.experiment_name,
         score_dimensions=score_dimensions,
@@ -57,31 +58,42 @@ def aintelope_main(cfg: DictConfig) -> None:
     )
 
     # test
-    (_, _, test_checkpoint_filenames) = run_experiment(
-        cfg,
-        experiment_name=cfg.experiment_name,
-        score_dimensions=score_dimensions,
-        test_mode=True,
-        i_pipeline_cycle=0,
-        num_actual_train_episodes=num_actual_train_episodes,
-    )
+    if (
+        training_run_was_terminated_early_due_to_nans
+        and cfg.hparams.model_params.skip_test_on_training_stop_on_nan_errors
+    ):
+        test_checkpoint_filenames = None
+    else:
+        (_, _, test_checkpoint_filenames) = run_experiment(
+            cfg,
+            experiment_name=cfg.experiment_name,
+            score_dimensions=score_dimensions,
+            test_mode=True,
+            i_pipeline_cycle=0,
+            num_actual_train_episodes=num_actual_train_episodes,
+        )
 
-    title = timestamp + " : " + cfg.experiment_name
-    do_not_show_plot = cfg.hparams.unit_test_mode
-    analytics(
-        cfg,
-        score_dimensions,
-        title=title,
-        experiment_name=cfg.experiment_name,
-        num_actual_train_episodes=num_actual_train_episodes,
-        training_run_was_terminated_early_due_to_nans=training_run_was_terminated_early_due_to_nans,
-        test_checkpoint_filenames=test_checkpoint_filenames,
-        do_not_show_plot=do_not_show_plot,
-    )
+        title = timestamp + " : " + cfg.experiment_name
+        do_not_show_plot = cfg.hparams.unit_test_mode
+        analytics(
+            cfg,
+            score_dimensions,
+            title=title,
+            experiment_name=cfg.experiment_name,
+            num_actual_train_episodes=num_actual_train_episodes,
+            training_run_was_terminated_early_due_to_nans=training_run_was_terminated_early_due_to_nans,
+            test_checkpoint_filenames=test_checkpoint_filenames,
+            do_not_show_plot=do_not_show_plot,
+        )
 
-    if not do_not_show_plot:
-        # keep plots visible until the user decides to close the program
-        wait_for_enter("Press [enter] to continue.")
+        if not do_not_show_plot:
+            # keep plots visible until the user decides to close the program
+            wait_for_enter("Press [enter] to continue.")
+
+    # / if training_run_was_terminated_early_due_to_nans and cfg.hparams.model_params.skip_test_on_training_stop_on_nan_errors:
+
+
+# / def aintelope_main(cfg: DictConfig)
 
 
 def analytics(
