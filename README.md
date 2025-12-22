@@ -15,18 +15,13 @@ The source code for the **Extended Gridworlds** framework can be found at [https
 
 Roland Pihlakas. From homeostasis to resource sharing: Biologically and economically aligned multi-objective multi-agent gridworld-based AI safety benchmarks. Arxiv, a working paper, September 2024 (https://arxiv.org/abs/2410.00081).
 
+**Paper Author:** Roland Pihlakas
+
+**Top Code Contributors:** Roland Pihlakas (94.6%), Andre Kochanke (2.7%), Joel Pyykkö (1.7%), Gunnar Zarncke (0.6%).
+
+See [AUTHORS.md](AUTHORS.md) for detailed contribution information and [LICENSE.txt](LICENSE.txt) for licence.
+
 **Use of Entire Suite**: We encourage the inclusion of the entire benchmark suite in derivative works to maintain the integrity and comprehensiveness of AI safety assessments.
-
-Git authorship distribution top:
-| Author                              |   loc |   coms |   fils |  distribution   |
-|:------------------------------------|------:|-------:|-------:|:----------------|
-| Roland Pihlakas                     | 21014 |    693 |    139 | 94.6/56.2/64.4  |
-| Joel Pyykkö                         |   371 |    159 |     12 | 1.7/12.9/ 5.6   |
-| derdre                              |   369 |     62 |     23 | 1.7/ 5.0/10.6   |
-| a.kochanke                          |   239 |    145 |     20 | 1.1/11.8/ 9.3   |
-| Gunnar Zarncke                      |   127 |      1 |      1 | 0.6/ 0.1/ 0.5   |
-
-For more details, see the [LICENSE.txt](LICENSE.txt) and [AUTHORS.md](AUTHORS.md) files.
 
 
 ## Project setup
