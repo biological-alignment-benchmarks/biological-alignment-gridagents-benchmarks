@@ -23,6 +23,14 @@ import hydra
 from hydra.core.hydra_config import HydraConfig
 from hydra.core.global_hydra import GlobalHydra
 
+from omegaconf import DictConfig, OmegaConf
+from flatten_dict import flatten
+from flatten_dict.reducers import make_reducer
+
+from aintelope.utils import disable_gym_warning, RobustProgressBar, wait_for_enter
+
+disable_gym_warning()
+
 from aintelope.config.config_utils import (
     register_resolvers,
     select_gpu,
@@ -30,11 +38,6 @@ from aintelope.config.config_utils import (
     set_priorities,
     set_console_title,
 )
-from omegaconf import DictConfig, OmegaConf
-from flatten_dict import flatten
-from flatten_dict.reducers import make_reducer
-
-from aintelope.utils import RobustProgressBar, wait_for_enter
 
 from aintelope.analytics import plotting, recording
 from aintelope.gridsearch_pipeline import (

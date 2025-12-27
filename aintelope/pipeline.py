@@ -28,9 +28,16 @@ from diskcache import Cache
 # this one is cross-platform
 from filelock import FileLock
 
-from aintelope.utils import RobustProgressBar, Semaphore, wait_for_enter
-
 from matplotlib import pyplot as plt
+
+from aintelope.utils import (
+    disable_gym_warning,
+    RobustProgressBar,
+    Semaphore,
+    wait_for_enter,
+)
+
+disable_gym_warning()
 
 from aintelope.analytics import plotting, recording
 from aintelope.config.config_utils import (

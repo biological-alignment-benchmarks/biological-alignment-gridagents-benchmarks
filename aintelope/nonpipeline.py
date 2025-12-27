@@ -15,6 +15,10 @@ import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 
+from aintelope.utils import disable_gym_warning, wait_for_enter
+
+disable_gym_warning()
+
 from aintelope.config.config_utils import (
     register_resolvers,
     get_score_dimensions,
@@ -23,8 +27,6 @@ from aintelope.config.config_utils import (
 from aintelope.experiments import run_experiment, run_experiment_with_retries
 
 from aintelope.analytics import plotting, recording
-
-from aintelope.utils import wait_for_enter
 
 logger = logging.getLogger("aintelope.__main__")
 

@@ -8,6 +8,7 @@
 import os
 import time
 import datetime
+import warnings
 
 from progressbar import ProgressBar
 
@@ -23,6 +24,12 @@ else:
 
 # this one is cross-platform
 from filelock import FileLock
+
+
+def disable_gym_warning():  # gym is actually not used by current code, the gym import probably comes from some dependency
+    warnings.filterwarnings(
+        "ignore", message=".*Gym has been unmaintained.*", category=UserWarning
+    )
 
 
 def wait_for_enter(message=None):
