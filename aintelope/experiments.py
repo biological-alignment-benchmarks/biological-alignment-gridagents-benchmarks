@@ -628,17 +628,24 @@ def run_baseline_training(
 
     # num_total_steps = cfg.hparams.env_params.num_iters * 1
     num_total_steps = cfg.hparams.env_params.num_iters * cfg.hparams.num_episodes
+    num_total_progressbar_steps = num_total_steps
+    if (
+        not self.cfg.hparams.model_params.use_weight_sharing
+    ):  # if there are multiple models then the step count needs also be multiplied. For weight sharing, the step count does not need to be multiplied because both agents contribute to same model
+        num_total_progressbar_steps *= env.num_agents
 
     # During multi-agent multi-model training the actual agents will run in threads/subprocesses because SB3 requires Gym interface. Agent[0] will be used just as an interface to call train(), the SB3BaseAgent base class will automatically set up the actual agents.
     # In case of multi-agent weight-shared model training it is partially similar: Agent[0] will be used just as an interface to call train(), the SB3 weight-shared model will handle the actual agents present in the environment.
 
     with RobustProgressBar(
-        max_value=num_total_steps,  # TODO: somehow obtain the total number of steps PPO plans to actually take, considering that it rounds the number of steps up with some logic. The rounding up seems to be same every time, so it does not depend on the events happending during training.
+        max_value=num_total_progressbar_steps,  # TODO: somehow obtain the total number of steps PPO plans to actually take, considering that it rounds the number of steps up with some logic. The rounding up seems to be same every time, so it does not depend on the events happending during training.
         granularity=100,
         disable=unit_test_mode,
     ) as step_bar:  # this is a slow task so lets use a progress bar    # note that ProgressBar crashes under unit test mode, so it will be disabled if unit_test_mode is on
         agents[0].progressbar = step_bar
-        can_save_model = agents[0].train(num_total_steps)
+        can_save_model = agents[0].train(
+            num_total_steps
+        )  # NB! train method needs to get original num_total_steps, not the count of steps multiplied by the number of agents
 
     # Save models
     if (

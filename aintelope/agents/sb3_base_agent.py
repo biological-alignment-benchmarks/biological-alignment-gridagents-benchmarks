@@ -81,6 +81,7 @@ def vec_env_args(env, num_envs):
 
     def env_fn():
         # TODO: Environment duplication support for parallel compute purposes. Abseil package needs to be replaced for that end. Also note that environment seeding needs to be adapted so that each environment gets potentially a different seed, as it is currently set by experiments.py.
+        # TODO: alternatively, maybe instead of cloning the env, we could pass env constructor arguments as an "env" and then call constructor here?
         # env_copy = cloudpickle.loads(cloudpickle.dumps(env))
         env_copy = env  # TODO: add an assertion check that verifies that this "cloning" function is called only once per environment
         return env_copy
@@ -234,7 +235,7 @@ def sb3_agent_train_thread_entry_point(
             # capture errors raised by NaN's in SB3 tensors, which occur with PPO imitation learning in 2-layout configuration
         except Exception as ex:
             if check_for_nan_errors(ex, cfg):
-                # NB! do not save model - once NaNs appear the model may be already corrupted
+                # NB! do not save model - once NaNs appear the model may be already corrupted, see https://stable-baselines3.readthedocs.io/en/master/guide/checking_nan.html
                 # TODO: detect whether model parameters actually contain NaNs and decide based on that
                 # NB! Exceptions raised by NaN's are propagated here to the parent process in order to terminate the training of both agents
                 raise
@@ -474,7 +475,8 @@ class SB3BaseAgent(Agent):
         if self.events is None:
             return
 
-        self.total_steps_across_episodes += 1
+        # NB! if weight sharing is on then the number of steps per model is multiplied by the number of agents
+        self.total_steps_across_episodes += self.env.num_agents
         if self.progressbar is not None:
             self.progressbar.update(
                 min(
@@ -761,14 +763,15 @@ class SB3BaseAgent(Agent):
             found_other_agents_exception = False
             for ex, trace in exs:
                 if (
-                    str(ex) == "Forced termination"
+                    str(ex)
+                    == "Forced termination"  # TODO: implement a dedicated ForcedTermination exception type so that it can be detected by type not by message
                 ):  # there should be another exception by the other agent which indirectly caused current agent to be force-terminated, lets check that other exception intead
                     found_forced_termination = ex
                     continue
                 else:
                     found_other_agents_exception = True
                     if check_for_nan_errors(ex, self.cfg):
-                        # NB! do not save model - once NaNs appear the model may be already corrupted
+                        # NB! do not save model - once NaNs appear the model may be already corrupted, see https://stable-baselines3.readthedocs.io/en/master/guide/checking_nan.html
                         # TODO: detect whether model parameters actually contain NaNs and decide based on that
                         # wait_for_enter("Press enter to continue")
                         result = False
