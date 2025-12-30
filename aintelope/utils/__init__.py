@@ -70,6 +70,7 @@ class RobustProgressBar(ProgressBar):
     def __init__(self, *args, initial_value=0, disable=False, granularity=1, **kwargs):
         self.disable = disable
         self.granularity = granularity
+        self.initial_value = initial_value
         self.prev_value = initial_value
         super(RobustProgressBar, self).__init__(
             *args, initial_value=initial_value, **kwargs
@@ -98,6 +99,8 @@ class RobustProgressBar(ProgressBar):
                     value is not None and value - self.prev_value >= self.granularity
                 ):  # avoid too frequent console updates which would slow down the computation
                     if value is not None:
+                        if self.prev_value == self.initial_value:
+                            force = True  # without forcing, for some reason the progressbar shows "0" when the value is "1"
                         self.prev_value = value
                     super(RobustProgressBar, self).update(
                         value, *args, force=force, **kwargs
