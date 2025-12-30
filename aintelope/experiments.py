@@ -630,7 +630,7 @@ def run_baseline_training(
     num_total_steps = cfg.hparams.env_params.num_iters * cfg.hparams.num_episodes
     num_total_progressbar_steps = num_total_steps
     if (
-        not self.cfg.hparams.model_params.use_weight_sharing
+        not cfg.hparams.model_params.use_weight_sharing
     ):  # if there are multiple models then the step count needs also be multiplied. For weight sharing, the step count does not need to be multiplied because both agents contribute to same model
         num_total_progressbar_steps *= env.num_agents
 
