@@ -8,7 +8,7 @@
 import os
 import logging
 import traceback
-from typing import List, NamedTuple, Optional, Tuple
+from typing import List, NamedTuple, Optional, Tuple, Dict
 from gymnasium.spaces import Discrete
 
 import pandas as pd
@@ -229,15 +229,15 @@ def sb3_agent_train_thread_entry_point(
             env = env_wrapper
 
         model = model_constructor(env, env_classname, agent_id, cfg)
-
         env_wrapper.set_model(model)
+
         try:
             model.learn(total_timesteps=num_total_steps, callback=checkpoint_callback)
             # capture errors raised by NaN's in SB3 tensors, which occur with PPO imitation learning in 2-layout configuration
         except Exception as ex:
             trace = (
                 traceback.format_exc()
-            )  # NB! need to obtain trace here since the outer except block would not get the full trace anymore
+            )  # NB! need to obtain trace here since the outer except block would not get the full trace anymore. NB! cannot use exc.__traceback__ since that would result in "cannot pickle 'traceback' object" when it is sent to the parent process
             if check_for_nan_errors(ex, cfg):
                 # NB! do not save model - once NaNs appear the model may be already corrupted, see https://stable-baselines3.readthedocs.io/en/master/guide/checking_nan.html
                 # TODO: detect whether model parameters actually contain NaNs and decide based on that
@@ -252,14 +252,37 @@ def sb3_agent_train_thread_entry_point(
     ) as ex:  # NB! need to catch exception so that the env wrapper can signal the training ended
         if (
             trace is None
-        ):  # NB! need to preserve inner trace here since this outer except block would not get the full trace anymore
+        ):  # NB! need to preserve inner trace here since this outer except block would not get the full trace anymore. NB! cannot use exc.__traceback__ since that would result in "cannot pickle 'traceback' object" when it is sent to the parent process
             trace = traceback.format_exc()
         exception_info = (
             ex,
             trace,
         )  # NB! return exception in its original type, not as a str
         env_wrapper.terminate_with_exception(exception_info)
-        print(exception_info)
+        # print(exception_info)
+
+
+def get_exception_or_exceptions_with_trace(
+    exs_with_trace: Dict[str, Tuple[Exception, str]],
+    exclude_forced_termination_ex: bool,
+) -> Exception:
+    if exclude_forced_termination_ex:
+        exs_with_trace = {
+            agent_id: (ex, trace)
+            for agent_id, (ex, trace) in exs_with_trace.items()
+            if str(ex) != "Forced termination"
+        }
+
+    if (
+        len(exs_with_trace) == 1
+    ):  # this provides better readability as trace is not stringified
+        (ex, trace) = list(exs_with_trace.values())[0]  # { agent_id: (ex, trace) }
+        # ex.with_traceback(trace) # NB! cannot use this since traceback from th subprocess can be transferred only as string, not trace. But ex.with_traceback requires trace type, it does not accept string.
+        return Exception(str(ex) + os.linesep + str(trace))
+    else:
+        return Exception(
+            str(exs_with_trace)
+        )  # this will be string representation of dict, not very well readable
 
 
 class SB3BaseAgent(Agent):
@@ -783,14 +806,18 @@ class SB3BaseAgent(Agent):
                         # wait_for_enter("Press enter to continue")
                         result = False
                     else:
-                        raise Exception(str(self.exceptions))
+                        raise get_exception_or_exceptions_with_trace(
+                            self.exceptions, exclude_forced_termination_ex=True
+                        )
             # / for ex, trace in exs:
 
             if (
                 found_forced_termination is not None
                 and not found_other_agents_exception
             ):  # this should not happen
-                raise Exception(str(self.exceptions))
+                raise get_exception_or_exceptions_with_trace(
+                    self.exceptions, exclude_forced_termination_ex=False
+                )
         # / if self.exceptions:
 
         return result
