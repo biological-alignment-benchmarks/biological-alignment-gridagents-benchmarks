@@ -35,6 +35,7 @@ from aintelope.utils import (
     RobustProgressBar,
     Semaphore,
     wait_for_enter,
+    init_console_timestamps,
 )
 
 disable_gym_warning()
@@ -357,6 +358,8 @@ def aintelope_main() -> None:
 
 
 if __name__ == "__main__":  # for multiprocessing support
+    init_console_timestamps()
+
     register_resolvers()
 
     if (

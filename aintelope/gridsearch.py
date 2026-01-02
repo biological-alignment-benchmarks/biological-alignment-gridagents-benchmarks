@@ -27,7 +27,12 @@ from omegaconf import DictConfig, OmegaConf
 from flatten_dict import flatten
 from flatten_dict.reducers import make_reducer
 
-from aintelope.utils import disable_gym_warning, RobustProgressBar, wait_for_enter
+from aintelope.utils import (
+    disable_gym_warning,
+    RobustProgressBar,
+    wait_for_enter,
+    init_console_timestamps,
+)
 
 disable_gym_warning()
 
@@ -45,14 +50,8 @@ from aintelope.gridsearch_pipeline import (
     gpu_count,
     worker_count_multiplier,
     cache,
-    run_pipeline,
     run_gridsearch_experiment_cache_helper,
 )
-
-
-def aintelope_main() -> None:
-    # return run_gridsearch_experiment(gridsearch_params=None)    # TODO: caching support
-    run_pipeline()
 
 
 # hydra does not seem to support async, therefore need a separate function here
@@ -365,6 +364,8 @@ def get_run_gridsearch_experiment_cache_helper_cache_key(gridsearch_params):
 
 
 if __name__ == "__main__":  # for multiprocessing support
+    init_console_timestamps()
+
     register_resolvers()
 
     if (

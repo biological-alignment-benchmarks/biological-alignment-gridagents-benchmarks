@@ -14,7 +14,12 @@ from gymnasium.spaces import Discrete
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
 
-from aintelope.utils import RobustProgressBar, wait_for_enter, check_for_nan_errors
+from aintelope.utils import (
+    RobustProgressBar,
+    wait_for_enter,
+    check_for_nan_errors,
+    init_console_timestamps,
+)
 
 import numpy as np
 import numpy.typing as npt
@@ -183,6 +188,8 @@ def sb3_agent_train_thread_entry_point(
     *args,
     **kwargs,
 ):
+    init_console_timestamps()
+
     if (
         sys.gettrace() is None
     ):  # do not set low priority while debugging. Note that unit tests also set sys.gettrace() to not-None

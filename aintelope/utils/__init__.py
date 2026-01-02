@@ -6,6 +6,7 @@
 # https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks
 
 import os
+import sys
 import time
 import datetime
 import warnings
@@ -246,3 +247,86 @@ def check_for_nan_errors(ex, cfg):
 
 
 # / def check_for_nan_errors(ex, cfg):
+
+
+# adds timestamps to all print statements, even if they do not use logger object
+class LogTimestamper(object):
+    def __init__(self, terminal):
+        self.terminal = terminal
+        pid = os.getpid()
+        self.pid_str = " : " + str(pid).rjust(7) + " : "
+
+    def get_now_str(self):
+        return datetime.datetime.strftime(datetime.datetime.now(), "%Y.%m.%d %H:%M:%S")
+
+    def write(self, message_in):
+        if isinstance(message_in, bytes):
+            message = message_in.decode(
+                "utf-8", "ignore"
+            )  # NB! message_in might be byte array not a string
+        else:
+            message = message_in
+
+        if (
+            message.strip() == ""
+        ):  # or message[0] == "[":  # logger messages begin with [timestamp] so there is no need to add one more timestamp, but since the logger message does not contain pid then lets still add timestamp-pid pair here
+            message_with_timestamp = message
+        else:
+            now = self.get_now_str()
+
+            if len(message) >= 2 and message[-2:] == "\n\r":
+                message_end_linebreak = "\n\r"
+            elif len(message) >= 2 and message[-2:] == "\r\n":
+                message_end_linebreak = "\r\n"
+            elif len(message) >= 1 and message[-1:] == "\n":
+                message_end_linebreak = "\n"
+            else:
+                message_end_linebreak = ""
+
+            newline_prefix = (
+                " " + now + self.pid_str
+            )  # NB! add space in front of the timestamp to mitigate the first character appearing at the end of last progressbar update line when print calls are interleaved with progress bar updates
+            newline = message_end_linebreak if message_end_linebreak else "\n"
+            message_without_end_linebreak = (
+                message[: -len(message_end_linebreak)]
+                if message_end_linebreak != ""
+                else message
+            )
+            message_with_timestamp = (
+                newline_prefix
+                + message_without_end_linebreak.replace(
+                    newline, newline + newline_prefix
+                )
+                + message_end_linebreak
+            )
+
+            message_with_timestamp = message_with_timestamp.encode(
+                "utf-8", "ignore"
+            ).decode("utf-8", "ignore")
+
+        try:
+            self.terminal.write(message_with_timestamp)
+        except Exception as ex:
+            pass
+
+    # / def write(self, message_in):
+
+    def flush(self):
+        self.terminal.flush()
+
+    @property
+    def encoding(self):
+        return self.terminal.encoding
+
+    def fileno(self):
+        return self.terminal.fileno()
+
+
+# / class LogTimestamper(object):
+
+
+def init_console_timestamps():
+    if not isinstance(sys.stdout, LogTimestamper):
+        sys.stdout = LogTimestamper(sys.stdout)
+    if not isinstance(sys.stderr, LogTimestamper):
+        sys.stderr = LogTimestamper(sys.stdout)

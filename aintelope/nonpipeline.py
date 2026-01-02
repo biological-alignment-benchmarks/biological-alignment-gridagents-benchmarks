@@ -15,7 +15,7 @@ import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 
-from aintelope.utils import disable_gym_warning, wait_for_enter
+from aintelope.utils import disable_gym_warning, wait_for_enter, init_console_timestamps
 
 disable_gym_warning()
 
@@ -133,5 +133,6 @@ def analytics(
 
 
 if __name__ == "__main__":  # for multiprocessing support
+    init_console_timestamps()
     register_resolvers()
     aintelope_main()

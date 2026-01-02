@@ -61,11 +61,6 @@ cache = Cache(cache_folder)
 gridsearch_params_global = None
 
 
-def aintelope_main() -> None:
-    # return run_gridsearch_experiment(gridsearch_params=None)    # TODO: caching support
-    run_pipeline()
-
-
 # this method is used by grid search, but it needs to be in same file as run_pipeline, else sharing the gridsearch_params_global would not work
 # TODO: auto-detect need for cache update then pipeline has different configuration
 # @cache.memoize(    # TODO: disable this for the duration of evals since then the gridsearch parameters are nulls

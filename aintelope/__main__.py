@@ -19,6 +19,10 @@ import asyncio
 
 import hydra
 
+from aintelope.utils import disable_gym_warning, wait_for_enter, init_console_timestamps
+
+disable_gym_warning()
+
 from aintelope.config.config_utils import (
     register_resolvers,
     select_gpu,
@@ -41,6 +45,8 @@ def aintelope_main() -> None:
 
 
 if __name__ == "__main__":
+    init_console_timestamps()
+
     register_resolvers()
 
     if (
