@@ -1,10 +1,10 @@
 # Biologically and economically aligned multi-objective multi-agent gridworld-based AI safety benchmarks
 
-Developing safe agentic AI systems benefits from automated empirical testing that conforms with human values, a subfield that is largely underdeveloped at the moment. To contribute towards this topic, present work focuses on introducing biologically and economically motivated themes that have been neglected in the safety aspects of modern reinforcement learning literature, namely homeostasis, balancing multiple objectives, bounded objectives, diminishing returns, sustainability, and multi-agent resource sharing. We implemented eight main benchmark environments on the above themes, for illustrating the potential shortcomings of current mainstream discussions on AI safety.
+Developing safe agentic AI systems benefits from automated empirical testing that conforms with human values, a subfield that is largely underdeveloped at the moment. To contribute towards this topic, present work focuses on introducing biologically and economically motivated themes that have been neglected in the safety aspects of modern reinforcement learning literature, namely homeostasis, balancing multiple objectives, bounded objectives, diminishing returns, sustainability, and multi-agent resource sharing. Eight main benchmark environments on the above themes have been implemented, for illustrating the potential shortcomings of current mainstream discussions on AI safety.
 
-This work introduces safety challenges for an agent's ability to learn and act in desired ways in relation to biologically and economically relevant aspects. In total we implemented nine benchmarks, which are conceptually split into three developmental stages: “basic biologically inspired dynamics in objectives”, “multi-objective agents”, and “cooperation”. The first two stages can be considered as proto-cooperative stages, since the behavioral dynamics tested in these benchmarks will be later potentially very relevant for supporting and enabling cooperative behavior in multi-agent scenarios. 
+This work introduces safety challenges for an agent's ability to learn and act in desired ways in relation to biologically and economically relevant aspects. In total eleven benchmarks have been implemented, which are conceptually split into three developmental stages: “basic biologically inspired dynamics in objectives”, “multi-objective agents”, and “cooperation”. The first two stages can be considered as proto-cooperative stages, since the behavioral dynamics tested in these benchmarks will be later potentially very relevant for supporting and enabling cooperative behavior in multi-agent scenarios. 
 
-The benchmarks were implemented in a gridworld-based environment. The environments are relatively simple, just as much complexity is added as is necessary to illustrate the relevant safety and performance aspects. The pictures attached in this document are illustrative, since the environment sizes and amounts of object types can be changed.
+The benchmarks are implemented in a gridworld-based environment. The environments are relatively simple, just as much complexity is added as is necessary to illustrate the relevant safety and performance aspects. The pictures attached in this document are illustrative, since the environment sizes and amounts of object types can be changed.
 
 The source code for concrete implementation of biologically compatible benchmarks described in this publication, as well as code for training and running the agents can be found at the current repo [https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks](https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks). The repo contains code for agents based on OpenAI Stable Baselines 3, code for an LLM agent, and an example code for a random agent, which can be extended for example into a custom implementation of a Q-learning agent.
 
@@ -21,7 +21,7 @@ Roland Pihlakas. From homeostasis to resource sharing: Biologically and economic
 
 See [AUTHORS.md](AUTHORS.md) for detailed contribution information and [LICENSE.txt](LICENSE.txt) for licence.
 
-**Use of Entire Suite**: We encourage the inclusion of the entire benchmark suite in derivative works to maintain the integrity and comprehensiveness of AI safety assessments.
+**Use of Entire Suite**: Inclusion of the entire benchmark suite in derivative works is encouraged to maintain the integrity and comprehensiveness of AI safety assessments.
 
 
 ## Project setup
@@ -32,7 +32,7 @@ This readme contains instructions for both Linux and Windows installation. Windo
 
 The project installation is managed via `make` and `pip`. Please see the respective commands in the `Makefile`. To setup the environment follow these steps:
 
-1. Install CPython. The code is tested with Python version 3.10.10. We do not recommend using Conda package manager. 
+1. Install CPython. The code is tested with Python version 3.10.10. Using Conda package manager is not recommended. 
 
 Under Linux, run the following commands:
 
@@ -66,7 +66,7 @@ Under Linux, run the following commands:
 Edit the launch.json so that the PYTHONPATH variable points to the folder where you downloaded the repo and installed virtual environment:
 
 replace all
-<br>//"PYTHONPATH": "your_path_here"
+<br>"PYTHONPATH": "YOUR_PATH_HERE"
 <br>with
 <br>"PYTHONPATH": "your_local_repo_path"
 
@@ -81,7 +81,7 @@ replace all
 
 ### Installation under Windows
 
-1. Install CPython from python.org. The code is tested with Python version 3.10.10. We do not recommend using Conda package manager.
+1. Install CPython from python.org. The code is tested with Python version 3.10.10. Using Conda package manager is not recommended. 
 
 You can download the latest installer from https://www.python.org/downloads/release/python-31010/ or if you want to download a newer 3.10.x version then from https://github.com/adang1345/PythonWindows
 
@@ -109,7 +109,7 @@ You can download the latest installer from https://www.python.org/downloads/rele
 Edit the launch.json so that the PYTHONPATH variable points to the folder where you downloaded the repo and installed virtual environment:
 
 replace all
-<br>//"PYTHONPATH": "your_path_here"
+<br>"PYTHONPATH": "YOUR_PATH_HERE"
 <br>with
 <br>"PYTHONPATH": "your_local_repo_path"
 
@@ -225,6 +225,7 @@ Aintelope code base is compatible with Windows. No extra steps needed. GPU compu
 
 # Blog posts
 
+* **Research agenda for training aligned AIs using concave utility functions following the principles of homeostasis and diminishing returns** (2025) https://www.lesswrong.com/posts/9hWgJQK8wnpuFtD5Z/research-agenda-for-training-aligned-ais-using-concave
 * **Why modelling multi-objective homeostasis is essential for AI alignment (and how it helps with AI safety as well)** (2025) https://www.lesswrong.com/posts/vGeuBKQ7nzPnn5f7A/why-modelling-multi-objective-homeostasis-is-essential-for
 
 
@@ -235,7 +236,7 @@ Aintelope code base is compatible with Windows. No extra steps needed. GPU compu
     - Video: https://www.youtube.com/watch?v=ydxMlGlQeco
     - Slides: https://bit.ly/bmmbs
 * At **Foresight Institute's Intelligent Cooperation Group**, Nov 2024: 
-    - The subject of the presentation was describing why we should consider fundamental yet neglected principles from biology and economics when thinking about AI alignment, and how these considerations will help with AI safety as well (alignment and safety were treated in this research explicitly as separate aspects, which both benefit from consideration of aforementioned principles). These principles include homeostasis and diminishing returns in utility functions, and sustainability. Next I introduce multi-objective and multi-agent gridworlds-based benchmark environments we have created for measuring the performance of machine learning algorithms and AI agents in relation to their capacity for biological and economical alignment. The benchmarks are now available as a public repo. At the end I mention some of the related themes and dilemmas not yet covered by these benchmarks, and describe new benchmark environments we have planned for future implementation.
+    - The subject of the presentation was describing why we should consider fundamental yet neglected principles from biology and economics when thinking about AI alignment, and how these considerations will help with AI safety as well (alignment and safety were treated in this research explicitly as separate aspects, which both benefit from consideration of aforementioned principles). These principles include homeostasis and diminishing returns in utility functions, and sustainability. Next I introduce multi-objective and multi-agent gridworlds-based benchmark environments I have created for measuring the performance of machine learning algorithms and AI agents in relation to their capacity for biological and economical alignment. The benchmarks are now available as a public repo. At the end I mention some of the related themes and dilemmas not yet covered by these benchmarks, and describe new benchmark environments I have planned for future implementation.
     - Recording: https://www.youtube.com/watch?v=DCUqqyyhcko
     - Slides: https://bit.ly/beamm 
 
@@ -260,7 +261,7 @@ This project is licensed under the Mozilla Public License 2.0. You are free to u
 
 Roland Pihlakas. From homeostasis to resource sharing: Biologically and economically aligned multi-objective multi-agent gridworld-based AI safety benchmarks. Arxiv, a working paper, September 2024 (https://arxiv.org/abs/2410.00081).
 
-**Use of Entire Suite**: We encourage the inclusion of the entire benchmark suite in derivative works to maintain the integrity and comprehensiveness of AI safety assessments.
+**Use of Entire Suite**: Inclusion of the entire benchmark suite in derivative works is encouraged to maintain the integrity and comprehensiveness of AI safety assessments.
 
 For more details, see the [LICENSE.txt](LICENSE.txt) and [AUTHORS.md](AUTHORS.md) files.
 
