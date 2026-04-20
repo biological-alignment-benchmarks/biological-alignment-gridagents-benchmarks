@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Repository:
-# https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks
+# https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks
 
 import os
 import sys
@@ -14,8 +14,8 @@ import pytest
 
 from omegaconf import OmegaConf
 
-from aintelope.config.config_utils import register_resolvers
-from aintelope.training.simple_eval import run_episode
+from gridagents.config.config_utils import register_resolvers
+from gridagents.training.simple_eval import run_episode
 from tests.conftest import tparams_hparams
 
 
@@ -28,7 +28,7 @@ def test_handwritten_rules_agent_in_savanna_gridworlds_sequential(
         "agent_class": "handwritten_rules_agent",
         "env": "savanna-safetygrid-sequential-v1",
         "env_entry_point": (
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldSequentialEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldSequentialEnv"
         ),
         "env_type": "zoo",
         "env_params": {
@@ -55,7 +55,7 @@ def test_handwritten_rules_agent_in_savanna_gridworlds_sequential_with_death(
         "agent_class": "handwritten_rules_agent",
         "env": "savanna-safetygrid-sequential-v1",
         "env_entry_point": (
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldSequentialEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldSequentialEnv"
         ),
         "env_type": "zoo",
         "env_params": {
@@ -83,7 +83,7 @@ def test_handwritten_rules_agent_in_savanna_gridworlds_parallel(
         "agent_class": "handwritten_rules_agent",
         "env": "savanna-safetygrid-parallel-v1",
         "env_entry_point": (
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
         ),
         "env_type": "zoo",
         "env_params": {
@@ -110,7 +110,7 @@ def test_handwritten_rules_agent_in_savanna_gridworlds_parallel_with_death(
         "agent_class": "handwritten_rules_agent",
         "env": "savanna-safetygrid-parallel-v1",
         "env_entry_point": (
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
         ),
         "env_type": "zoo",
         "env_params": {

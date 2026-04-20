@@ -6,7 +6,7 @@ This work introduces safety challenges for an agent's ability to learn and act i
 
 The benchmarks are implemented in a gridworld-based environment. The environments are relatively simple, just as much complexity is added as is necessary to illustrate the relevant safety and performance aspects. The pictures attached in this document are illustrative, since the environment sizes and amounts of object types can be changed.
 
-The source code for concrete implementation of biologically compatible benchmarks described in this publication, as well as code for training and running the agents can be found at the current repo [https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks](https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks). The repo contains code for agents based on OpenAI Stable Baselines 3, code for an LLM agent, and an example code for a random agent, which can be extended for example into a custom implementation of a Q-learning agent.
+The source code for concrete implementation of biologically compatible benchmarks described in this publication, as well as code for training and running the agents can be found at the current repo [https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks](https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks). The repo contains code for agents based on OpenAI Stable Baselines 3, code for an LLM agent, and an example code for a random agent, which can be extended for example into a custom implementation of a Q-learning agent.
 
 The source code for the **Extended Gridworlds** framework can be found at [https://github.com/biological-alignment-benchmarks/ai-safety-gridworlds/tree/biological-compatibility-benchmarks](https://github.com/biological-alignment-benchmarks/ai-safety-gridworlds/tree/biological-compatibility-benchmarks). Current repo imports this extended gridworlds framework as a dependency and it is used for providing building blocks the concrete environment implementation in the current project.
 
@@ -22,6 +22,17 @@ Roland Pihlakas. From homeostasis to resource sharing: Biologically and economic
 See [AUTHORS.md](AUTHORS.md) for detailed contribution information and [LICENSE.txt](LICENSE.txt) for licence.
 
 **Use of Entire Suite**: Inclusion of the entire benchmark suite in derivative works is encouraged to maintain the integrity and comprehensiveness of AI safety assessments.
+
+
+## Demo image
+
+Example image of the current system, where all features are turned on simultaneously:
+
+<img src="screenshots/screenshot_with_all_features.png" />
+
+Elements and metrics can be configured flexibly for each given benchmark. Examples of configuration options are: observation and state space of agents, scoring dimensions, adding NPC agents, object types and their dynamics.
+
+For benchmark-specific images, see [screenshots folder](screenshots).
 
 
 ## Project setup
@@ -45,13 +56,13 @@ Under Linux, run the following commands:
 2. Get the code from repo:
 
 `sudo apt install git-all`
-<br>Run `git clone https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks.git`
-<br>Run `cd biological-compatibility-benchmarks`
+<br>Run `git clone https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks.git`
+<br>Run `cd biological-alignment-gridagents-benchmarks`
 
 3. Create a virtual python environment:
 
 `make venv-310`
-<br>`source venv_aintelope/bin/activate`
+<br>`source venv_gridagents/bin/activate`
 
 4. Install dependencies:
 
@@ -76,7 +87,7 @@ replace all
 * Run tests: `make tests-local`
 
 7. Location of an example agent you can use as a template for building your custom agent: 
-[`aintelope/agents/example_agent.py`](aintelope/agents/example_agent.py)
+[`gridagents/agents/example_agent.py`](gridagents/agents/example_agent.py)
 
 
 ### Installation under Windows
@@ -88,18 +99,19 @@ You can download the latest installer from https://www.python.org/downloads/rele
 2. Get the code from repo:
 * Install Git from https://gitforwindows.org/
 * Open command prompt and navigate top the folder you want to use for repo
-* Run `git clone https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks.git`
-* Run `cd biological-compatibility-benchmarks`
+* Run `git clone https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks.git`
+* Run `cd biological-alignment-gridagents-benchmarks`
 
 3. Create a virtual python environment by running: 
 <br>3.1. To activate VirtualEnv with Python 3.10:
-<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`virtualenv -p python3.10 venv_aintelope` 
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`virtualenv -p python3.10 venv_gridagents` 
 <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(or if you want to use your default Python version: 
-<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`python -m venv venv_aintelope`)
-<br>3.2. `venv_aintelope\scripts\activate`
+<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`python -m venv venv_gridagents`)
+<br>3.2. `venv_gridagents\scripts\activate`
 
 4. Install dependencies by running:
 <br>`pip uninstall -y ai_safety_gridworlds >nul 2>&1`
+<br>`pip uninstall -y zoo_to_gym_multiagent_adapter 2>&1`
 <br>`pip install -r requirements/api.txt`
 
 5. If you use VSCode, then set up your launch configurations file:
@@ -116,10 +128,10 @@ replace all
 6. For development and testing:
 
 * Install development dependencies: `pip install -r requirements/dev.txt`
-* Run tests: `python -m pytest --tb=native --cov="aintelope tests"`
+* Run tests: `python -m pytest --tb=native --cov="gridagents tests"`
 
 7. Location of an example agent you can use as a template for building your custom agent: 
-[`aintelope\agents\example_agent.py`](aintelope/agents/example_agent.py)
+[`gridagents\agents\example_agent.py`](gridagents/agents/example_agent.py)
 
 
 ### Setting up the LLM API access
@@ -133,7 +145,7 @@ Ensure you have loaded credits on your OpenAI API account, else you will get "ra
 ### Code formatting and style
 
 To automatically sort the imports you can run
-[`isort aintelope tests`](https://github.com/PyCQA/isort) from the root level of the project.
+[`isort gridagents tests`](https://github.com/PyCQA/isort) from the root level of the project.
 To autoformat python files you can use [`black .`](https://github.com/psf/black) from the root level of the project.
 Configurations of the formatters can be found in `pyproject.toml`.
 For linting/code style use [`flake8`](https://flake8.pycqa.org/en/latest/).
@@ -147,11 +159,11 @@ make flake8
 ```
 
 
-## Executing `aintelope`
+## Executing `gridagents`
 
 In the folder `.vscode` there is a file named `launch.json.template`. Copy that file to `launch.json`. This is a VSCode launch configurations file, containing many launch configurations. (The original file named `launch.json.template` is necessary so that your local changes to launch configurations do not end up in the Git repository.)
 
-Alternatively, try executing `make run-training-baseline`. You do not need VSCode for running this command. Then look in `aintelope/outputs`. This command will execute only one of many available launch configurations present in `launch.json`.
+Alternatively, try executing `make run-training-baseline`. You do not need VSCode for running this command. Then look in `gridagents/outputs`. This command will execute only one of many available launch configurations present in `launch.json`.
 
 ### Executing LLM agent
 
@@ -188,7 +200,7 @@ By default, the separate turning actions are turned off.
 
 ## Human-playable demos
 
-In the folder `aintelope\environments\demos\gridworlds\` are located the human-playable demo environments, which have same configuration as the benchmarks in our pipeline. Playing these human-playable demos manually can give you a better intuition of the rules and how the benchmarks work.
+In the folder `gridagents\environments\demos\gridworlds\` are located the human-playable demo environments, which have same configuration as the benchmarks in our pipeline. Playing these human-playable demos manually can give you a better intuition of the rules and how the benchmarks work.
 
 You can launch these Python files without additional arguments. 
 
@@ -214,7 +226,7 @@ food_sharing.py
 
 ## Windows
 
-Aintelope code base is compatible with Windows. No extra steps needed. GPU computation works fine as well. WSL is not needed.
+Gridagents code base is compatible with Windows. No extra steps needed. GPU computation works fine as well. WSL is not needed.
 
 
 # Papers
@@ -261,8 +273,10 @@ This project is licensed under the Mozilla Public License 2.0. You are free to u
 
 Roland Pihlakas. From homeostasis to resource sharing: Biologically and economically aligned multi-objective multi-agent gridworld-based AI safety benchmarks. Arxiv, a working paper, September 2024 (https://arxiv.org/abs/2410.00081).
 
+Original upstream repository: [https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks](https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks)
+
 **Use of Entire Suite**: Inclusion of the entire benchmark suite in derivative works is encouraged to maintain the integrity and comprehensiveness of AI safety assessments.
 
 For more details, see the [LICENSE.txt](LICENSE.txt) and [AUTHORS.md](AUTHORS.md) files.
 
-This repo derives from Aintelope's internal repo on branch publication.
+This repo was initially developed within Aintelope DE's internal repository (where Roland Pihlakas became primary author at 94%). Then after publication on 2024, moved to his independent benchmarking account on 2025 for public benefit.

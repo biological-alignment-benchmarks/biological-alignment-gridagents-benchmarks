@@ -1,5 +1,5 @@
 # Variables
-PROJECT = aintelope
+PROJECT = gridagents
 TESTS = tests
 CODEBASE = ${PROJECT} ${TESTS}
 VENV = venv_$(PROJECT)
@@ -57,10 +57,10 @@ typecheck-local: ## Local typechecking
 # ---------- formatting ----------
 .PHONY: isort isort-check format format-check
 format: ## apply automatic code formatter to repository
-	black --exclude="aintelope_savanna.py" $(CODEBASE)
+	black --exclude="savanna.py" $(CODEBASE)
 
 format-check: ## check formatting
-	black --check --exclude="aintelope_savanna.py" $(CODEBASE)
+	black --check --exclude="savanna.py" $(CODEBASE)
 
 isort: ## Sort python imports
 	isort $(CODEBASE)

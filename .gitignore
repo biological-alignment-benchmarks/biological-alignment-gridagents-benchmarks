@@ -120,7 +120,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-venv_aintelope
+venv_aintelope/
+venv_gridagents/
 
 # Spyder project settings
 .spyderproject

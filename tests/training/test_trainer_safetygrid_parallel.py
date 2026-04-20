@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Repository:
-# https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks
+# https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks
 
 import os
 import subprocess
@@ -11,8 +11,8 @@ import sys
 
 import pytest
 
-from aintelope.config.config_utils import register_resolvers
-from aintelope.nonpipeline import aintelope_main
+from gridagents.config.config_utils import register_resolvers
+from gridagents.nonpipeline import gridagents_main
 from tests.conftest import constants
 
 
@@ -22,7 +22,7 @@ def test_training_pipeline_main():
         "hparams.env=savanna-safetygrid-parallel-v1",
         (
             "hparams.env_entry_point="
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
         ),
         "hparams.env_type=zoo",
         "hparams.unit_test_mode=True",
@@ -31,7 +31,7 @@ def test_training_pipeline_main():
         "hparams.env_params.num_iters=50",
         "hparams.warm_start_steps=10",
     ]
-    aintelope_main()
+    gridagents_main()
     sys.argv = [""]
 
 
@@ -43,7 +43,7 @@ def test_training_pipeline_main_with_dead_agents(execution_number):
         "hparams.env=savanna-safetygrid-parallel-v1",
         (
             "hparams.env_entry_point="
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
         ),
         "hparams.env_type=zoo",
         "hparams.env_params.seed=" + str(execution_number),
@@ -54,7 +54,7 @@ def test_training_pipeline_main_with_dead_agents(execution_number):
         "hparams.env_params.num_iters=50",
         "hparams.warm_start_steps=10",
     ]
-    aintelope_main()
+    gridagents_main()
     sys.argv = [""]
 
 
@@ -67,7 +67,7 @@ def test_training_pipeline_baseline():
         "hparams.env=savanna-safetygrid-parallel-v1",
         (
             "hparams.env_entry_point="
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
         ),
         "hparams.env_type=zoo",
         "hparams.agent_class=q_agent",
@@ -77,7 +77,7 @@ def test_training_pipeline_baseline():
         "hparams.env_params.num_iters=50",
         "hparams.warm_start_steps=10",
     ]
-    aintelope_main()
+    gridagents_main()
     sys.argv = [""]
 
 
@@ -92,7 +92,7 @@ def test_training_pipeline_baseline_with_dead_agents(execution_number):
         "hparams.env=savanna-safetygrid-parallel-v1",
         (
             "hparams.env_entry_point="
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
         ),
         "hparams.env_type=zoo",
         "hparams.agent_class=q_agent",
@@ -104,7 +104,7 @@ def test_training_pipeline_baseline_with_dead_agents(execution_number):
         "hparams.env_params.num_iters=50",
         "hparams.warm_start_steps=10",
     ]
-    aintelope_main()
+    gridagents_main()
     sys.argv = [""]
 
 

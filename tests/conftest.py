@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Repository:
-# https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks
+# https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks
 
 import os
 import pathlib
@@ -15,7 +15,7 @@ from omegaconf import DictConfig, ListConfig, OmegaConf
 
 def constants() -> DictConfig:
     constants_dict = {
-        "PROJECT": "aintelope",
+        "PROJECT": "gridagents",
         "BASELINE": "run-training-baseline",
     }
     return OmegaConf.create(constants_dict)
@@ -29,9 +29,9 @@ def constants() -> DictConfig:
 @pytest.fixture
 # def tparams_hparams(root_dir: pathlib.Path) -> Union[DictConfig, ListConfig]:
 def tparams_hparams() -> Union[DictConfig, ListConfig]:
-    # full_params = OmegaConf.load(os.path.join(root_dir, "aintelope", "config", "config_experiment.yaml"))
+    # full_params = OmegaConf.load(os.path.join(root_dir, "gridagents", "config", "config_experiment.yaml"))
     full_params = OmegaConf.load(
-        os.path.join("aintelope", "config", "config_experiment.yaml")
+        os.path.join("gridagents", "config", "config_experiment.yaml")
     )
 
     # override some parameters during tests in order to speed up computations

@@ -3,8 +3,8 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Repository:
-# https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks
+# https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks
 
-from aintelope.config.config_utils import register_resolvers
+from gridagents.config.config_utils import register_resolvers
 
 register_resolvers()

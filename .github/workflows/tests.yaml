@@ -21,4 +21,4 @@ jobs:
           pip install -r requirements/api.txt
           pip install -r requirements/dev.txt
       - name: Run tests
-        run: python -m pytest --cov=aintelope tests
+        run: python -m pytest --cov=gridagents tests

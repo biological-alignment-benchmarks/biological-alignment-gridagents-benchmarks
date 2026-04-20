@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Repository:
-# https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks
+# https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks
 
 import os
 from typing import Dict
@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 from omegaconf import OmegaConf
 
-from aintelope.config.config_utils import register_resolvers
-from aintelope.training.simple_eval import run_episode
+from gridagents.config.config_utils import register_resolvers
+from gridagents.training.simple_eval import run_episode
 from tests.conftest import tparams_hparams
 
 
@@ -26,7 +26,7 @@ def test_example_agent_in_savanna_gridworlds_parallel(
         "agent_class": "example_agent",
         "env": "savanna-safetygrid-parallel-v1",
         "env_entry_point": (
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
         ),
         "env_type": "zoo",
         "env_params": {
@@ -53,7 +53,7 @@ def test_randomwalkagent_in_savanna_gridworlds_parallel(
         "agent_class": "random_walk_agent",
         "env": "savanna-safetygrid-parallel-v1",
         "env_entry_point": (
-            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
         ),
         "env_type": "zoo",
         "env_params": {
@@ -80,7 +80,7 @@ def test_randomwalkagent_in_savanna_gridworlds_parallel(
 #        "agent_class": "one_step_perfect_prediction_agent",
 #        "env": "savanna-safetygrid-parallel-v1",
 #        "env_entry_point": (
-#            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+#            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
 #        ),
 #        "env_type": "zoo",
 #        "env_params": {
@@ -109,7 +109,7 @@ def test_randomwalkagent_in_savanna_gridworlds_parallel(
 #        "agent_class": "iterative_weight_optimization_agent",
 #        "env": "savanna-safetygrid-parallel-v1",
 #        "env_entry_point": (
-#            "aintelope.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
+#            "gridagents.environments.savanna_safetygrid:SavannaGridworldParallelEnv"
 #        ),
 #        "env_type": "zoo",
 #        "env_params": {

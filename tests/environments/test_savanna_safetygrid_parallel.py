@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #
 # Repository:
-# https://github.com/biological-alignment-benchmarks/biological-alignment-gridworlds-benchmarks
+# https://github.com/biological-alignment-benchmarks/biological-alignment-gridagents-benchmarks
 
 import os
 import traceback
@@ -12,8 +12,8 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from aintelope.environments import savanna_safetygrid as safetygrid
-from aintelope.environments.savanna_safetygrid import SavannaGridworldParallelEnv
+from gridagents.environments import savanna_safetygrid as safetygrid
+from gridagents.environments.savanna_safetygrid import SavannaGridworldParallelEnv
 
 from zoo_to_gym_multiagent_adapter.singleagent_zoo_to_gym_adapter import (
     SingleAgentZooToGymAdapter,
